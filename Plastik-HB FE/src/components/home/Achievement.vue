@@ -146,9 +146,6 @@ const mainAchievement = ref<MainAchievement>({
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-// API Configuration
-const ACHIEVEMENTS_ENDPOINT = '/achievements/active';
-
 // Fetch achievements from backend using fetchEndpoint utility
 const fetchAchievements = async (): Promise<void> => {
     loading.value = true;
