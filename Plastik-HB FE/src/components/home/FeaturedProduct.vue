@@ -28,7 +28,7 @@ const fetchProducts = async (): Promise<void> => {
     error.value = null;
 
     try {
-        const endpoint = `/products/featured`;
+        const endpoint = `products/featured`;
         const data = await fetchEndpoint(endpoint, 'GET');
 
         if (data && data.success) {
