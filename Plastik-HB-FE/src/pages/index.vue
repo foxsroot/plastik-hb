@@ -1,14 +1,18 @@
 <template>
-  <v-container>
-    <v-row>
-      <v-col cols="12">
-        <h1 class="text-h3 mb-4">Selamat Datang di Plastik HB</h1>
-        <p class="text-body-1">Halaman beranda website Plastik HB.</p>
-      </v-col>
-    </v-row>
-  </v-container>
+  <div class="home-page">
+    <!-- Banner Section -->
+    <Banner />
+    
+    <!-- Achievement Section -->
+    <Pencapaian />
+    
+    <!-- Featured Products Section -->
+    <ProdukAndalan />
+  </div>
 </template>
 
 <script lang="ts" setup>
-  //
+import Banner from './home/Banner.vue'
+import Pencapaian from './home/Pencapaian.vue'
+import ProdukAndalan from './home/ProdukAndalan.vue'
 </script>
