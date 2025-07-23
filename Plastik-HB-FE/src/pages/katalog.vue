@@ -89,6 +89,7 @@
               </v-card-subtitle>
               <v-card-actions>
                 <v-btn
+                  :to="{ path: '/detail-produk', query: { id: product.id } }"
                   color="primary"
                   variant="elevated"
                   size="small"
