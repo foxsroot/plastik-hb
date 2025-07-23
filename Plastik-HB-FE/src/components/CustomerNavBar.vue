@@ -35,11 +35,11 @@
         </v-btn>
 
         <v-btn
-          to="/tentang"
+          to="/tentang-kami"
           variant="text"
           size="large"
           class="nav-link px-6"
-          :class="{ active: $route.path === '/tentang' }"
+          :class="{ active: $route.path === '/tentang-kami' }"
         >
           Tentang Kami
         </v-btn>
@@ -71,7 +71,7 @@
             <v-list-item-title>Katalog Produk</v-list-item-title>
           </v-list-item>
 
-          <v-list-item to="/tentang" @click="mobileMenu = false">
+          <v-list-item to="/tentang-kami" @click="mobileMenu = false">
             <v-list-item-title>Tentang Kami</v-list-item-title>
           </v-list-item>
         </v-list>
