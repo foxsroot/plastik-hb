@@ -1,13 +1,7 @@
 <template>
   <v-app-bar elevation="1" color="white" height="80">
     <v-container fluid class="d-flex align-center px-6">
-      <!-- Logo Section -->
-      <v-btn
-        variant="text"
-        to="/"
-        class="logo-btn pa-2"
-        size="large"
-      >
+      <v-btn variant="text" to="/" class="logo-btn pa-2" size="large">
         <v-img
           src="/src/assets/logo.png"
           alt="Logo"
@@ -19,34 +13,33 @@
 
       <v-spacer />
 
-      <!-- Navigation Links -->
       <v-btn-group variant="text" class="d-none d-md-flex">
         <v-btn
           to="/"
           variant="text"
           size="large"
           class="nav-link px-6"
-          :class="{ 'active': $route.path === '/' }"
+          :class="{ active: $route.path === '/' }"
         >
           Home
         </v-btn>
-        
+
         <v-btn
           to="/katalog"
           variant="text"
           size="large"
           class="nav-link px-6"
-          :class="{ 'active': $route.path === '/katalog' }"
+          :class="{ active: $route.path === '/katalog' }"
         >
           Katalog Produk
         </v-btn>
-        
+
         <v-btn
           to="/tentang"
           variant="text"
           size="large"
           class="nav-link px-6"
-          :class="{ 'active': $route.path === '/tentang' }"
+          :class="{ active: $route.path === '/tentang' }"
         >
           Tentang Kami
         </v-btn>
@@ -54,7 +47,6 @@
 
       <v-spacer />
 
-      <!-- Mobile Menu -->
       <v-menu
         v-model="mobileMenu"
         :close-on-content-click="true"
@@ -69,26 +61,17 @@
             class="d-md-none"
           />
         </template>
-        
+
         <v-list>
-          <v-list-item
-            to="/"
-            @click="mobileMenu = false"
-          >
+          <v-list-item to="/" @click="mobileMenu = false">
             <v-list-item-title>Home</v-list-item-title>
           </v-list-item>
-          
-          <v-list-item
-            to="/katalog"
-            @click="mobileMenu = false"
-          >
+
+          <v-list-item to="/katalog" @click="mobileMenu = false">
             <v-list-item-title>Katalog Produk</v-list-item-title>
           </v-list-item>
-          
-          <v-list-item
-            to="/tentang"
-            @click="mobileMenu = false"
-          >
+
+          <v-list-item to="/tentang" @click="mobileMenu = false">
             <v-list-item-title>Tentang Kami</v-list-item-title>
           </v-list-item>
         </v-list>
@@ -98,9 +81,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref } from "vue";
 
-const mobileMenu = ref(false)
+const mobileMenu = ref(false);
 </script>
 
 <style scoped>

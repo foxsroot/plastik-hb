@@ -1,5 +1,13 @@
 <script setup lang="ts"></script>
 
+<route>
+{
+  meta: {
+    layout: 'admin'
+  }
+}
+</route>
+
 <template>
   <v-container>
     <v-row>
