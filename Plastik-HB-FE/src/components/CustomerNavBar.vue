@@ -39,7 +39,7 @@
           variant="text"
           size="large"
           class="nav-link px-6"
-          :class="{ active: $route.path === '/tentang' }"
+          :class="{ active: $route.path === '/tentang-kami' }"
         >
           Tentang Kami
         </v-btn>
