@@ -21,8 +21,16 @@ declare module 'vue-router/auto-routes' {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/home/Banner': RouteRecordInfo<'/home/Banner', '/home/Banner', Record<never, never>, Record<never, never>>,
     '/home/Pencapaian': RouteRecordInfo<'/home/Pencapaian', '/home/Pencapaian', Record<never, never>, Record<never, never>>,
-    '/home/ProdukAndalan': RouteRecordInfo<'/home/ProdukAndalan', '/home/ProdukAndalan', Record<never, never>, Record<never, never>>,
-    '/KatalogProduk': RouteRecordInfo<'/KatalogProduk', '/KatalogProduk', Record<never, never>, Record<never, never>>,
-    '/TentangKami': RouteRecordInfo<'/TentangKami', '/TentangKami', Record<never, never>, Record<never, never>>,
+    '/home/ProdukAndalan': RouteRecordInfo<'/home/ProdukAndalan', '/home/ProdukAndalan', Record<never, never>, Record<never, never>>
+    '/admin/': RouteRecordInfo<'/admin/', '/admin', Record<never, never>, Record<never, never>>,
+    '/admin/halaman-utama': RouteRecordInfo<'/admin/halaman-utama', '/admin/halaman-utama', Record<never, never>, Record<never, never>>,
+    '/admin/informasi-kontak': RouteRecordInfo<'/admin/informasi-kontak', '/admin/informasi-kontak', Record<never, never>, Record<never, never>>,
+    '/admin/katalog-produk': RouteRecordInfo<'/admin/katalog-produk', '/admin/katalog-produk', Record<never, never>, Record<never, never>>,
+    '/admin/kategori': RouteRecordInfo<'/admin/kategori', '/admin/kategori', Record<never, never>, Record<never, never>>,
+    '/admin/login': RouteRecordInfo<'/admin/login', '/admin/login', Record<never, never>, Record<never, never>>,
+    '/admin/tentang-kami': RouteRecordInfo<'/admin/tentang-kami', '/admin/tentang-kami', Record<never, never>, Record<never, never>>,
+    '/detail-produk': RouteRecordInfo<'/detail-produk', '/detail-produk', Record<never, never>, Record<never, never>>,
+    '/katalog': RouteRecordInfo<'/katalog', '/katalog', Record<never, never>, Record<never, never>>,
+    '/tentang-kami': RouteRecordInfo<'/tentang-kami', '/tentang-kami', Record<never, never>, Record<never, never>>,
   }
 }
