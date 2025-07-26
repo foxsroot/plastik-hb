@@ -1,5 +1,5 @@
 <template>
-  <v-container class="banner-section py-12">
+  <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
     <v-row>
       <v-col cols="12">
         <div class="banner-container">
@@ -34,7 +34,7 @@
                       <v-btn
                         v-if="banner.buttonText"
                         :to="banner.buttonLink"
-                        color="primary"
+                        color="amber"
                         size="large"
                         rounded
                         class="banner-btn"
@@ -60,7 +60,7 @@
               :class="{ 'active': currentSlide === index }"
               @click="goToSlide(index)"
             >
-              <v-icon size="12">mdi-circle</v-icon>
+              <v-icon size="12" color="amber">mdi-circle</v-icon>
             </v-btn>
           </div>
         </div>
@@ -127,10 +127,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.banner-section {
-  background-color: #ffffff;
-}
-
 .banner-container {
   position: relative;
   overflow: hidden;
@@ -199,11 +195,11 @@ onUnmounted(() => {
 }
 
 .banner-dot.active {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 193, 7, 0.8);
 }
 
 .banner-dot:hover {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 193, 7, 0.6);
   transform: scale(1.2);
 }
 

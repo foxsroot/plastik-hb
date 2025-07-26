@@ -1,23 +1,23 @@
 <template>
-  <v-container class="achievement-section py-12">
+  <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
     <v-row>
       <v-col cols="12">
         <div class="text-center mb-8">
-          <h2 class="achievement-title text-h3 font-weight-bold mb-4">
+          <h2 class="text-h5 font-weight-bold mb-6">
             Achievement
           </h2>
         </div>
       </v-col>
     </v-row>
 
-    <v-row class="achievement-content">
+    <v-row class="achievement-content mb-12">
       <!-- Left Side - Large Image or Achievement Items -->
       <v-col cols="12" md="6" class="left-section">
         <div v-if="leftSideAchievements.length === 0" class="large-image-placeholder">
-          <v-card class="fill-height d-flex align-center justify-center" outlined>
+          <v-card class="fill-height d-flex align-center justify-center bg-grey-darken-3 rounded-lg elevation-1" outlined>
             <div class="text-center pa-8">
-              <v-icon size="80" color="grey-lighten-1">mdi-image-outline</v-icon>
-              <p class="text-grey mt-4">Large Image Placeholder</p>
+              <v-icon size="80" color="amber">mdi-image-outline</v-icon>
+              <p class="text-white mt-4">Large Image Placeholder</p>
             </div>
           </v-card>
         </div>
@@ -27,10 +27,9 @@
           <v-card
             v-for="achievement in leftSideAchievements"
             :key="achievement.id"
-            class="achievement-card mb-4"
-            elevation="2"
+            class="achievement-card mb-4 pa-6 bg-grey-darken-3 rounded-lg elevation-1"
           >
-            <v-card-text class="d-flex align-center pa-4">
+            <v-card-text class="d-flex align-center pa-0">
               <!-- Achievement Icon/Image -->
               <v-avatar size="60" class="mr-4">
                 <v-img
@@ -38,17 +37,17 @@
                   :src="achievement.image"
                   :alt="achievement.title"
                 />
-                <v-icon v-else size="40" color="primary">mdi-trophy</v-icon>
+                <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
               </v-avatar>
               
               <!-- Achievement Content -->
               <div class="flex-grow-1">
                 <div class="d-flex align-center mb-2">
-                  <h3 class="achievement-percentage text-h4 font-weight-bold text-primary">
+                  <h3 class="achievement-percentage text-h4 font-weight-bold text-amber">
                     {{ achievement.percentage }}%
                   </h3>
                 </div>
-                <p class="achievement-description text-body-2 mb-0">
+                <p class="achievement-description text-body-1 mb-0 text-white">
                   {{ achievement.description }}
                 </p>
               </div>
@@ -63,10 +62,9 @@
           <v-card
             v-for="achievement in rightSideAchievements"
             :key="achievement.id"
-            class="achievement-card mb-4"
-            elevation="2"
+            class="achievement-card mb-4 pa-6 bg-grey-darken-3 rounded-lg elevation-1"
           >
-            <v-card-text class="d-flex align-center pa-4">
+            <v-card-text class="d-flex align-center pa-0">
               <!-- Achievement Icon/Image -->
               <v-avatar size="60" class="mr-4">
                 <v-img
@@ -74,17 +72,17 @@
                   :src="achievement.image"
                   :alt="achievement.title"
                 />
-                <v-icon v-else size="40" color="primary">mdi-trophy</v-icon>
+                <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
               </v-avatar>
               
               <!-- Achievement Content -->
               <div class="flex-grow-1">
                 <div class="d-flex align-center mb-2">
-                  <h3 class="achievement-percentage text-h4 font-weight-bold text-primary">
+                  <h3 class="achievement-percentage text-h4 font-weight-bold text-amber">
                     {{ achievement.percentage }}%
                   </h3>
                 </div>
-                <p class="achievement-description text-body-2 mb-0">
+                <p class="achievement-description text-body-1 mb-0 text-white">
                   {{ achievement.description }}
                 </p>
               </div>
@@ -164,36 +162,17 @@ const rightSideAchievements = computed(() => {
 </script>
 
 <style scoped>
-.achievement-section {
-  background-color: #f8f9fa;
-}
-
-.achievement-title {
-  color: #2c3e50;
-  margin-bottom: 2rem;
-}
-
 .large-image-placeholder {
   height: 400px;
 }
 
 .achievement-card {
   transition: all 0.3s ease;
-  border-radius: 12px;
 }
 
 .achievement-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
-}
-
-.achievement-percentage {
-  color: #1976d2;
-}
-
-.achievement-description {
-  color: #546e7a;
-  line-height: 1.5;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
 .achievement-grid {
