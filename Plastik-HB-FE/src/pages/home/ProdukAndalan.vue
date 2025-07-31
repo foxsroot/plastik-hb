@@ -1,12 +1,12 @@
 <template>
-  <v-container class="featured-products-section py-12">
+  <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
     <v-row>
       <v-col cols="12">
         <div class="text-center mb-8">
-          <h2 class="section-title text-h3 font-weight-bold mb-4">
+          <h2 class="text-h5 font-weight-bold mb-6">
             Produk Andalan
           </h2>
-          <p class="section-subtitle text-h6 text-grey-darken-1 mb-6">
+          <p class="text-subtitle-1 mb-3">
             Koleksi produk plastik berkualitas tinggi pilihan terbaik kami
           </p>
         </div>
@@ -26,8 +26,7 @@
               <v-card
                 v-for="product in featuredProducts"
                 :key="product.id"
-                class="product-card"
-                elevation="2"
+                class="product-card bg-grey-darken-3 rounded-lg elevation-1"
                 @click="viewProductDetail(product)"
               >
                 <!-- Product Image -->
@@ -41,7 +40,7 @@
                   >
                     <template v-slot:placeholder>
                       <div class="d-flex align-center justify-center fill-height">
-                        <v-icon size="60" color="grey-lighten-3">mdi-package-variant</v-icon>
+                        <v-icon size="60" color="amber">mdi-package-variant</v-icon>
                       </div>
                     </template>
                   </v-img>
@@ -49,7 +48,7 @@
                   <!-- Product Badge -->
                   <v-chip
                     v-if="product.badge"
-                    :color="product.badgeColor || 'primary'"
+                    :color="product.badgeColor || 'amber'"
                     size="small"
                     class="product-badge"
                   >
@@ -59,17 +58,17 @@
 
                 <!-- Product Content -->
                 <v-card-text class="pa-4">
-                  <h3 class="product-name text-subtitle-1 font-weight-bold mb-2">
+                  <h3 class="product-name text-subtitle-1 font-weight-bold mb-2 text-white">
                     {{ product.name }}
                   </h3>
-                  <p class="product-description text-body-2 text-grey-darken-1 mb-3">
+                  <p class="product-description text-body-2 text-grey-lighten-1 mb-3">
                     {{ product.description }}
                   </p>
                   
                   <!-- Product Price -->
                   <div class="product-price-container d-flex align-center justify-space-between">
                     <div>
-                      <span class="product-price text-h6 font-weight-bold text-primary">
+                      <span class="product-price text-h6 font-weight-bold text-amber">
                         {{ formatPrice(product.price) }}
                       </span>
                       <span v-if="product.originalPrice" class="original-price text-body-2 text-grey ml-2">
@@ -90,7 +89,7 @@
       <v-col cols="12" class="text-center">
         <v-btn
           to="/katalog"
-          color="primary"
+          color="amber"
           size="large"
           variant="outlined"
           class="px-8"
@@ -255,14 +254,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.featured-products-section {
-  background-color: #ffffff;
-}
-
-.section-title {
-  color: #2c3e50;
-}
-
 .products-carousel-container {
   position: relative;
 }
@@ -288,14 +279,13 @@ onMounted(async () => {
 .product-card {
   width: 260px;
   min-width: 260px;
-  border-radius: 12px;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
 }
 
 .product-image-container {
@@ -303,7 +293,7 @@ onMounted(async () => {
 }
 
 .product-image {
-  border-radius: 12px 12px 0 0;
+  border-radius: 8px 8px 0 0;
 }
 
 .product-badge {
@@ -314,12 +304,10 @@ onMounted(async () => {
 }
 
 .product-name {
-  color: #2c3e50;
   line-height: 1.3;
   min-height: 2.6em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-    line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -329,13 +317,8 @@ onMounted(async () => {
   min-height: 2.8em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.product-price {
-  color: #1976d2;
 }
 
 .original-price {
