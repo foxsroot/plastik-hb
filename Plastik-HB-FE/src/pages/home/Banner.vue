@@ -50,18 +50,13 @@
 
           <!-- Custom Dots Indicator -->
           <div class="banner-dots">
-            <v-btn
+            <div
               v-for="(banner, index) in banners"
               :key="index"
-              icon
-              size="small"
-              variant="text"
               class="banner-dot"
               :class="{ 'active': currentSlide === index }"
               @click="goToSlide(index)"
-            >
-              <v-icon size="12" color="amber">mdi-circle</v-icon>
-            </v-btn>
+            />
           </div>
         </div>
       </v-col>
@@ -189,18 +184,22 @@ onUnmounted(() => {
 }
 
 .banner-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(4px);
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .banner-dot.active {
-  background: rgba(255, 193, 7, 0.8);
+  background: rgba(255, 193, 7, 0.9);
+  transform: scale(1.2);
 }
 
 .banner-dot:hover {
-  background: rgba(255, 193, 7, 0.6);
-  transform: scale(1.2);
+  background: rgba(255, 193, 7, 0.7);
+  transform: scale(1.1);
 }
 
 /* Responsive Design */
@@ -215,6 +214,12 @@ onUnmounted(() => {
   
   .banner-dots {
     bottom: 10px;
+    gap: 6px;
+  }
+  
+  .banner-dot {
+    width: 10px;
+    height: 10px;
   }
 }
 </style>
