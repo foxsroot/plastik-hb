@@ -30,6 +30,12 @@ const showAddModal = ref(false)
 const addLoading = ref(false)
 const editingCategory = ref<Category | null>(null)
 
+// Alert state
+const alertVisible = ref(false)
+const alertType = ref<'success' | 'error'>('success')
+const alertTitle = ref('')
+const alertMessage = ref('')
+
 // Form data for modal
 const newCategory = ref<NewCategory>({
   name: '',
@@ -54,6 +60,19 @@ const sortOptions = [
   { title: 'Jumlah Produk', value: 'product_count' },
   { title: 'Terbaru', value: 'newest' }
 ]
+
+// Alert functions
+const showAlert = (type: 'success' | 'error', title: string, message: string) => {
+  alertType.value = type
+  alertTitle.value = title
+  alertMessage.value = message
+  alertVisible.value = true
+  
+  // Auto hide after 5 seconds
+  setTimeout(() => {
+    alertVisible.value = false
+  }, 5000)
+}
 
 // Computed untuk filter dan sort kategori
 const filteredCategories = computed(() => {
@@ -123,7 +142,7 @@ const fetchCategories = async () => {
         name: 'Plastik Rumah Tangga', 
         description: 'Kategori untuk produk plastik keperluan rumah tangga',
         status: 'inactive',
-        productCount: 3,
+        productCount: 0,
         createdAt: '2024-01-05'
       },
       { 
@@ -156,7 +175,7 @@ const updateStatus = async (category: Category, newStatus: 'active' | 'inactive'
     })
     
     if (response.ok) {
-      success('Berhasil', `Status kategori "${category.name}" berhasil diubah menjadi ${newStatus === 'active' ? 'Aktif' : 'Tidak Aktif'}`)
+      showAlert('success', 'Berhasil', `Status kategori "${category.name}" berhasil diubah menjadi ${newStatus === 'active' ? 'Aktif' : 'Tidak Aktif'}`)
     } else {
       throw new Error('Gagal mengupdate status')
     }
@@ -164,7 +183,7 @@ const updateStatus = async (category: Category, newStatus: 'active' | 'inactive'
     console.error('Error updating status:', err)
     // Rollback on error
     category.status = oldStatus
-    error('Error', 'Gagal mengupdate status kategori')
+    showAlert('error', 'Error', 'Gagal mengupdate status kategori')
   }
 }
 
@@ -193,7 +212,7 @@ const openEditModal = (category: Category) => {
 // Fungsi untuk menyimpan kategori baru
 const handleSaveCategory = async () => {
   if (!newCategory.value.name.trim()) {
-    error('Validasi Error', 'Nama kategori wajib diisi')
+    showAlert('error', 'Validasi Error', 'Nama kategori wajib diisi')
     return
   }
 
@@ -213,7 +232,7 @@ const handleSaveCategory = async () => {
         if (index !== -1) {
           categories.value[index] = { ...updatedCategory, productCount: editingCategory.value.productCount }
         }
-        success('Berhasil', 'Kategori berhasil diperbarui!')
+        showAlert('success', 'Berhasil', 'Kategori berhasil diperbarui!')
       } else {
         throw new Error('Gagal mengupdate kategori')
       }
@@ -228,7 +247,7 @@ const handleSaveCategory = async () => {
       if (response.ok) {
         const savedCategory = await response.json()
         categories.value.unshift({ ...savedCategory, productCount: 0 })
-        success('Berhasil', 'Kategori berhasil ditambahkan!')
+        showAlert('success', 'Berhasil', 'Kategori berhasil ditambahkan!')
       } else {
         throw new Error('Gagal menyimpan kategori')
       }
@@ -248,7 +267,7 @@ const handleSaveCategory = async () => {
           status: newCategory.value.status
         }
       }
-      success('Berhasil', 'Kategori berhasil diperbarui!')
+      showAlert('success', 'Berhasil', 'Kategori berhasil diperbarui!')
     } else {
       const newId = Math.max(...categories.value.map(c => c.id)) + 1
       const savedCategory: Category = {
@@ -260,7 +279,7 @@ const handleSaveCategory = async () => {
         createdAt: new Date().toISOString().split('T')[0]
       }
       categories.value.unshift(savedCategory)
-      success('Berhasil', 'Kategori berhasil ditambahkan!')
+      showAlert('success', 'Berhasil', 'Kategori berhasil ditambahkan!')
     }
     showAddModal.value = false
   } finally {
@@ -272,7 +291,7 @@ const handleSaveCategory = async () => {
 // Fungsi untuk hapus kategori
 const deleteCategory = async (category: Category) => {
   if (category.productCount > 0) {
-    error('Error', `Tidak dapat menghapus kategori "${category.name}" karena masih memiliki ${category.productCount} produk`)
+    showAlert('error', 'Error', `Tidak dapat menghapus kategori "${category.name}" karena masih memiliki ${category.productCount} produk`)
     return
   }
 
@@ -283,7 +302,7 @@ const deleteCategory = async (category: Category) => {
     
     if (response.ok) {
       categories.value = categories.value.filter(c => c.id !== category.id)
-      success('Berhasil', `Kategori "${category.name}" berhasil dihapus`)
+      showAlert('success', 'Berhasil', `Kategori "${category.name}" berhasil dihapus`)
     } else {
       throw new Error('Gagal menghapus kategori')
     }
@@ -291,7 +310,7 @@ const deleteCategory = async (category: Category) => {
     console.error('Error deleting category:', err)
     // Simulasi berhasil untuk testing
     categories.value = categories.value.filter(c => c.id !== category.id)
-    success('Berhasil', `Kategori "${category.name}" berhasil dihapus`)
+    showAlert('success', 'Berhasil', `Kategori "${category.name}" berhasil dihapus`)
   }
 }
 
@@ -310,6 +329,17 @@ onMounted(() => {
 
 <template>
   <v-container class="pa-6">
+    <!-- Alert -->
+    <v-alert
+      v-model="alertVisible"
+      :type="alertType"
+      :title="alertTitle"
+      :text="alertMessage"
+      closable
+      class="mb-4"
+      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"
+    />
+
     <!-- Header -->
     <v-row class="mb-6">
       <v-col cols="12" class="d-flex justify-space-between align-center">

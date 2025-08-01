@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import AddProductModal from '@/components/pop-up/AddProductModal.vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useAlert } from '@/composables/useAlert'
 
 interface Product {
@@ -37,6 +36,26 @@ const showAddModal = ref(false)
 const addLoading = ref(false)
 const editingProduct = ref<Product | null>(null)
 
+// Alert state
+const alertVisible = ref(false)
+const alertType = ref<'success' | 'error'>('success')
+const alertTitle = ref('')
+const alertMessage = ref('')
+
+// Form data for modal
+const newProduct = ref<NewProduct>({
+  name: '',
+  price: null,
+  status: 'draft',
+  image: '',
+  description: '',
+  category: '',
+  specifications: ''
+})
+
+// Ref for file input
+const fileInputRef = ref<HTMLInputElement | null>(null)
+
 const statusOptions = [
   { title: 'Semua Status', value: 'all' },
   { title: 'Aktif', value: 'active' },
@@ -55,7 +74,25 @@ const sortOptions = [
   { title: 'Harga Tertinggi', value: 'price_desc' }
 ]
 
-// Computed untuk filter dan sort produk
+// Kategori options
+const categoryOptions = [
+  { title: 'Kategori 1', value: 'kategori1' },
+  { title: 'Kategori 2', value: 'kategori2' },
+  { title: 'Kategori 3', value: 'kategori3' },
+]
+
+// Form validation rules
+const nameRules = [
+  (v: string) => !!v || 'Nama produk wajib diisi',
+  (v: string) => v.length >= 3 || 'Nama produk minimal 3 karakter'
+]
+
+const priceRules = [
+  (v: number) => !!v || 'Harga wajib diisi',
+  (v: number) => v > 0 || 'Harga harus lebih dari 0'
+]
+
+// Computed
 const filteredProducts = computed(() => {
   let filtered = products.value
 
@@ -89,6 +126,28 @@ const filteredProducts = computed(() => {
 
   return filtered
 })
+
+// Check if in edit mode
+const isEditMode = computed(() => !!editingProduct.value)
+
+// Modal title
+const modalTitle = computed(() => isEditMode.value ? 'Edit Produk' : 'Tambah Produk Baru')
+
+// Button text
+const saveButtonText = computed(() => isEditMode.value ? 'Update' : 'Save')
+
+// Alert functions
+const showAlert = (type: 'success' | 'error', title: string, message: string) => {
+  alertType.value = type
+  alertTitle.value = title
+  alertMessage.value = message
+  alertVisible.value = true
+  
+  // Auto hide after 5 seconds
+  setTimeout(() => {
+    alertVisible.value = false
+  }, 5000)
+}
 
 // Fungsi untuk fetch data dari API
 const fetchProducts = async () => {
@@ -156,128 +215,184 @@ const formatPrice = (price: number) => {
   }).format(price)
 }
 
-// Fungsi untuk update status dengan dropdown
-const updateStatus = async (product: Product, newStatus: 'active' | 'draft') => {
-  if (product.status === newStatus) return
+// Modal functions
+const openFileInput = () => {
+  fileInputRef.value?.click()
+}
 
-  const oldStatus = product.status
-  product.status = newStatus // Optimistic update
+const handleImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
   
-  try {
-    // Panggil API untuk update status
-    const response = await fetch(`/api/products/${product.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    })
-    
-    if (response.ok) {
-      success('Berhasil', `Status produk "${product.name}" berhasil diubah menjadi ${newStatus === 'active' ? 'Aktif' : 'Draft'}`)
-    } else {
-      throw new Error('Gagal mengupdate status')
+  if (file) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      newProduct.value.image = e.target?.result as string
     }
-  } catch (err) {
-    console.error('Error updating status:', err)
-    // Rollback on error
-    product.status = oldStatus
-    error('Error', 'Gagal mengupdate status produk')
+    reader.readAsDataURL(file)
+  }
+}
+
+const resetForm = () => {
+  newProduct.value = {
+    name: '',
+    price: null,
+    status: 'draft',
+    image: '',
+    description: '',
+    category: '',
+    specifications: ''
+  }
+}
+
+const loadProductData = () => {
+  if (editingProduct.value) {
+    newProduct.value = {
+      name: editingProduct.value.name,
+      price: editingProduct.value.price,
+      status: editingProduct.value.status,
+      image: editingProduct.value.image || '',
+      description: editingProduct.value.description || '',
+      category: editingProduct.value.category || '',
+      specifications: editingProduct.value.specifications || ''
+    }
+  } else {
+    resetForm()
   }
 }
 
 // Fungsi untuk membuka modal tambah produk
 const openAddModal = () => {
   editingProduct.value = null
+  resetForm()
   showAddModal.value = true
 }
 
 // Fungsi untuk membuka modal edit produk
 const openEditModal = (product: Product) => {
-  editingProduct.value = { ...product } // Clone the product
+  editingProduct.value = { ...product }
   showAddModal.value = true
 }
 
-// Fungsi untuk menyimpan produk baru
-const handleSaveProduct = async (productData: NewProduct) => {
+const closeModal = () => {
+  showAddModal.value = false
+  setTimeout(() => {
+    resetForm()
+    editingProduct.value = null
+  }, 300)
+}
+
+// Fungsi untuk menyimpan atau update produk
+const saveProduct = async () => {
+  if (!newProduct.value.name || !newProduct.value.price) {
+    showAlert('error', 'Validasi Error', 'Mohon lengkapi data produk yang wajib diisi (Nama Produk dan Harga)')
+    return
+  }
+
   addLoading.value = true
   try {
-    // Panggil API untuk menambah produk
-    const response = await fetch('/api/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData)
-    })
-    
-    if (response.ok) {
-      const savedProduct = await response.json()
-      // Tambahkan produk baru ke list
-      products.value.unshift(savedProduct)
-      // Tutup modal
-      showAddModal.value = false
-      success('Berhasil', 'Produk berhasil ditambahkan!')
+    if (isEditMode.value && editingProduct.value) {
+      // Update existing product
+      const updatedProduct: Product = {
+        ...editingProduct.value,
+        ...newProduct.value,
+        price: newProduct.value.price!
+      }
+      
+      const response = await fetch(`/api/products/${editingProduct.value.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProduct)
+      })
+      
+      if (response.ok) {
+        const index = products.value.findIndex(p => p.id === editingProduct.value!.id)
+        if (index !== -1) {
+          products.value[index] = updatedProduct
+        }
+        showAlert('success', 'Berhasil', 'Produk berhasil diperbarui!')
+      } else {
+        throw new Error('Gagal mengupdate produk')
+      }
     } else {
-      throw new Error('Gagal menyimpan produk')
+      // Create new product
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProduct.value)
+      })
+      
+      if (response.ok) {
+        const savedProduct = await response.json()
+        products.value.unshift(savedProduct)
+        showAlert('success', 'Berhasil', 'Produk berhasil ditambahkan!')
+      } else {
+        throw new Error('Gagal menyimpan produk')
+      }
     }
+    
+    closeModal()
   } catch (err) {
     console.error('Error saving product:', err)
     // Simulasi berhasil untuk testing
-    const newId = Math.max(...products.value.map(p => p.id)) + 1
-    const savedProduct: Product = {
-      id: newId,
-      name: productData.name,
-      price: productData.price!,
-      status: productData.status,
-      image: productData.image || '/placeholder.jpg',
-      description: productData.description,
-      category: productData.category,
-      specifications: productData.specifications
+    if (isEditMode.value && editingProduct.value) {
+      const index = products.value.findIndex(p => p.id === editingProduct.value!.id)
+      if (index !== -1) {
+        products.value[index] = {
+          ...editingProduct.value,
+          ...newProduct.value,
+          price: newProduct.value.price!
+        }
+      }
+      showAlert('success', 'Berhasil', 'Produk berhasil diperbarui!')
+    } else {
+      const newId = Math.max(...products.value.map(p => p.id)) + 1
+      const savedProduct: Product = {
+        id: newId,
+        name: newProduct.value.name,
+        price: newProduct.value.price!,
+        status: newProduct.value.status,
+        image: newProduct.value.image || '/placeholder.jpg',
+        description: newProduct.value.description,
+        category: newProduct.value.category,
+        specifications: newProduct.value.specifications
+      }
+      products.value.unshift(savedProduct)
+      showAlert('success', 'Berhasil', 'Produk berhasil ditambahkan!')
     }
-    products.value.unshift(savedProduct)
-    showAddModal.value = false
-    success('Berhasil', 'Produk berhasil ditambahkan!')
+    closeModal()
   } finally {
     addLoading.value = false
-    editingProduct.value = null
   }
 }
 
-// Fungsi untuk update produk
-const handleUpdateProduct = async (productData: Product) => {
-  addLoading.value = true
+// Fungsi untuk hapus produk
+const deleteProduct = async (product: Product) => {
   try {
-    // Panggil API untuk update produk
-    const response = await fetch(`/api/products/${productData.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData)
+    const response = await fetch(`/api/products/${product.id}`, {
+      method: 'DELETE'
     })
     
     if (response.ok) {
-      const updatedProduct = await response.json()
-      // Update produk di list
-      const index = products.value.findIndex(p => p.id === productData.id)
-      if (index !== -1) {
-        products.value[index] = updatedProduct
-      }
-      // Tutup modal
-      showAddModal.value = false
-      success('Berhasil', 'Produk berhasil diperbarui!')
+      products.value = products.value.filter(p => p.id !== product.id)
+      showAlert('success', 'Berhasil', `Produk "${product.name}" berhasil dihapus`)
     } else {
-      throw new Error('Gagal mengupdate produk')
+      throw new Error('Gagal menghapus produk')
     }
   } catch (err) {
-    console.error('Error updating product:', err)
+    console.error('Error deleting product:', err)
     // Simulasi berhasil untuk testing
-    const index = products.value.findIndex(p => p.id === productData.id)
-    if (index !== -1) {
-      products.value[index] = { ...productData }
-    }
-    showAddModal.value = false
-    success('Berhasil', 'Produk berhasil diperbarui!')
-  } finally {
-    addLoading.value = false
-    editingProduct.value = null
+    products.value = products.value.filter(p => p.id !== product.id)
+    showAlert('success', 'Berhasil', `Produk "${product.name}" berhasil dihapus`)
   }
 }
+
+// Watch for modal opening and load data accordingly
+watch(() => showAddModal.value, (newVal) => {
+  if (newVal) {
+    loadProductData()
+  }
+})
 
 onMounted(() => {
   fetchProducts()
@@ -294,6 +409,17 @@ onMounted(() => {
 
 <template>
   <v-container class="pa-6">
+    <!-- Alert -->
+    <v-alert
+      v-model="alertVisible"
+      :type="alertType"
+      :title="alertTitle"
+      :text="alertMessage"
+      closable
+      class="mb-4"
+      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"
+    />
+
     <!-- Header -->
     <v-row class="mb-6">
       <v-col cols="12" class="d-flex justify-space-between align-center">
@@ -389,83 +515,59 @@ onMounted(() => {
                   </v-col>
                   
                   <!-- Product Info -->
-                  <v-col cols="6" md="7" class="pl-4">
+                  <v-col cols="4" md="5" class="pl-4">
                     <h3 class="text-h6 font-weight-medium mb-1">{{ product.name }}</h3>
                     <p class="text-body-2 text-grey-darken-1 mb-0">{{ formatPrice(product.price) }}</p>
                   </v-col>
                   
-                  <!-- Status Dropdown -->
-                  <v-col cols="2" md="2" class="text-center">
-                    <v-select
-                      :model-value="product.status"
-                      :items="productStatusOptions"
-                      variant="outlined"
-                      density="compact"
-                      hide-details
-                      class="status-select"
-                      @update:model-value="(value) => updateStatus(product, value as 'active' | 'draft')"
+                  <!-- Status Display -->
+                  <v-col cols="3" md="3" class="text-center">
+                    <v-chip
+                      :color="product.status === 'active' ? 'success' : 'warning'"
+                      variant="flat"
+                      size="default"
+                      :prepend-icon="product.status === 'active' ? 'mdi-check' : 'mdi-clock'"
                     >
-                      <template v-slot:selection="{ item }">
-                        <div 
-                          class="status-badge"
-                          :class="{
-                            'status-active': item.value === 'active',
-                            'status-draft': item.value === 'draft'
-                          }"
-                        >
-                          <v-icon size="14" class="mr-1">
-                            {{ item.value === 'active' ? 'mdi-check' : 'mdi-clock' }}
-                          </v-icon>
-                          {{ item.title }}
-                        </div>
-                      </template>
-                      <template v-slot:item="{ props, item }">
-                        <v-list-item v-bind="props">
-                          <template v-slot:prepend>
-                            <v-icon 
-                              :color="item.raw.value === 'active' ? 'success' : 'warning'"
-                            >
-                              {{ item.raw.value === 'active' ? 'mdi-check' : 'mdi-clock' }}
-                            </v-icon>
-                          </template>
-                        </v-list-item>
-                      </template>
-                    </v-select>
+                      {{ product.status === 'active' ? 'Aktif' : 'Draft' }}
+                    </v-chip>
                   </v-col>
                   
-                  <!-- Actions -->
-                  <v-col cols="2" md="2" class="text-center">
-                    <v-menu>
-                      <template v-slot:activator="{ props }">
-                        <v-btn
-                          v-bind="props"
-                          icon="mdi-dots-horizontal"
-                          variant="text"
-                          size="small"
-                        />
-                      </template>
-                      <v-list density="compact">
-                        <v-list-item @click="openEditModal(product)">
-                          <template v-slot:prepend>
-                            <v-icon>mdi-pencil</v-icon>
-                          </template>
-                          <v-list-item-title>Edit</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item @click="$router.push(`/admin/produk/${product.id}`)">
-                          <template v-slot:prepend>
-                            <v-icon>mdi-eye</v-icon>
-                          </template>
-                          <v-list-item-title>Detail</v-list-item-title>
-                        </v-list-item>
-                        <v-divider />
-                        <v-list-item class="text-error">
-                          <template v-slot:prepend>
-                            <v-icon>mdi-delete</v-icon>
-                          </template>
-                          <v-list-item-title>Hapus</v-list-item-title>
-                        </v-list-item>
-                      </v-list>
-                    </v-menu>
+                  <!-- Action Buttons -->
+                  <v-col cols="3" md="3" class="text-right">
+                    <div class="d-flex justify-end align-center ga-2">
+                      <!-- Edit Button -->
+                      <v-btn
+                        prepend-icon="mdi-pencil"
+                        variant="outlined"
+                        size="small"
+                        color="primary"
+                        @click="openEditModal(product)"
+                      >
+                        Edit
+                      </v-btn>
+                      
+                      <!-- Detail Button -->
+                      <v-btn
+                        prepend-icon="mdi-eye"
+                        variant="outlined"
+                        size="small"
+                        color="info"
+                        @click="$router.push(`/admin/produk/${product.id}`)"
+                      >
+                        Detail
+                      </v-btn>
+                      
+                      <!-- Delete Button -->
+                      <v-btn
+                        prepend-icon="mdi-delete"
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        @click="deleteProduct(product)"
+                      >
+                        Hapus
+                      </v-btn>
+                    </div>
                   </v-col>
                 </v-row>
                 <v-divider v-if="index < filteredProducts.length - 1" />
@@ -477,13 +579,159 @@ onMounted(() => {
     </v-row>
 
     <!-- Add/Edit Product Modal -->
-    <AddProductModal
-      v-model="showAddModal"
-      :loading="addLoading"
-      :edit-product="editingProduct"
-      @save="handleSaveProduct"
-      @update="handleUpdateProduct"
-    />
+    <v-dialog 
+      v-model="showAddModal" 
+      max-width="800px"
+      :persistent="false"
+      class="product-modal"
+    >
+      <v-card class="product-modal-card">
+        <v-card-title class="text-h5 pa-6">
+          {{ modalTitle }}
+        </v-card-title>
+        
+        <v-card-text class="pa-8">
+          <v-form>
+            <v-row>
+              <!-- Image Upload Section -->
+              <v-col cols="12" md="4">
+                <div class="image-upload-section">
+                  <v-card
+                    height="200"
+                    variant="outlined"
+                    class="d-flex align-center justify-center mb-4 image-upload-card"
+                    @click="openFileInput"
+                  >
+                    <div v-if="!newProduct.image" class="text-center">
+                      <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-camera</v-icon>
+                      <p class="text-grey-darken-1">Gambar Produk</p>
+                    </div>
+                    <v-img 
+                      v-else
+                      :src="newProduct.image"
+                      cover
+                      height="100%"
+                      class="rounded"
+                    />
+                  </v-card>
+                  
+                  <v-btn
+                    block
+                    variant="outlined"
+                    prepend-icon="mdi-pencil"
+                    @click="openFileInput"
+                  >
+                    Edit Gambar
+                  </v-btn>
+                  
+                  <!-- Hidden file input -->
+                  <input
+                    ref="fileInputRef"
+                    type="file"
+                    accept="image/*"
+                    style="display: none"
+                    @change="handleImageUpload"
+                  />
+                </div>
+              </v-col>
+              
+              <!-- Form Fields -->
+              <v-col cols="12" md="8">
+                <v-row>
+                  <!-- Nama Produk -->
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model="newProduct.name"
+                      label="Nama Produk"
+                      :rules="nameRules"
+                      variant="outlined"
+                      required
+                    />
+                  </v-col>
+                  
+                  <!-- Harga -->
+                  <v-col cols="12">
+                    <v-text-field
+                      v-model.number="newProduct.price"
+                      label="Harga"
+                      type="number"
+                      :rules="priceRules"
+                      variant="outlined"
+                      prefix="Rp"
+                      required
+                    />
+                  </v-col>
+                  
+                  <!-- Status (only show in edit mode) -->
+                  <v-col cols="12" v-if="isEditMode">
+                    <v-select
+                      v-model="newProduct.status"
+                      :items="productStatusOptions"
+                      label="Status"
+                      variant="outlined"
+                    />
+                  </v-col>
+                  
+                  <!-- Spesifikasi Produk -->
+                  <v-col cols="12">
+                    <v-textarea
+                      v-model="newProduct.specifications"
+                      label="Spesifikasi Produk"
+                      variant="outlined"
+                      rows="3"
+                      placeholder="Masukkan spesifikasi produk..."
+                    />
+                  </v-col>
+                </v-row>
+              </v-col>
+              
+              <!-- Deskripsi Produk - Full Width -->
+              <v-col cols="12">
+                <v-textarea
+                  v-model="newProduct.description"
+                  label="Deskripsi Produk"
+                  variant="outlined"
+                  rows="4"
+                  placeholder="Masukkan deskripsi produk..."
+                />
+              </v-col>
+              
+              <!-- Kategori Produk -->
+              <v-col cols="12">
+                <v-select
+                  v-model="newProduct.category"
+                  :items="categoryOptions"
+                  label="Kategori Produk"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+          </v-form>
+        </v-card-text>
+        
+        <!-- Action Buttons -->
+        <v-card-actions class="px-8 pb-8">
+          <v-spacer />
+          <v-btn
+            variant="outlined"
+            @click="closeModal"
+            :disabled="addLoading"
+            class="mr-3"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            @click="saveProduct"
+            :loading="addLoading"
+            :disabled="!newProduct.name || !newProduct.price"
+          >
+            {{ saveButtonText }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -492,88 +740,32 @@ onMounted(() => {
   background-color: rgba(var(--v-theme-primary), 0.08);
 }
 
-.cursor-pointer {
+/* Apply blur effect to the backdrop */
+.product-modal :deep(.v-overlay__scrim) {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.product-modal-card {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  position: relative;
+}
+
+.image-upload-section {
+  position: sticky;
+  top: 0;
+}
+
+.image-upload-card {
   cursor: pointer;
+  border: 2px dashed #ccc;
+  transition: all 0.3s ease;
 }
 
-/* Custom status badge styles */
-.status-select :deep(.v-field__input) {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.status-select :deep(.v-field__field) {
-  border-radius: 20px;
-  padding: 0 !important;
-}
-
-.status-select :deep(.v-field__outline) {
-  border-radius: 20px;
-  opacity: 0;
-}
-
-.status-select :deep(.v-select__selection) {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100%;
-  height: 100%;
-}
-
-.status-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: calc(100% + 24px);
-  height: 40px;
-  border-radius: 20px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-align: center;
-  padding: 0 16px;
-  margin: -12px;
-  position: relative;
-}
-
-.status-active {
-  background-color: rgb(var(--v-theme-success));
-  color: white;
-}
-
-.status-draft {
-  background-color: rgb(var(--v-theme-warning));
-  color: white;
-}
-
-/* Hide select field borders completely */
-.status-select :deep(.v-field--focused .v-field__outline) {
-  opacity: 0;
-}
-
-/* Fix dropdown arrow positioning */
-.status-select :deep(.v-field__append-inner) {
-  position: absolute;
-  right: 2px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  padding: 0;
-  margin: 0;
-}
-
-.status-select :deep(.v-field__append-inner .v-icon) {
-  color: white;
-  opacity: 0.8;
-}
-
-/* Make sure the entire field is clickable */
-.status-select {
-  width: 120px;
-  max-width: 120px;
-  position: relative;
-}
-
-/* Ensure proper layering */
-.status-select :deep(.v-field) {
-  position: relative;
+.image-upload-card:hover {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.05);
 }
 </style>
