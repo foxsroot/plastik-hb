@@ -10,13 +10,21 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.UUIDV4,
       },
-      title: {
+      text: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      description: {
-        type: Sequelize.TEXT,
+      filePath: {
+        type: Sequelize.STRING,
         allowNull: false,
+      },
+      content_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'contents',
+          key: 'id',
+        },
       },
       created_at: {
         type: Sequelize.DATE,

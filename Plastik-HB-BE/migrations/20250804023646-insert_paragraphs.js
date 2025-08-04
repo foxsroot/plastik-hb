@@ -11,8 +11,16 @@ module.exports = {
         defaultValue: Sequelize.UUIDV4,
       },
       text: {
-        type: Sequelize.TEXT,
+        type: Sequelize.STRING,
         allowNull: false,
+      },
+      content_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'contents',
+          key: 'id',
+        },
       },
       created_at: {
         type: Sequelize.DATE,

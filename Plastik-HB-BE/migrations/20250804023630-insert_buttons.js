@@ -10,13 +10,21 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.UUIDV4,
       },
-      label: {
+      text: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      action: {
+      url: {
         type: Sequelize.STRING,
         allowNull: false,
+      },
+      content_id: {
+        type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: 'contents',
+          key: 'id',
+        },
       },
       created_at: {
         type: Sequelize.DATE,

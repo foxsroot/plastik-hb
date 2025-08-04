@@ -14,9 +14,13 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      level: {
-        type: Sequelize.INTEGER,
+      content_id: {
+        type: Sequelize.UUID,
         allowNull: false,
+        references: {
+          model: 'contents',
+          key: 'id',
+        },
       },
       created_at: {
         type: Sequelize.DATE,
