@@ -1,5 +1,4 @@
 import { Table, Model, Column, DataType, BelongsTo } from 'sequelize-typescript';
-import { Button } from './Button';
 import { Page } from './Page';
 import { Product } from './Product';
 
@@ -32,12 +31,6 @@ export class Analytic extends Model {
         field: "target_id"
     })
     declare targetId: string;
-
-    @BelongsTo(() => Button, {
-        foreignKey: 'target_id',
-        constraints: false
-    })
-    button?: Button;
 
     @BelongsTo(() => Page, {
         foreignKey: 'target_id',

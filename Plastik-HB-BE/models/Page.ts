@@ -1,5 +1,5 @@
 import { Table, Model, Column, DataType, HasMany } from 'sequelize-typescript';
-import { Content } from './Content';
+import { Section } from './Section';
 
 @Table({
     tableName: "pages",
@@ -18,9 +18,35 @@ export class Page extends Model {
     })
     declare id: string;
 
-    @HasMany(() => Content, {
-        foreignKey: 'content_id',
-        sourceKey: 'id'
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
     })
-    declare contents: Content[];
+    declare title: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: false,
+    })
+    declare slug: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: true,
+    })
+    declare published: boolean;
+
+    @HasMany(() => Section, {
+        foreignKey: 'page_id',
+        sourceKey: 'page_id',
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+    })
+    sections?: Section[];
 }
