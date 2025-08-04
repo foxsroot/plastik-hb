@@ -16,6 +16,7 @@ import { ProductImage } from './models/ProductImage';
 import { Session } from './models/Session';
 import { Shop } from './models/Shop';
 import { User } from './models/User';
+import { Image } from './models/Image';
 
 dotenv.config();
 
@@ -34,9 +35,9 @@ const sequelize = new Sequelize({
     dialect: 'postgres',
     host: process.env.DB_HOST,
     database: process.env.DB_NAME,
-    username: process.env.DB_USER,
+    username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
-    models: [Achievement, Analytic, Banner, Button, Content, Heading, Page, Paragraph, Product, ProductImage, Session, Shop, User],
+    models: [Achievement, Analytic, Banner, Button, Content, Heading, Image, Page, Paragraph, Product, ProductImage, Session, Shop, User],
 });
 
 // Test database connection
