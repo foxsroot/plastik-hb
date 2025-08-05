@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import AdminSidebar from "@/components/AdminSidebar.vue";
+import AdminSidebar from "@/components/AdminSideBar.vue";
 
 const drawer = ref(true);
 </script>
