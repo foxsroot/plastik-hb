@@ -1,422 +1,460 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from "vue";
+import index from "../index.vue";
 
 // Banner Interface
 interface Banner {
-  image: string
-  title: string
-  subtitle: string
-  buttonText?: string
-  buttonLink?: string
+  image: string;
+  title: string;
+  subtitle: string;
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 // Achievement Interface
 interface Achievement {
-  id: number
-  title: string
-  percentage: number
-  description: string
-  image?: string
+  id: number;
+  title: string;
+  percentage: number;
+  description: string;
+  image?: string;
 }
 
 // Product Interface (from catalog)
 interface Product {
-  id: number
-  name: string
-  description: string
-  price: number
-  originalPrice?: number
-  image: string
-  rating: number
-  category: string
-  stock?: number
-  isActive?: boolean
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  rating: number;
+  category: string;
+  stock?: number;
+  isActive?: boolean;
 }
 
 // Featured Product Interface (selected from catalog)
 interface FeaturedProduct {
-  productId: number
-  badge?: string
-  badgeColor?: string
-  displayOrder?: number
+  productId: number;
+  badge?: string;
+  badgeColor?: string;
+  displayOrder?: number;
 }
 
 // Homepage Data Interface
 interface HomepageData {
-  banners: Banner[]
-  achievements: Achievement[]
-  featuredProducts: FeaturedProduct[]
+  banners: Banner[];
+  achievements: Achievement[];
+  featuredProducts: FeaturedProduct[];
 }
 
 // Alert state
-const alertVisible = ref(false)
-const alertType = ref<'success' | 'error'>('success')
-const alertTitle = ref('')
-const alertMessage = ref('')
+const alertVisible = ref(false);
+const alertType = ref<"success" | "error">("success");
+const alertTitle = ref("");
+const alertMessage = ref("");
 
 // Form state
-const loading = ref(false)
-const saveLoading = ref(false)
-const catalogLoading = ref(false)
+const loading = ref(false);
+const saveLoading = ref(false);
+const catalogLoading = ref(false);
 
 // All products from catalog
-const catalogProducts = ref<Product[]>([])
+const catalogProducts = ref<Product[]>([]);
 
 // Homepage data
 const homepageData = ref<HomepageData>({
   banners: [
     {
-      image: '',
-      title: '',
-      subtitle: '',
-      buttonText: '',
-      buttonLink: ''
-    }
+      image: "",
+      title: "",
+      subtitle: "",
+      buttonText: "",
+      buttonLink: "",
+    },
   ],
   achievements: [
     {
       id: 1,
-      title: '',
+      title: "",
       percentage: 0,
-      description: '',
-      image: ''
-    }
+      description: "",
+      image: "",
+    },
   ],
-  featuredProducts: []
-})
+  featuredProducts: [],
+});
 
 // Product selection dialog
-const productSelectionDialog = ref(false)
-const selectedProductId = ref<number | null>(null)
+const productSelectionDialog = ref(false);
+const selectedProductId = ref<number | null>(null);
 
 // File input refs
-const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([])
-const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([])
+const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
+const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
 
 // Computed properties
-const selectedProductIds = computed(() => 
-  homepageData.value.featuredProducts.map(fp => fp.productId)
-)
+const selectedProductIds = computed(() =>
+  homepageData.value.featuredProducts.map((fp) => fp.productId)
+);
 
-const availableProducts = computed(() => 
-  catalogProducts.value.filter(product => 
-    !selectedProductIds.value.includes(product.id) && 
-    product.isActive !== false
+const availableProducts = computed(() =>
+  catalogProducts.value.filter(
+    (product) =>
+      !selectedProductIds.value.includes(product.id) &&
+      product.isActive !== false
   )
-)
+);
 
 const featuredProductsWithDetails = computed(() => {
-  return homepageData.value.featuredProducts.map(fp => {
-    const product = catalogProducts.value.find(p => p.id === fp.productId)
-    return {
-      ...fp,
-      product: product
-    }
-  }).filter(fp => fp.product) // Only include products that exist in catalog
-})
+  return homepageData.value.featuredProducts
+    .map((fp) => {
+      const product = catalogProducts.value.find((p) => p.id === fp.productId);
+      return {
+        ...fp,
+        product: product,
+      };
+    })
+    .filter((fp) => fp.product); // Only include products that exist in catalog
+});
 
 // Alert functions
-const showAlert = (type: 'success' | 'error', title: string, message: string) => {
-  alertType.value = type
-  alertTitle.value = title
-  alertMessage.value = message
-  alertVisible.value = true
-  
+const showAlert = (
+  type: "success" | "error",
+  title: string,
+  message: string
+) => {
+  alertType.value = type;
+  alertTitle.value = title;
+  alertMessage.value = message;
+  alertVisible.value = true;
+
   setTimeout(() => {
-    alertVisible.value = false
-  }, 5000)
-}
+    alertVisible.value = false;
+  }, 5000);
+};
 
 // Banner functions (keeping existing banner functions)
 const addBanner = () => {
   homepageData.value.banners.push({
-    image: '',
-    title: '',
-    subtitle: '',
-    buttonText: '',
-    buttonLink: ''
-  })
-}
+    image: "",
+    title: "",
+    subtitle: "",
+    buttonText: "",
+    buttonLink: "",
+  });
+};
 
 const removeBanner = (index: number) => {
   if (homepageData.value.banners.length > 1) {
-    homepageData.value.banners.splice(index, 1)
+    homepageData.value.banners.splice(index, 1);
   }
-}
+};
 
 const handleBannerImageUpload = (event: Event, index: number) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
   if (file) {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = (e) => {
-      homepageData.value.banners[index].image = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
+      homepageData.value.banners[index].image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   }
-}
+};
 
 const openBannerFileInput = (index: number) => {
-  bannerFileInputRefs.value[index]?.click()
-}
+  bannerFileInputRefs.value[index]?.click();
+};
 
 // Achievement functions (keeping existing achievement functions)
 const addAchievement = () => {
-  const newId = Math.max(...homepageData.value.achievements.map(a => a.id), 0) + 1
+  const newId =
+    Math.max(...homepageData.value.achievements.map((a) => a.id), 0) + 1;
   homepageData.value.achievements.push({
     id: newId,
-    title: '',
+    title: "",
     percentage: 0,
-    description: '',
-    image: ''
-  })
-}
+    description: "",
+    image: "",
+  });
+};
 
 const removeAchievement = (index: number) => {
   if (homepageData.value.achievements.length > 1) {
-    homepageData.value.achievements.splice(index, 1)
+    homepageData.value.achievements.splice(index, 1);
   }
-}
+};
 
 const handleAchievementImageUpload = (event: Event, index: number) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
   if (file) {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = (e) => {
-      homepageData.value.achievements[index].image = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
+      homepageData.value.achievements[index].image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   }
-}
+};
 
 const openAchievementFileInput = (index: number) => {
-  achievementFileInputRefs.value[index]?.click()
-}
+  achievementFileInputRefs.value[index]?.click();
+};
 
 // Featured Products functions (NEW)
 const openProductSelection = () => {
-  selectedProductId.value = null
-  productSelectionDialog.value = true
-}
+  selectedProductId.value = null;
+  productSelectionDialog.value = true;
+};
 
 const addSelectedProduct = () => {
   if (selectedProductId.value) {
-    const maxOrder = Math.max(...homepageData.value.featuredProducts.map(fp => fp.displayOrder || 0), 0)
+    const maxOrder = Math.max(
+      ...homepageData.value.featuredProducts.map((fp) => fp.displayOrder || 0),
+      0
+    );
     homepageData.value.featuredProducts.push({
       productId: selectedProductId.value,
-      badge: '',
-      badgeColor: 'amber',
-      displayOrder: maxOrder + 1
-    })
-    productSelectionDialog.value = false
-    selectedProductId.value = null
+      badge: "",
+      badgeColor: "amber",
+      displayOrder: maxOrder + 1,
+    });
+    productSelectionDialog.value = false;
+    selectedProductId.value = null;
   }
-}
+};
 
 const removeFeaturedProduct = (index: number) => {
-  homepageData.value.featuredProducts.splice(index, 1)
-}
+  homepageData.value.featuredProducts.splice(index, 1);
+};
 
 const moveProductUp = (index: number) => {
   if (index > 0) {
-    const temp = homepageData.value.featuredProducts[index]
-    homepageData.value.featuredProducts[index] = homepageData.value.featuredProducts[index - 1]
-    homepageData.value.featuredProducts[index - 1] = temp
+    const temp = homepageData.value.featuredProducts[index];
+    homepageData.value.featuredProducts[index] =
+      homepageData.value.featuredProducts[index - 1];
+    homepageData.value.featuredProducts[index - 1] = temp;
   }
-}
+};
 
 const moveProductDown = (index: number) => {
   if (index < homepageData.value.featuredProducts.length - 1) {
-    const temp = homepageData.value.featuredProducts[index]
-    homepageData.value.featuredProducts[index] = homepageData.value.featuredProducts[index + 1]
-    homepageData.value.featuredProducts[index + 1] = temp
+    const temp = homepageData.value.featuredProducts[index];
+    homepageData.value.featuredProducts[index] =
+      homepageData.value.featuredProducts[index + 1];
+    homepageData.value.featuredProducts[index + 1] = temp;
   }
-}
+};
 
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(price)
-}
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(price);
+};
 
 // Fetch catalog products
 const fetchCatalogProducts = async () => {
-  catalogLoading.value = true
+  catalogLoading.value = true;
   try {
-    const response = await fetch('/api/products')
+    const response = await fetch("/api/products");
     if (response.ok) {
-      const data = await response.json()
-      catalogProducts.value = data
+      const data = await response.json();
+      catalogProducts.value = data;
     } else {
-      throw new Error('Gagal memuat katalog produk')
+      throw new Error("Gagal memuat katalog produk");
     }
   } catch (error) {
-    console.error('Error fetching catalog products:', error)
+    console.error("Error fetching catalog products:", error);
     // Fallback data untuk testing
     catalogProducts.value = [
       {
         id: 1,
-        name: 'Kantong Plastik HD Premium',
-        description: 'Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging',
+        name: "Kantong Plastik HD Premium",
+        description:
+          "Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging",
         price: 25000,
         originalPrice: 30000,
-        image: '',
+        image: "",
         rating: 4.8,
-        category: 'Kantong Plastik',
+        category: "Kantong Plastik",
         stock: 100,
-        isActive: true
+        isActive: true,
       },
       {
         id: 2,
-        name: 'Wadah Makanan Food Grade',
-        description: 'Wadah plastik food grade aman untuk makanan dan minuman',
+        name: "Wadah Makanan Food Grade",
+        description: "Wadah plastik food grade aman untuk makanan dan minuman",
         price: 45000,
-        image: '',
+        image: "",
         rating: 4.9,
-        category: 'Wadah Makanan',
+        category: "Wadah Makanan",
         stock: 50,
-        isActive: true
+        isActive: true,
       },
       {
         id: 3,
-        name: 'Botol Plastik 500ml',
-        description: 'Botol plastik transparan untuk minuman dengan tutup rapat',
+        name: "Botol Plastik 500ml",
+        description:
+          "Botol plastik transparan untuk minuman dengan tutup rapat",
         price: 15000,
-        image: '',
+        image: "",
         rating: 4.7,
-        category: 'Botol',
+        category: "Botol",
         stock: 200,
-        isActive: true
+        isActive: true,
       },
       {
         id: 4,
-        name: 'Ember Plastik Multi Fungsi',
-        description: 'Ember plastik kuat dan tahan lama untuk berbagai keperluan',
+        name: "Ember Plastik Multi Fungsi",
+        description:
+          "Ember plastik kuat dan tahan lama untuk berbagai keperluan",
         price: 75000,
-        image: '',
+        image: "",
         rating: 4.6,
-        category: 'Alat Rumah Tangga',
+        category: "Alat Rumah Tangga",
         stock: 30,
-        isActive: true
+        isActive: true,
       },
       {
         id: 5,
-        name: 'Gelas Plastik Set 12pcs',
-        description: 'Set gelas plastik untuk acara dan penggunaan sehari-hari',
+        name: "Gelas Plastik Set 12pcs",
+        description: "Set gelas plastik untuk acara dan penggunaan sehari-hari",
         price: 35000,
         originalPrice: 40000,
-        image: '',
+        image: "",
         rating: 4.5,
-        category: 'Peralatan Makan',
+        category: "Peralatan Makan",
         stock: 80,
-        isActive: true
-      }
-    ]
+        isActive: true,
+      },
+    ];
   } finally {
-    catalogLoading.value = false
+    catalogLoading.value = false;
   }
-}
+};
 
 // Fetch homepage data
 const fetchHomepageData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const response = await fetch('/api/homepage')
+    const response = await fetch("/api/homepage");
     if (response.ok) {
-      const data = await response.json()
-      homepageData.value = data
+      const data = await response.json();
+      homepageData.value = data;
     } else {
-      throw new Error('Gagal memuat data halaman utama')
+      throw new Error("Gagal memuat data halaman utama");
     }
   } catch (error) {
-    console.error('Error fetching homepage data:', error)
+    console.error("Error fetching homepage data:", error);
     // Fallback data untuk testing
     homepageData.value = {
       banners: [
         {
-          image: "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg",
-          title: 'Solusi Plastik Berkualitas Tinggi',
-          subtitle: 'Menyediakan berbagai produk plastik untuk kebutuhan industri dan rumah tangga',
-          buttonText: 'Lihat Produk',
-          buttonLink: '/katalog'
+          image:
+            "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg",
+          title: "Solusi Plastik Berkualitas Tinggi",
+          subtitle:
+            "Menyediakan berbagai produk plastik untuk kebutuhan industri dan rumah tangga",
+          buttonText: "Lihat Produk",
+          buttonLink: "/katalog",
         },
         {
-          image: "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg",
-          title: 'Custom Order Tersedia',
-          subtitle: 'Kami melayani pesanan custom sesuai dengan kebutuhan spesifik Anda',
-          buttonText: 'Pesan Sekarang',
-          buttonLink: '/custom-order'
-        }
+          image:
+            "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg",
+          title: "Custom Order Tersedia",
+          subtitle:
+            "Kami melayani pesanan custom sesuai dengan kebutuhan spesifik Anda",
+          buttonText: "Pesan Sekarang",
+          buttonLink: "/custom-order",
+        },
       ],
       achievements: [
         {
           id: 1,
-          title: 'Customer Satisfaction',
+          title: "Customer Satisfaction",
           percentage: 95,
-          description: 'Tingkat kepuasan pelanggan terhadap produk dan layanan kami',
-          image: ''
+          description:
+            "Tingkat kepuasan pelanggan terhadap produk dan layanan kami",
+          image: "",
         },
         {
           id: 2,
-          title: 'Quality Products',
+          title: "Quality Products",
           percentage: 98,
-          description: 'Produk berkualitas tinggi yang memenuhi standar internasional',
-          image: ''
-        }
+          description:
+            "Produk berkualitas tinggi yang memenuhi standar internasional",
+          image: "",
+        },
       ],
       featuredProducts: [
         {
           productId: 1,
-          badge: 'Best Seller',
-          badgeColor: 'success',
-          displayOrder: 1
-        }
-      ]
-    }
+          badge: "Best Seller",
+          badgeColor: "success",
+          displayOrder: 1,
+        },
+      ],
+    };
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Save homepage data
 const saveHomepageData = async () => {
-  saveLoading.value = true
+  saveLoading.value = true;
   try {
-    const response = await fetch('/api/homepage', {
-      method: 'PUT',
+    const response = await fetch("/api/homepage", {
+      method: "PUT",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(homepageData.value)
-    })
-    
+      body: JSON.stringify(homepageData.value),
+    });
+
     if (response.ok) {
-      showAlert('success', 'Berhasil', 'Data halaman utama berhasil disimpan!')
+      showAlert("success", "Berhasil", "Data halaman utama berhasil disimpan!");
     } else {
-      throw new Error('Gagal menyimpan data halaman utama')
+      throw new Error("Gagal menyimpan data halaman utama");
     }
   } catch (error) {
-    console.error('Error saving homepage data:', error)
-    showAlert('success', 'Berhasil', 'Data halaman utama berhasil disimpan!')
+    console.error("Error saving homepage data:", error);
+    showAlert("success", "Berhasil", "Data halaman utama berhasil disimpan!");
   } finally {
-    saveLoading.value = false
+    saveLoading.value = false;
   }
-}
+};
+
+// Preview state
+const previewKey = ref(0);
+const previewTimestamp = ref(Date.now());
+
+// Preview functions
+const refreshPreview = () => {
+  previewKey.value += 1;
+  previewTimestamp.value = Date.now();
+};
+
+const openHomepage = () => {
+  window.open("/", "_blank");
+};
 
 onMounted(async () => {
-  await fetchCatalogProducts()
-  await fetchHomepageData()
-})
+  await fetchCatalogProducts();
+  await fetchHomepageData();
+});
 </script>
 
 <route>
 {
   meta: {
+    requiresAuth: true,
     layout: 'admin'
   }
 }
@@ -432,7 +470,13 @@ onMounted(async () => {
       :text="alertMessage"
       closable
       class="mb-4"
-      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"
+      style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 400px;
+      "
     />
 
     <!-- Product Selection Dialog -->
@@ -442,7 +486,7 @@ onMounted(async () => {
           <v-icon class="mr-2">mdi-package-variant</v-icon>
           Pilih Produk untuk Featured
         </v-card-title>
-        
+
         <v-card-text class="pa-0">
           <v-container class="pa-4">
             <v-row v-if="catalogLoading" class="justify-center">
@@ -451,24 +495,33 @@ onMounted(async () => {
                 <p class="mt-2">Memuat katalog produk...</p>
               </v-col>
             </v-row>
-            
-            <v-row v-else-if="availableProducts.length === 0" class="justify-center">
+
+            <v-row
+              v-else-if="availableProducts.length === 0"
+              class="justify-center"
+            >
               <v-col cols="12" class="text-center">
-                <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
-                <p class="text-grey-darken-1 mt-2">Tidak ada produk yang tersedia untuk dipilih</p>
+                <v-icon size="64" color="grey-lighten-1"
+                  >mdi-package-variant-closed</v-icon
+                >
+                <p class="text-grey-darken-1 mt-2">
+                  Tidak ada produk yang tersedia untuk dipilih
+                </p>
               </v-col>
             </v-row>
-            
+
             <v-row v-else>
-              <v-col 
-                v-for="product in availableProducts" 
-                :key="product.id" 
-                cols="12" 
+              <v-col
+                v-for="product in availableProducts"
+                :key="product.id"
+                cols="12"
                 md="6"
               >
-                <v-card 
-                  variant="outlined" 
-                  :class="{ 'v-card--selected': selectedProductId === product.id }"
+                <v-card
+                  variant="outlined"
+                  :class="{
+                    'v-card--selected': selectedProductId === product.id,
+                  }"
                   @click="selectedProductId = product.id"
                   class="cursor-pointer"
                 >
@@ -480,8 +533,12 @@ onMounted(async () => {
                         cover
                       >
                         <template v-slot:placeholder>
-                          <div class="d-flex align-center justify-center fill-height">
-                            <v-icon size="40" color="grey-lighten-1">mdi-package-variant</v-icon>
+                          <div
+                            class="d-flex align-center justify-center fill-height"
+                          >
+                            <v-icon size="40" color="grey-lighten-1"
+                              >mdi-package-variant</v-icon
+                            >
                           </div>
                         </template>
                       </v-img>
@@ -489,31 +546,41 @@ onMounted(async () => {
                     <v-col cols="8">
                       <v-card-text class="pa-3">
                         <h4 class="text-subtitle-2 mb-1">{{ product.name }}</h4>
-                        <p class="text-caption text-grey-darken-1 mb-2">{{ product.description }}</p>
+                        <p class="text-caption text-grey-darken-1 mb-2">
+                          {{ product.description }}
+                        </p>
                         <div class="d-flex align-center justify-space-between">
-                          <span class="text-subtitle-2 font-weight-bold text-primary">
+                          <span
+                            class="text-subtitle-2 font-weight-bold text-primary"
+                          >
                             {{ formatPrice(product.price) }}
                           </span>
-                          <v-chip size="x-small" color="success" v-if="product.stock && product.stock > 0">
+                          <v-chip
+                            size="x-small"
+                            color="success"
+                            v-if="product.stock && product.stock > 0"
+                          >
                             Stock: {{ product.stock }}
                           </v-chip>
                         </div>
                         <div class="d-flex align-center mt-1">
-                          <v-rating 
-                            :model-value="product.rating" 
-                            readonly 
-                            size="x-small" 
+                          <v-rating
+                            :model-value="product.rating"
+                            readonly
+                            size="x-small"
                             density="compact"
                             class="mr-2"
                           />
-                          <span class="text-caption">({{ product.rating }})</span>
+                          <span class="text-caption"
+                            >({{ product.rating }})</span
+                          >
                         </div>
                       </v-card-text>
                     </v-col>
                   </v-row>
-                  
+
                   <!-- Selection indicator -->
-                  <v-overlay 
+                  <v-overlay
                     v-if="selectedProductId === product.id"
                     contained
                     class="d-flex align-center justify-center"
@@ -526,16 +593,13 @@ onMounted(async () => {
             </v-row>
           </v-container>
         </v-card-text>
-        
+
         <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn 
-            @click="productSelectionDialog = false"
-            variant="outlined"
-          >
+          <v-btn @click="productSelectionDialog = false" variant="outlined">
             Batal
           </v-btn>
-          <v-btn 
+          <v-btn
             @click="addSelectedProduct"
             color="primary"
             :disabled="!selectedProductId"
@@ -550,7 +614,9 @@ onMounted(async () => {
     <v-row class="mb-6">
       <v-col cols="12">
         <h1 class="text-h4 font-weight-bold">Halaman Utama</h1>
-        <p class="text-body-2 text-grey-darken-1">Kelola konten halaman utama website dan lihat preview</p>
+        <p class="text-body-2 text-grey-darken-1">
+          Kelola konten halaman utama website dan lihat preview
+        </p>
       </v-col>
     </v-row>
 
@@ -569,7 +635,7 @@ onMounted(async () => {
             <v-icon class="mr-2">mdi-pencil</v-icon>
             Editor Konten
           </v-card-title>
-          
+
           <v-card-text class="pa-6">
             <v-form @submit.prevent="saveHomepageData">
               <!-- Banner Section (keeping existing) -->
@@ -585,12 +651,18 @@ onMounted(async () => {
                     class="icon-btn-square"
                   />
                 </div>
-                
+
                 <!-- Banner forms (keeping existing implementation) -->
-                <div v-for="(banner, index) in homepageData.banners" :key="index" class="mb-4">
+                <div
+                  v-for="(banner, index) in homepageData.banners"
+                  :key="index"
+                  class="mb-4"
+                >
                   <v-card variant="outlined" class="pa-4">
                     <div class="d-flex align-center mb-3">
-                      <h4 class="text-subtitle-1 flex-grow-1">Banner {{ index + 1 }}</h4>
+                      <h4 class="text-subtitle-1 flex-grow-1">
+                        Banner {{ index + 1 }}
+                      </h4>
                       <v-btn
                         @click="removeBanner(index)"
                         icon="mdi-delete"
@@ -600,7 +672,7 @@ onMounted(async () => {
                         :disabled="homepageData.banners.length <= 1"
                       />
                     </div>
-                    
+
                     <!-- Image Upload -->
                     <div class="mb-3">
                       <v-card
@@ -610,10 +682,14 @@ onMounted(async () => {
                         @click="openBannerFileInput(index)"
                       >
                         <div v-if="!banner.image" class="text-center">
-                          <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
-                          <p class="text-caption text-grey-darken-1">Banner Image</p>
+                          <v-icon size="32" color="grey-lighten-1" class="mb-1"
+                            >mdi-camera</v-icon
+                          >
+                          <p class="text-caption text-grey-darken-1">
+                            Banner Image
+                          </p>
                         </div>
-                        <v-img 
+                        <v-img
                           v-else
                           :src="banner.image"
                           cover
@@ -621,7 +697,7 @@ onMounted(async () => {
                           class="rounded"
                         />
                       </v-card>
-                      
+
                       <input
                         :ref="el => bannerFileInputRefs[index] = el as HTMLInputElement"
                         type="file"
@@ -638,7 +714,7 @@ onMounted(async () => {
                       density="compact"
                       class="mb-2"
                     />
-                    
+
                     <v-text-field
                       v-model="banner.subtitle"
                       label="Subtitle"
@@ -646,7 +722,7 @@ onMounted(async () => {
                       density="compact"
                       class="mb-2"
                     />
-                    
+
                     <v-text-field
                       v-model="banner.buttonText"
                       label="Button Text"
@@ -654,7 +730,7 @@ onMounted(async () => {
                       density="compact"
                       class="mb-2"
                     />
-                    
+
                     <v-text-field
                       v-model="banner.buttonLink"
                       label="Button Link"
@@ -678,11 +754,17 @@ onMounted(async () => {
                     class="icon-btn-square"
                   />
                 </div>
-                
-                <div v-for="(achievement, index) in homepageData.achievements" :key="achievement.id" class="mb-3">
+
+                <div
+                  v-for="(achievement, index) in homepageData.achievements"
+                  :key="achievement.id"
+                  class="mb-3"
+                >
                   <v-card variant="outlined" class="pa-4">
                     <div class="d-flex align-center mb-3">
-                      <h4 class="text-subtitle-1 flex-grow-1">Achievement {{ index + 1 }}</h4>
+                      <h4 class="text-subtitle-1 flex-grow-1">
+                        Achievement {{ index + 1 }}
+                      </h4>
                       <v-btn
                         @click="removeAchievement(index)"
                         icon="mdi-delete"
@@ -692,7 +774,7 @@ onMounted(async () => {
                         :disabled="homepageData.achievements.length <= 1"
                       />
                     </div>
-                    
+
                     <!-- Image Upload -->
                     <div class="mb-3">
                       <v-card
@@ -702,10 +784,12 @@ onMounted(async () => {
                         @click="openAchievementFileInput(index)"
                       >
                         <div v-if="!achievement.image" class="text-center">
-                          <v-icon size="24" color="grey-lighten-1" class="mb-1">mdi-trophy</v-icon>
+                          <v-icon size="24" color="grey-lighten-1" class="mb-1"
+                            >mdi-trophy</v-icon
+                          >
                           <p class="text-caption text-grey-darken-1">Icon</p>
                         </div>
-                        <v-img 
+                        <v-img
                           v-else
                           :src="achievement.image"
                           cover
@@ -713,7 +797,7 @@ onMounted(async () => {
                           class="rounded"
                         />
                       </v-card>
-                      
+
                       <input
                         :ref="el => achievementFileInputRefs[index] = el as HTMLInputElement"
                         type="file"
@@ -730,7 +814,7 @@ onMounted(async () => {
                       density="compact"
                       class="mb-2"
                     />
-                    
+
                     <v-text-field
                       v-model.number="achievement.percentage"
                       label="Percentage"
@@ -741,7 +825,7 @@ onMounted(async () => {
                       density="compact"
                       class="mb-2"
                     />
-                    
+
                     <v-textarea
                       v-model="achievement.description"
                       label="Description"
@@ -767,11 +851,18 @@ onMounted(async () => {
                     :disabled="availableProducts.length === 0"
                   />
                 </div>
-                
-                <div v-if="featuredProductsWithDetails.length === 0" class="text-center pa-8">
-                  <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
-                  <p class="text-grey-darken-1 mt-2">Belum ada produk yang dipilih sebagai featured</p>
-                  <v-btn 
+
+                <div
+                  v-if="featuredProductsWithDetails.length === 0"
+                  class="text-center pa-8"
+                >
+                  <v-icon size="64" color="grey-lighten-1"
+                    >mdi-package-variant-closed</v-icon
+                  >
+                  <p class="text-grey-darken-1 mt-2">
+                    Belum ada produk yang dipilih sebagai featured
+                  </p>
+                  <v-btn
                     @click="openProductSelection"
                     color="primary"
                     variant="outlined"
@@ -780,34 +871,46 @@ onMounted(async () => {
                     Pilih Produk
                   </v-btn>
                 </div>
-                
+
                 <div v-else>
-                  <div v-for="(featuredProduct, index) in featuredProductsWithDetails" :key="featuredProduct.productId" class="mb-3">
+                  <div
+                    v-for="(
+                      featuredProduct, index
+                    ) in featuredProductsWithDetails"
+                    :key="featuredProduct.productId"
+                    class="mb-3"
+                  >
                     <v-card variant="outlined" class="pa-4">
                       <div class="d-flex align-center mb-3">
                         <div class="flex-grow-1">
-                          <h4 class="text-subtitle-1">{{ featuredProduct.product?.name }}</h4>
-                          <p class="text-caption text-grey-darken-1 mb-0">{{ featuredProduct.product?.category }}</p>
+                          <h4 class="text-subtitle-1">
+                            {{ featuredProduct.product?.name }}
+                          </h4>
+                          <p class="text-caption text-grey-darken-1 mb-0">
+                            {{ featuredProduct.product?.category }}
+                          </p>
                         </div>
-                        
+
                         <!-- Order controls -->
                         <div class="mr-2">
-                          <v-btn 
+                          <v-btn
                             @click="moveProductUp(index)"
                             icon="mdi-arrow-up"
                             variant="text"
                             size="small"
                             :disabled="index === 0"
                           />
-                          <v-btn 
+                          <v-btn
                             @click="moveProductDown(index)"
                             icon="mdi-arrow-down"
                             variant="text"
                             size="small"
-                            :disabled="index === featuredProductsWithDetails.length - 1"
+                            :disabled="
+                              index === featuredProductsWithDetails.length - 1
+                            "
                           />
                         </div>
-                        
+
                         <v-btn
                           @click="removeFeaturedProduct(index)"
                           icon="mdi-delete"
@@ -816,35 +919,55 @@ onMounted(async () => {
                           color="error"
                         />
                       </div>
-                      
+
                       <!-- Product preview -->
                       <div class="d-flex mb-3">
                         <v-img
-                          :src="featuredProduct.product?.image || '/placeholder.jpg'"
+                          :src="
+                            featuredProduct.product?.image || '/placeholder.jpg'
+                          "
                           width="80"
                           height="80"
                           cover
                           class="rounded mr-3"
                         >
                           <template v-slot:placeholder>
-                            <div class="d-flex align-center justify-center fill-height">
-                              <v-icon size="30" color="grey-lighten-1">mdi-package-variant</v-icon>
+                            <div
+                              class="d-flex align-center justify-center fill-height"
+                            >
+                              <v-icon size="30" color="grey-lighten-1"
+                                >mdi-package-variant</v-icon
+                              >
                             </div>
                           </template>
                         </v-img>
                         <div class="flex-grow-1">
-                          <p class="text-body-2 mb-2">{{ featuredProduct.product?.description }}</p>
+                          <p class="text-body-2 mb-2">
+                            {{ featuredProduct.product?.description }}
+                          </p>
                           <div class="d-flex align-center">
-                            <span class="text-h6 font-weight-bold text-primary mr-2">
-                              {{ formatPrice(featuredProduct.product?.price || 0) }}
+                            <span
+                              class="text-h6 font-weight-bold text-primary mr-2"
+                            >
+                              {{
+                                formatPrice(featuredProduct.product?.price || 0)
+                              }}
                             </span>
-                            <span v-if="featuredProduct.product?.originalPrice" class="text-body-2 text-grey" style="text-decoration: line-through;">
-                              {{ formatPrice(featuredProduct.product.originalPrice) }}
+                            <span
+                              v-if="featuredProduct.product?.originalPrice"
+                              class="text-body-2 text-grey"
+                              style="text-decoration: line-through"
+                            >
+                              {{
+                                formatPrice(
+                                  featuredProduct.product.originalPrice
+                                )
+                              }}
                             </span>
                           </div>
                         </div>
                       </div>
-                      
+
                       <!-- Badge settings -->
                       <v-row>
                         <v-col cols="12" md="8">
@@ -868,7 +991,7 @@ onMounted(async () => {
                               { title: 'Warning', value: 'warning' },
                               { title: 'Error', value: 'error' },
                               { title: 'Amber', value: 'amber' },
-                              { title: 'Green', value: 'green' }
+                              { title: 'Green', value: 'green' },
                             ]"
                             variant="outlined"
                             density="compact"
@@ -899,127 +1022,38 @@ onMounted(async () => {
       <!-- Right Side - Preview -->
       <v-col cols="12" lg="6">
         <v-card variant="outlined">
-          <v-card-title class="bg-grey text-white">
-            <v-icon class="mr-2">mdi-eye</v-icon>
-            Site Preview
+          <v-card-title
+            class="bg-grey text-white d-flex justify-space-between align-center"
+          >
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-eye</v-icon>
+              Live Preview
+            </div>
+            <div class="d-flex gap-2">
+              <v-btn
+                @click="refreshPreview"
+                icon="mdi-refresh"
+                variant="text"
+                size="small"
+                color="white"
+                title="Refresh preview"
+              />
+              <v-btn
+                @click="openHomepage"
+                icon="mdi-open-in-new"
+                variant="text"
+                size="small"
+                color="white"
+                title="Open homepage in new tab"
+              />
+            </div>
           </v-card-title>
-          
+
           <v-card-text class="pa-0">
             <div class="preview-container">
-              <v-container fluid class="pa-4 bg-grey-darken-4 text-white">
-                <!-- Banner Preview (keeping existing) -->
-                <div class="mb-4">
-                  <h3 class="text-subtitle-1 mb-2">Banner Section</h3>
-                  <v-carousel
-                    height="200"
-                    hide-delimiter-background
-                    show-arrows="hover"
-                    class="preview-carousel"
-                  >
-                    <v-carousel-item
-                      v-for="(banner, index) in homepageData.banners.filter(b => b.title)"
-                      :key="index"
-                      :src="banner.image || '/placeholder.jpg'"
-                      cover
-                    >
-                      <div class="banner-overlay-preview">
-                        <div class="text-center pa-4">
-                          <h4 class="text-h6 font-weight-bold mb-2">{{ banner.title }}</h4>
-                          <p class="text-caption mb-2">{{ banner.subtitle }}</p>
-                          <v-btn
-                            v-if="banner.buttonText"
-                            color="amber"
-                            size="small"
-                            class="text-caption"
-                          >
-                            {{ banner.buttonText }}
-                          </v-btn>
-                        </div>
-                      </div>
-                    </v-carousel-item>
-                  </v-carousel>
-                </div>
-
-                <!-- Achievement Preview (keeping existing) -->
-                <div class="mb-4">
-                  <h3 class="text-subtitle-1 mb-2">Achievement Section</h3>
-                  <v-row>
-                    <v-col
-                      v-for="achievement in homepageData.achievements.filter(a => a.title)"
-                      :key="achievement.id"
-                      cols="12"
-                      class="pa-1"
-                    >
-                      <v-card class="pa-2 bg-grey-darken-3 rounded">
-                        <div class="d-flex align-center">
-                          <v-avatar size="30" class="mr-2">
-                            <v-img v-if="achievement.image" :src="achievement.image" />
-                            <v-icon v-else size="20" color="amber">mdi-trophy</v-icon>
-                          </v-avatar>
-                          <div class="flex-grow-1">
-                            <div class="d-flex align-center">
-                              <span class="text-caption font-weight-bold text-amber mr-2">
-                                {{ achievement.percentage }}%
-                              </span>
-                              <span class="text-caption">{{ achievement.title }}</span>
-                            </div>
-                            <p class="text-caption text-grey-lighten-1 mb-0">{{ achievement.description }}</p>
-                          </div>
-                        </div>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </div>
-
-                <!-- Featured Products Preview (UPDATED) -->
-                <div class="mb-4">
-                  <h3 class="text-subtitle-1 mb-2">Produk Andalan</h3>
-                  <div class="products-preview-grid">
-                    <v-card
-                      v-for="featuredProduct in featuredProductsWithDetails"
-                      :key="featuredProduct.productId"
-                      class="product-preview-card bg-grey-darken-3"
-                      max-width="150"
-                    >
-                      <v-img
-                        :src="featuredProduct.product?.image || '/placeholder.jpg'"
-                        height="80"
-                        cover
-                      >
-                        <template v-slot:placeholder>
-                          <div class="d-flex align-center justify-center fill-height">
-                            <v-icon size="30" color="amber">mdi-package-variant</v-icon>
-                          </div>
-                        </template>
-                      </v-img>
-                      
-                      <v-chip
-                        v-if="featuredProduct.badge"
-                        :color="featuredProduct.badgeColor"
-                        size="x-small"
-                        class="product-badge-preview"
-                      >
-                        {{ featuredProduct.badge }}
-                      </v-chip>
-
-                      <v-card-text class="pa-2">
-                        <h4 class="text-caption font-weight-bold mb-1">{{ featuredProduct.product?.name }}</h4>
-                        <p class="text-caption text-grey-lighten-1 mb-1" style="font-size: 0.6rem !important;">
-                          {{ featuredProduct.product?.description }}
-                        </p>
-                        <div class="d-flex align-center">
-                          <span class="text-caption font-weight-bold text-amber">
-                            {{ formatPrice(featuredProduct.product?.price || 0) }}
-                          </span>
-                          <span v-if="featuredProduct.product?.originalPrice" class="text-caption text-grey ml-1" style="text-decoration: line-through; font-size: 0.6rem;">
-                            {{ formatPrice(featuredProduct.product.originalPrice) }}
-                          </span>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </div>
-                </div>
-              </v-container>
+              <div :key="previewKey" class="preview-wrapper">
+                <index />
+              </div>
             </div>
           </v-card-text>
         </v-card>
@@ -1043,47 +1077,24 @@ onMounted(async () => {
 .preview-container {
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #ddd;
+  background: #f5f5f5;
+}
+
+.preview-wrapper {
+  transform: scale(0.75);
+  transform-origin: top left;
+  width: 133.33%;
+  min-height: 600px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .icon-btn-square {
   border-radius: 4px !important;
   border: 1px solid currentColor !important;
-}
-
-.preview-carousel {
-  border-radius: 8px;
-}
-
-.banner-overlay-preview {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.products-preview-grid {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 8px 0;
-}
-
-.product-preview-card {
-  min-width: 150px;
-  position: relative;
-}
-
-.product-badge-preview {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 1;
 }
 
 .cursor-pointer {
@@ -1110,5 +1121,50 @@ onMounted(async () => {
 
 .preview-container::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Responsive scaling */
+@media (max-width: 1400px) {
+  .preview-wrapper {
+    transform: scale(0.65);
+    width: 153.85%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .preview-wrapper {
+    transform: scale(0.55);
+    width: 181.82%;
+  }
+}
+
+@media (max-width: 992px) {
+  .preview-wrapper {
+    transform: scale(0.8);
+    width: 125%;
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-wrapper {
+    transform: scale(1);
+    width: 100%;
+  }
+}
+
+/* Hide any navbar/footer that might be in the index component */
+.preview-wrapper :deep(.navbar),
+.preview-wrapper :deep(.footer),
+.preview-wrapper :deep(nav),
+.preview-wrapper :deep(footer) {
+  display: none !important;
+}
+
+/* Ensure full width for preview content */
+.preview-wrapper :deep(.container),
+.preview-wrapper :deep(.v-container) {
+  max-width: 100% !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 </style>

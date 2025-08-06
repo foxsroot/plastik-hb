@@ -1,32 +1,37 @@
 import { Table, Model, Column, DataType } from 'sequelize-typescript';
 
 @Table({
-    tableName: "pages",
+    tableName: "users",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at"
 })
 
-export class Pages extends Model {
+export class User extends Model {
     @Column({
         type: DataType.UUID,
         primaryKey: true,
         allowNull: false,
         defaultValue: DataType.UUIDV4,
-        field: "page_id"
+        field: "id"
     })
-    declare pageId: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: false,
-        field: "information_key"
-    })
-    declare informationKey: string;
+    declare id: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false
     })
-    declare value: string;
+    declare username: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: false
+    })
+    declare email: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: false
+    })
+    declare password: string;
 }

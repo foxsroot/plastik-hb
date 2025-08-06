@@ -1,32 +1,37 @@
 import { Table, Model, Column, DataType } from 'sequelize-typescript';
 
 @Table({
-    tableName: "store_informations",
+    tableName: "assets",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at"
 })
 
-export class StoreInformations extends Model {
+export class Asset extends Model {
     @Column({
         type: DataType.UUID,
         primaryKey: true,
         allowNull: false,
         defaultValue: DataType.UUIDV4,
-        field: "information_id"
+        field: "id"
     })
-    declare informationId: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: false,
-        field: "information_key"
-    })
-    declare informationKey: string;
+    declare id: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false
     })
-    declare value: string;
+    declare url: string;
+
+    @Column({
+        type: DataType.STRING,
+        allowNull: false
+    })
+    declare alt: string;
+
+    @Column({
+        type: DataType.ENUM('IMAGE', 'VIDEO'),
+        allowNull: false,
+    })
+    declare type: 'IMAGE' | 'VIDEO';
 }

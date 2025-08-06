@@ -46,6 +46,7 @@ interface AnalyticsOverview {
   totalVisitors: number;
   totalPageViews: number;
   totalProductClicks: number;
+  avgSessionDuration: string;
   bounceRate: number;
   topReferrer: string;
 }
@@ -62,6 +63,7 @@ const analyticsOverview = ref<AnalyticsOverview>({
   totalVisitors: 0,
   totalPageViews: 0,
   totalProductClicks: 0,
+  avgSessionDuration: "0:00",
   bounceRate: 0,
   topReferrer: "",
 });
@@ -126,25 +128,16 @@ const visitorChartOptions = computed(() => ({
   tooltip: {
     trigger: "axis",
     formatter: (params: any) => {
-      return (
-        `${params[0].axisValue}<br/>` +
-        params
-          .map(
-            (item: any) =>
-              `${item.marker} ${
-                item.seriesName
-              }: ${item.value.toLocaleString()}`
-          )
-          .join("<br/>")
-      );
+      const data = params[0];
+      return `${data.axisValue}<br/>
+              ${data.marker} ${
+        data.seriesName
+      }: ${data.value.toLocaleString()}`;
     },
   },
   legend: {
     bottom: 10,
-    data: ["Pengunjung", "Page Views", "Product Clicks"],
-    textStyle: {
-      color: "#ffffff",
-    },
+    data: ["Pengunjung", "Page Views", "Unique Visitors"],
   },
   grid: {
     left: "3%",
@@ -181,12 +174,10 @@ const visitorChartOptions = computed(() => ({
       areaStyle: { opacity: 0.1 },
     },
     {
-      name: "Product Clicks",
+      name: "Unique Visitors",
       type: "line",
       smooth: true,
-      data: visitorData.value.map(
-        (d) => Math.floor(Math.random() * 1000) + 50 // Mocked product clicks per day
-      ),
+      data: visitorData.value.map((d) => d.uniqueVisitors),
       itemStyle: { color: "#f57c00" },
       areaStyle: { opacity: 0.1 },
     },
@@ -282,6 +273,7 @@ const fetchAnalyticsData = async () => {
       totalVisitors: 12847,
       totalPageViews: 45632,
       totalProductClicks: 8934,
+      avgSessionDuration: "3:42",
       bounceRate: 34.2,
       topReferrer: "Google",
     };
@@ -374,6 +366,7 @@ onMounted(() => {
 <route>
 {
   meta: {
+    requiresAuth: true,
     layout: 'admin'
   }
 }
@@ -405,7 +398,7 @@ onMounted(() => {
     <template v-else>
       <!-- Overview Cards -->
       <v-row class="mb-6">
-        <v-col cols="12" sm="6" md="4">
+        <v-col cols="12" sm="6" md="3">
           <v-card class="pa-4 text-center" color="blue-lighten-5">
             <v-icon size="40" color="blue">mdi-account-group</v-icon>
             <h3 class="text-h5 font-weight-bold mt-2">
@@ -414,7 +407,7 @@ onMounted(() => {
             <p class="text-body-2 text-grey-darken-1">Total Pengunjung</p>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="6" md="4">
+        <v-col cols="12" sm="6" md="3">
           <v-card class="pa-4 text-center" color="green-lighten-5">
             <v-icon size="40" color="green">mdi-eye</v-icon>
             <h3 class="text-h5 font-weight-bold mt-2">
@@ -423,13 +416,22 @@ onMounted(() => {
             <p class="text-body-2 text-grey-darken-1">Page Views</p>
           </v-card>
         </v-col>
-        <v-col cols="12" sm="6" md="4">
+        <v-col cols="12" sm="6" md="3">
           <v-card class="pa-4 text-center" color="orange-lighten-5">
             <v-icon size="40" color="orange">mdi-mouse</v-icon>
             <h3 class="text-h5 font-weight-bold mt-2">
               {{ formatNumber(analyticsOverview.totalProductClicks) }}
             </h3>
             <p class="text-body-2 text-grey-darken-1">Product Clicks</p>
+          </v-card>
+        </v-col>
+        <v-col cols="12" sm="6" md="3">
+          <v-card class="pa-4 text-center" color="purple-lighten-5">
+            <v-icon size="40" color="purple">mdi-clock</v-icon>
+            <h3 class="text-h5 font-weight-bold mt-2">
+              {{ analyticsOverview.avgSessionDuration }}
+            </h3>
+            <p class="text-body-2 text-grey-darken-1">Avg. Session</p>
           </v-card>
         </v-col>
       </v-row>
