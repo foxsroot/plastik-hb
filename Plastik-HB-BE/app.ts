@@ -1,22 +1,66 @@
 import express from 'express';
 import { Sequelize } from 'sequelize-typescript';
 import cors from 'cors';
-import config from '../Plastik-HB-BE/config/config.json';
-import { Dialect } from 'sequelize';
+import dotenv from 'dotenv';
+import authenticationRouter from './routes/authenticationRoutes';
+import { errorHandler } from './utils/errorHandler';
+import { User } from './models/User';
+import { Analytic } from './models/Analytic';
+import { Asset } from './models/Asset';
+import { Page } from './models/Page';
+import { Product } from './models/Product';
+import { Section } from './models/Section';
+import { Session } from './models/Session';
+
+dotenv.config();
 
 const app = express();
+const port = Number(process.env.PORT) || 5000;
 
 // Enable CORS with credentials
 app.use(cors({
-    origin: 'http://localhost:5173', 
+    origin: 'http://localhost:3000',
     credentials: true,
 }));
 
 app.use(express.json());
 
-
 const sequelize = new Sequelize({
-    ...config.development,
-    dialect: config.development.dialect as Dialect, // Cast dialect to Dialect type
-    models: [],
+    dialect: 'postgres',
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    models: [User, Analytic, Asset, Page, Product, Section, Session],
+});
+
+// Test database connection
+sequelize.authenticate()
+    .then(() => console.log('Database connected successfully!'))
+    .catch(err => {
+        console.error('Database connection failed. Please check the credentials and database server:', err);
+        process.exit(1);
+    });
+
+// API routes
+
+app.get('/', (req, res) => {
+    res.send('Backend is running!');
+});
+
+app.use('/api/authentication', authenticationRouter);
+
+// ENDS HERE
+
+// Error handling middleware
+
+app.use(errorHandler);
+// app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+//     console.error(err.stack);
+//     res.status(500).json({ error: 'Something went wrong!' });
+// });
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server is running on http://${process.env.DB_HOST}:${port}`);
+    console.log(`You can also access it at http://localhost:${port}`);
 });

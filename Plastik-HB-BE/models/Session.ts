@@ -1,31 +1,32 @@
 import { Table, Model, Column, DataType } from 'sequelize-typescript';
 
 @Table({
-    tableName: "users",
+    tableName: "sessions",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at"
 })
 
-export class User extends Model {
+export class Session extends Model {
     @Column({
         type: DataType.UUID,
         primaryKey: true,
         allowNull: false,
         defaultValue: DataType.UUIDV4,
-        field: "user_id"
+        field: "id"
     })
-    declare userId: string;
+    declare id: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false
     })
-    declare username: string;
+    declare token: string;
 
     @Column({
-        type: DataType.STRING,
-        allowNull: false
+        type: DataType.DATE,
+        allowNull: false,
+        defaultValue: () => new Date(Date.now() + 24 * 60 * 60 * 7)
     })
-    declare password: string;
+    declare expires_at: Date;
 }

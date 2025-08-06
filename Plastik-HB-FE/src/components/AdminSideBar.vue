@@ -3,9 +3,6 @@
     <!-- Logo -->
     <div class="pa-4 d-flex justify-center">
       <h1 class="text-h4 mb-4">Plastik HB</h1>
-      <!-- <v-avatar size="48">
-        <v-img src="/" alt="Logo" />
-      </v-avatar> -->
     </div>
 
     <!-- Navigation Items -->
@@ -36,7 +33,7 @@
         variant="flat"
         class="text-subtitle-2 py-1"
         prepend-icon="mdi-logout"
-        @click="logout"
+        @click="handleLogout"
       >
         Logout
       </v-btn>
@@ -45,6 +42,9 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from "vue-router"; // Import Vue Router
+import { logout } from "@/api/authenticationApi"; // Import logout API function
+
 const navItems = [
   { title: "Dashboard", to: "/admin", icon: "mdi-view-dashboard" },
   {
@@ -70,8 +70,25 @@ const navItems = [
   },
 ];
 
-function logout() {
-  console.log("Logging out...");
-  // Replace with your actual logout logic
+const router = useRouter(); // Initialize Vue Router
+
+async function handleLogout() {
+  const token = localStorage.getItem("sessionToken");
+  if (!token) {
+    console.warn("No session token found. Redirecting to login...");
+    router.push("/admin/login");
+    return;
+  }
+
+  try {
+    await logout(token); // Call backend API to invalidate session
+    console.log("Logout successful.");
+    localStorage.removeItem("sessionToken"); // Remove token from localStorage
+    router.push("/admin/login"); // Redirect to login
+  } catch (error: any) {
+    console.error("Logout failed:", error);
+    localStorage.removeItem("sessionToken"); // Remove token even if logout fails
+    router.push("/admin/login"); // Redirect to login
+  }
 }
 </script>
