@@ -11,7 +11,10 @@ export function controllerWrapper<T>(routeHandler: ExpressRouteHandler<T>) {
         try {
             const result = await routeHandler(req, res, next);
             if (res.headersSent) return;
-            res.status(200).json(result);
+
+            const status = (result as any).status || 200;
+
+            res.status(status).json(result);
         } catch (error) {
             next(error);
         }

@@ -44,7 +44,7 @@ export class Page extends Model {
 
     @HasMany(() => Section, {
         foreignKey: 'page_id',
-        sourceKey: 'page_id',
+        sourceKey: 'id',
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
     })
