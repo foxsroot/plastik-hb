@@ -1,20 +1,779 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+
+// Banner Types and Data
+interface Banner {
+  image: string
+  title: string
+  subtitle: string
+  buttonText?: string
+  buttonLink?: string
+}
+
+const currentSlide = ref(0)
+let autoScrollInterval: number | null = null
+
+const banners = ref<Banner[]>([
+  {
+    image: '/src/assets/banner1.jpg',
+    title: 'Solusi Plastik Berkualitas Tinggi',
+    subtitle: 'Menyediakan berbagai produk plastik untuk kebutuhan industri dan rumah tangga',
+    buttonText: 'Lihat Produk',
+    buttonLink: '/katalog'
+  },
+  {
+    image: '/src/assets/banner2.jpg',
+    title: 'Custom Order Tersedia',
+    subtitle: 'Kami melayani pesanan custom sesuai dengan kebutuhan spesifik Anda',
+    buttonText: 'Pesan Sekarang',
+    buttonLink: '/custom-order'
+  },
+  {
+    image: '/src/assets/banner3.jpg',
+    title: 'Pembelian Grosir dengan Harga Terbaik',
+    subtitle: 'Dapatkan harga khusus untuk pembelian dalam jumlah besar',
+    buttonText: 'Hubungi Kami',
+    buttonLink: '/kontak'
+  }
+])
+
+// Achievement Types and Data
+interface Achievement {
+  id: number
+  title: string
+  percentage: number
+  description: string
+  image?: string
+}
+
+const achievements = ref<Achievement[]>([
+  {
+    id: 1,
+    title: 'Customer Satisfaction',
+    percentage: 95,
+    description: 'Tingkat kepuasan pelanggan terhadap produk dan layanan kami',
+    image: ''
+  },
+  {
+    id: 2,
+    title: 'Quality Products',
+    percentage: 98,
+    description: 'Produk berkualitas tinggi yang memenuhi standar internasional',
+    image: ''
+  },
+  {
+    id: 3,
+    title: 'On-Time Delivery',
+    percentage: 92,
+    description: 'Ketepatan waktu pengiriman pesanan kepada pelanggan',
+    image: ''
+  },
+  {
+    id: 4,
+    title: 'Environmental Friendly',
+    percentage: 88,
+    description: 'Komitmen terhadap produk ramah lingkungan dan berkelanjutan',
+    image: ''
+  },
+  {
+    id: 5,
+    title: 'Innovation',
+    percentage: 90,
+    description: 'Inovasi berkelanjutan dalam pengembangan produk plastik',
+    image: ''
+  }
+])
+
+// Featured Products Types and Data
+interface FeaturedProduct {
+  id: number
+  name: string
+  description: string
+  price: number
+  originalPrice?: number
+  image: string
+  rating: number
+  badge?: string
+  badgeColor?: string
+  category: string
+}
+
+const featuredProducts = ref<FeaturedProduct[]>([
+  {
+    id: 1,
+    name: 'Kantong Plastik HD Premium',
+    description: 'Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging',
+    price: 25000,
+    originalPrice: 30000,
+    image: '/src/assets/products/kantong-plastik-1.jpg',
+    rating: 4.8,
+    badge: 'Best Seller',
+    badgeColor: 'success',
+    category: 'Kantong Plastik'
+  },
+  {
+    id: 2,
+    name: 'Wadah Makanan Food Grade',
+    description: 'Wadah plastik food grade aman untuk makanan dan minuman',
+    price: 45000,
+    image: '/src/assets/products/wadah-makanan-1.jpg',
+    rating: 4.9,
+    badge: 'New',
+    badgeColor: 'info',
+    category: 'Wadah Makanan'
+  },
+  {
+    id: 3,
+    name: 'Botol Plastik 500ml',
+    description: 'Botol plastik transparan untuk minuman dengan tutup rapat',
+    price: 15000,
+    image: '/src/assets/products/botol-plastik-1.jpg',
+    rating: 4.7,
+    category: 'Botol'
+  },
+  {
+    id: 4,
+    name: 'Ember Plastik Multi Fungsi',
+    description: 'Ember plastik kuat dan tahan lama untuk berbagai keperluan',
+    price: 75000,
+    image: '/src/assets/products/ember-plastik-1.jpg',
+    rating: 4.6,
+    category: 'Alat Rumah Tangga'
+  },
+  {
+    id: 5,
+    name: 'Gelas Plastik Set 12pcs',
+    description: 'Set gelas plastik untuk acara dan penggunaan sehari-hari',
+    price: 35000,
+    originalPrice: 40000,
+    image: '/src/assets/products/gelas-plastik-1.jpg',
+    rating: 4.5,
+    badge: 'Promo',
+    badgeColor: 'error',
+    category: 'Peralatan Makan'
+  },
+  {
+    id: 6,
+    name: 'Kotak Penyimpanan 10L',
+    description: 'Kotak penyimpanan transparan dengan tutup kedap udara',
+    price: 55000,
+    image: '/src/assets/products/kotak-penyimpanan-1.jpg',
+    rating: 4.8,
+    category: 'Penyimpanan'
+  },
+  {
+    id: 7,
+    name: 'Piring Plastik Melamin',
+    description: 'Piring plastik melamin tahan pecah dan aman untuk microwave',
+    price: 20000,
+    image: '/src/assets/products/piring-plastik-1.jpg',
+    rating: 4.4,
+    category: 'Peralatan Makan'
+  },
+  {
+    id: 8,
+    name: 'Tempat Sampah 50L',
+    description: 'Tempat sampah plastik dengan penutup dan roda untuk kemudahan',
+    price: 125000,
+    image: '/src/assets/products/tempat-sampah-1.jpg',
+    rating: 4.7,
+    badge: 'Eco Friendly',
+    badgeColor: 'green',
+    category: 'Kebersihan'
+  },
+  {
+    id: 9,
+    name: 'Sedotan Plastik Biodegradable',
+    description: 'Sedotan plastik ramah lingkungan yang dapat terurai',
+    price: 12000,
+    image: '/src/assets/products/sedotan-plastik-1.jpg',
+    rating: 4.9,
+    badge: 'Eco',
+    badgeColor: 'green',
+    category: 'Aksesoris'
+  },
+  {
+    id: 10,
+    name: 'Keranjang Plastik Anyam',
+    description: 'Keranjang plastik dengan desain anyam untuk dekorasi dan penyimpanan',
+    price: 65000,
+    image: '/src/assets/products/keranjang-plastik-1.jpg',
+    rating: 4.6,
+    category: 'Dekorasi'
+  }
+])
+
+// Banner Functions
+const goToSlide = (index: number) => {
+  currentSlide.value = index
+}
+
+const startAutoScroll = () => {
+  autoScrollInterval = setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % banners.value.length
+  }, 5000)
+}
+
+const stopAutoScroll = () => {
+  if (autoScrollInterval) {
+    clearInterval(autoScrollInterval)
+    autoScrollInterval = null
+  }
+}
+
+// Achievement Computed Properties
+const leftSideAchievements = computed(() => {
+  const total = achievements.value.length
+  if (total === 0) return []
+  
+  const leftCount = Math.ceil(total / 2)
+  return achievements.value.slice(0, leftCount)
+})
+
+const rightSideAchievements = computed(() => {
+  const total = achievements.value.length
+  const leftCount = Math.ceil(total / 2)
+  return achievements.value.slice(leftCount)
+})
+
+// Product Functions
+const scrollContainer = ref<HTMLElement | null>(null)
+
+const updateScrollPosition = () => {
+  // Keep this for potential future use
+}
+
+const viewProductDetail = (product: FeaturedProduct) => {
+  console.log('View product:', product.name)
+  // router.push(`/produk/${product.id}`)
+}
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(price)
+}
+
+// Lifecycle
+onMounted(async () => {
+  startAutoScroll()
+  await nextTick()
+  updateScrollPosition()
+})
+
+onUnmounted(() => {
+  stopAutoScroll()
+})
+</script>
 
 <template>
   <div class="home-page">
     <!-- Banner Section -->
-    <Banner />
+    <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
+      <v-row>
+        <v-col cols="12">
+          <div class="banner-container">
+            <v-carousel
+              v-model="currentSlide"
+              :continuous="true"
+              :cycle="true"
+              interval="5000"
+              height="400"
+              hide-delimiter-background
+              hide-delimiters
+              show-arrows="false"
+              class="custom-carousel"
+            >
+              <v-carousel-item
+                v-for="(banner, index) in banners"
+                :key="index"
+                :src="banner.image"
+                cover
+                class="banner-item"
+              >
+                <div class="banner-overlay">
+                  <v-container class="fill-height">
+                    <v-row align="center" justify="center">
+                      <v-col cols="12" md="8" class="text-center">
+                        <h1 class="banner-title text-white mb-4">
+                          {{ banner.title }}
+                        </h1>
+                        <p class="banner-subtitle text-white mb-6">
+                          {{ banner.subtitle }}
+                        </p>
+                        <v-btn
+                          v-if="banner.buttonText"
+                          :to="banner.buttonLink"
+                          color="amber"
+                          size="large"
+                          rounded
+                          class="banner-btn"
+                        >
+                          {{ banner.buttonText }}
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-container>
+                </div>
+              </v-carousel-item>
+            </v-carousel>
+
+            <!-- Custom Dots Indicator -->
+            <div class="banner-dots">
+              <div
+                v-for="(banner, index) in banners"
+                :key="index"
+                class="banner-dot"
+                :class="{ 'active': currentSlide === index }"
+                @click="goToSlide(index)"
+              />
+            </div>
+          </div>
+        </v-col>
+      </v-row>
+    </v-container>
     
     <!-- Achievement Section -->
-    <Pencapaian />
+    <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
+      <v-row>
+        <v-col cols="12">
+          <div class="text-center mb-8">
+            <h2 class="text-h5 font-weight-bold mb-6">
+              Achievement
+            </h2>
+          </div>
+        </v-col>
+      </v-row>
+
+      <v-row class="achievement-content mb-12">
+        <!-- Left Side - Large Image or Achievement Items -->
+        <v-col cols="12" md="6" class="left-section">
+          <div v-if="leftSideAchievements.length === 0" class="large-image-placeholder">
+            <v-card class="fill-height d-flex align-center justify-center bg-grey-darken-3 rounded-lg elevation-1" outlined>
+              <div class="text-center pa-8">
+                <v-icon size="80" color="amber">mdi-image-outline</v-icon>
+                <p class="text-white mt-4">Large Image Placeholder</p>
+              </div>
+            </v-card>
+          </div>
+          
+          <!-- Left Achievement Items -->
+          <div v-else class="achievement-grid">
+            <v-card
+              v-for="achievement in leftSideAchievements"
+              :key="achievement.id"
+              class="achievement-card mb-4 pa-6 bg-grey-darken-3 rounded-lg elevation-1"
+            >
+              <v-card-text class="d-flex align-center pa-0">
+                <!-- Achievement Icon/Image -->
+                <v-avatar size="60" class="mr-4">
+                  <v-img
+                    v-if="achievement.image"
+                    :src="achievement.image"
+                    :alt="achievement.title"
+                  />
+                  <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
+                </v-avatar>
+                
+                <!-- Achievement Content -->
+                <div class="flex-grow-1">
+                  <div class="d-flex align-center mb-2">
+                    <h3 class="achievement-percentage text-h4 font-weight-bold text-amber">
+                      {{ achievement.percentage }}%
+                    </h3>
+                  </div>
+                  <p class="achievement-description text-body-1 mb-0 text-white">
+                    {{ achievement.description }}
+                  </p>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+        </v-col>
+
+        <!-- Right Side - Achievement Items -->
+        <v-col cols="12" md="6" class="right-section">
+          <div class="achievement-grid">
+            <v-card
+              v-for="achievement in rightSideAchievements"
+              :key="achievement.id"
+              class="achievement-card mb-4 pa-6 bg-grey-darken-3 rounded-lg elevation-1"
+            >
+              <v-card-text class="d-flex align-center pa-0">
+                <!-- Achievement Icon/Image -->
+                <v-avatar size="60" class="mr-4">
+                  <v-img
+                    v-if="achievement.image"
+                    :src="achievement.image"
+                    :alt="achievement.title"
+                  />
+                  <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
+                </v-avatar>
+                
+                <!-- Achievement Content -->
+                <div class="flex-grow-1">
+                  <div class="d-flex align-center mb-2">
+                    <h3 class="achievement-percentage text-h4 font-weight-bold text-amber">
+                      {{ achievement.percentage }}%
+                    </h3>
+                  </div>
+                  <p class="achievement-description text-body-1 mb-0 text-white">
+                    {{ achievement.description }}
+                  </p>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+        </v-col>
+      </v-row>
+    </v-container>
     
     <!-- Featured Products Section -->
-    <ProdukAndalan />
+    <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
+      <v-row>
+        <v-col cols="12">
+          <div class="text-center mb-8">
+            <h2 class="text-h5 font-weight-bold mb-6">
+              Produk Andalan
+            </h2>
+            <p class="text-subtitle-1 mb-3">
+              Koleksi produk plastik berkualitas tinggi pilihan terbaik kami
+            </p>
+          </div>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col cols="12">
+          <div class="products-carousel-container">
+            <!-- Products Scroll Container -->
+            <div 
+              ref="scrollContainer"
+              class="products-scroll-container"
+              @scroll="updateScrollPosition"
+            >
+              <div class="products-grid">
+                <v-card
+                  v-for="product in featuredProducts"
+                  :key="product.id"
+                  class="product-card bg-grey-darken-3 rounded-lg elevation-1"
+                  @click="viewProductDetail(product)"
+                >
+                  <!-- Product Image -->
+                  <div class="product-image-container">
+                    <v-img
+                      :src="product.image"
+                      :alt="product.name"
+                      height="200"
+                      cover
+                      class="product-image"
+                    >
+                      <template v-slot:placeholder>
+                        <div class="d-flex align-center justify-center fill-height">
+                          <v-icon size="60" color="amber">mdi-package-variant</v-icon>
+                        </div>
+                      </template>
+                    </v-img>
+                    
+                    <!-- Product Badge -->
+                    <v-chip
+                      v-if="product.badge"
+                      :color="product.badgeColor || 'amber'"
+                      size="small"
+                      class="product-badge"
+                    >
+                      {{ product.badge }}
+                    </v-chip>
+                  </div>
+
+                  <!-- Product Content -->
+                  <v-card-text class="pa-4">
+                    <h3 class="product-name text-subtitle-1 font-weight-bold mb-2 text-white">
+                      {{ product.name }}
+                    </h3>
+                    <p class="product-description text-body-2 text-grey-lighten-1 mb-3">
+                      {{ product.description }}
+                    </p>
+                    
+                    <!-- Product Price -->
+                    <div class="product-price-container d-flex align-center justify-space-between">
+                      <div>
+                        <span class="product-price text-h6 font-weight-bold text-amber">
+                          {{ formatPrice(product.price) }}
+                        </span>
+                        <span v-if="product.originalPrice" class="original-price text-body-2 text-grey ml-2">
+                          {{ formatPrice(product.originalPrice) }}
+                        </span>
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </div>
+          </div>
+        </v-col>
+      </v-row>
+
+      <!-- View All Products Button -->
+      <v-row class="mt-6">
+        <v-col cols="12" class="text-center">
+          <v-btn
+            to="/katalog"
+            color="amber"
+            size="large"
+            variant="outlined"
+            class="px-8"
+          >
+            Lihat Semua Produk
+            <v-icon end>mdi-arrow-right</v-icon>
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
-<script lang="ts" setup>
-import Banner from './home/Banner.vue'
-import Pencapaian from './home/Pencapaian.vue'
-import ProdukAndalan from './home/ProdukAndalan.vue'
-</script>
+<style scoped>
+/* Banner Styles */
+.banner-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-carousel {
+  border-radius: 8px;
+}
+
+.banner-item {
+  position: relative;
+}
+
+.banner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-title {
+  font-size: 3rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  line-height: 1.2;
+}
+
+.banner-subtitle {
+  font-size: 1.2rem;
+  font-weight: 400;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.banner-btn {
+  font-weight: 600;
+  padding: 12px 32px;
+  text-transform: none;
+  letter-spacing: 0.5px;
+}
+
+.banner-dots {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.banner-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.banner-dot.active {
+  background: rgba(255, 193, 7, 0.9);
+  transform: scale(1.2);
+}
+
+.banner-dot:hover {
+  background: rgba(255, 193, 7, 0.7);
+  transform: scale(1.1);
+}
+
+/* Achievement Styles */
+.large-image-placeholder {
+  height: 400px;
+}
+
+.achievement-card {
+  transition: all 0.3s ease;
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+.achievement-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.left-section, .right-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Product Styles */
+.products-carousel-container {
+  position: relative;
+}
+
+.products-scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.products-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.products-grid {
+  display: flex;
+  gap: 20px;
+  padding: 20px 40px;
+  min-width: max-content;
+}
+
+.product-card {
+  width: 260px;
+  min-width: 260px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.product-image-container {
+  position: relative;
+}
+
+.product-image {
+  border-radius: 8px 8px 0 0;
+}
+
+.product-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+}
+
+.product-name {
+  line-height: 1.3;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-description {
+  line-height: 1.4;
+  min-height: 2.8em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.original-price {
+  text-decoration: line-through;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .products-grid {
+    padding: 20px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .banner-title {
+    font-size: 2rem;
+  }
+  
+  .banner-subtitle {
+    font-size: 1rem;
+  }
+  
+  .banner-dots {
+    bottom: 10px;
+    gap: 6px;
+  }
+  
+  .banner-dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .achievement-content {
+    flex-direction: column;
+  }
+  
+  .large-image-placeholder {
+    height: 250px;
+    margin-bottom: 2rem;
+  }
+  
+  .achievement-card {
+    margin-bottom: 1rem;
+  }
+
+  .product-card {
+    width: 220px;
+    min-width: 220px;
+  }
+  
+  .products-grid {
+    padding: 20px 10px;
+    gap: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-card {
+    width: 200px;
+    min-width: 200px;
+  }
+  
+  .products-grid {
+    gap: 10px;
+  }
+}
+</style>
