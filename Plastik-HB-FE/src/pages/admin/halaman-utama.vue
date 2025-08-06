@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import index from '../index.vue'
 
 // Banner Interface
 interface Banner {
@@ -406,6 +407,20 @@ const saveHomepageData = async () => {
   } finally {
     saveLoading.value = false
   }
+}
+
+// Preview state
+const previewKey = ref(0)
+const previewTimestamp = ref(Date.now())
+
+// Preview functions
+const refreshPreview = () => {
+  previewKey.value += 1
+  previewTimestamp.value = Date.now()
+}
+
+const openHomepage = () => {
+  window.open('/', '_blank')
 }
 
 onMounted(async () => {
@@ -899,127 +914,36 @@ onMounted(async () => {
       <!-- Right Side - Preview -->
       <v-col cols="12" lg="6">
         <v-card variant="outlined">
-          <v-card-title class="bg-grey text-white">
-            <v-icon class="mr-2">mdi-eye</v-icon>
-            Site Preview
+          <v-card-title class="bg-grey text-white d-flex justify-space-between align-center">
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-eye</v-icon>
+              Live Preview
+            </div>
+            <div class="d-flex gap-2">
+              <v-btn
+                @click="refreshPreview"
+                icon="mdi-refresh"
+                variant="text"
+                size="small"
+                color="white"
+                title="Refresh preview"
+              />
+              <v-btn
+                @click="openHomepage"
+                icon="mdi-open-in-new"
+                variant="text"
+                size="small"
+                color="white"
+                title="Open homepage in new tab"
+              />
+            </div>
           </v-card-title>
           
           <v-card-text class="pa-0">
             <div class="preview-container">
-              <v-container fluid class="pa-4 bg-grey-darken-4 text-white">
-                <!-- Banner Preview (keeping existing) -->
-                <div class="mb-4">
-                  <h3 class="text-subtitle-1 mb-2">Banner Section</h3>
-                  <v-carousel
-                    height="200"
-                    hide-delimiter-background
-                    show-arrows="hover"
-                    class="preview-carousel"
-                  >
-                    <v-carousel-item
-                      v-for="(banner, index) in homepageData.banners.filter(b => b.title)"
-                      :key="index"
-                      :src="banner.image || '/placeholder.jpg'"
-                      cover
-                    >
-                      <div class="banner-overlay-preview">
-                        <div class="text-center pa-4">
-                          <h4 class="text-h6 font-weight-bold mb-2">{{ banner.title }}</h4>
-                          <p class="text-caption mb-2">{{ banner.subtitle }}</p>
-                          <v-btn
-                            v-if="banner.buttonText"
-                            color="amber"
-                            size="small"
-                            class="text-caption"
-                          >
-                            {{ banner.buttonText }}
-                          </v-btn>
-                        </div>
-                      </div>
-                    </v-carousel-item>
-                  </v-carousel>
-                </div>
-
-                <!-- Achievement Preview (keeping existing) -->
-                <div class="mb-4">
-                  <h3 class="text-subtitle-1 mb-2">Achievement Section</h3>
-                  <v-row>
-                    <v-col
-                      v-for="achievement in homepageData.achievements.filter(a => a.title)"
-                      :key="achievement.id"
-                      cols="12"
-                      class="pa-1"
-                    >
-                      <v-card class="pa-2 bg-grey-darken-3 rounded">
-                        <div class="d-flex align-center">
-                          <v-avatar size="30" class="mr-2">
-                            <v-img v-if="achievement.image" :src="achievement.image" />
-                            <v-icon v-else size="20" color="amber">mdi-trophy</v-icon>
-                          </v-avatar>
-                          <div class="flex-grow-1">
-                            <div class="d-flex align-center">
-                              <span class="text-caption font-weight-bold text-amber mr-2">
-                                {{ achievement.percentage }}%
-                              </span>
-                              <span class="text-caption">{{ achievement.title }}</span>
-                            </div>
-                            <p class="text-caption text-grey-lighten-1 mb-0">{{ achievement.description }}</p>
-                          </div>
-                        </div>
-                      </v-card>
-                    </v-col>
-                  </v-row>
-                </div>
-
-                <!-- Featured Products Preview (UPDATED) -->
-                <div class="mb-4">
-                  <h3 class="text-subtitle-1 mb-2">Produk Andalan</h3>
-                  <div class="products-preview-grid">
-                    <v-card
-                      v-for="featuredProduct in featuredProductsWithDetails"
-                      :key="featuredProduct.productId"
-                      class="product-preview-card bg-grey-darken-3"
-                      max-width="150"
-                    >
-                      <v-img
-                        :src="featuredProduct.product?.image || '/placeholder.jpg'"
-                        height="80"
-                        cover
-                      >
-                        <template v-slot:placeholder>
-                          <div class="d-flex align-center justify-center fill-height">
-                            <v-icon size="30" color="amber">mdi-package-variant</v-icon>
-                          </div>
-                        </template>
-                      </v-img>
-                      
-                      <v-chip
-                        v-if="featuredProduct.badge"
-                        :color="featuredProduct.badgeColor"
-                        size="x-small"
-                        class="product-badge-preview"
-                      >
-                        {{ featuredProduct.badge }}
-                      </v-chip>
-
-                      <v-card-text class="pa-2">
-                        <h4 class="text-caption font-weight-bold mb-1">{{ featuredProduct.product?.name }}</h4>
-                        <p class="text-caption text-grey-lighten-1 mb-1" style="font-size: 0.6rem !important;">
-                          {{ featuredProduct.product?.description }}
-                        </p>
-                        <div class="d-flex align-center">
-                          <span class="text-caption font-weight-bold text-amber">
-                            {{ formatPrice(featuredProduct.product?.price || 0) }}
-                          </span>
-                          <span v-if="featuredProduct.product?.originalPrice" class="text-caption text-grey ml-1" style="text-decoration: line-through; font-size: 0.6rem;">
-                            {{ formatPrice(featuredProduct.product.originalPrice) }}
-                          </span>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </div>
-                </div>
-              </v-container>
+              <div :key="previewKey" class="preview-wrapper">
+                <index />
+              </div>
             </div>
           </v-card-text>
         </v-card>
@@ -1043,47 +967,24 @@ onMounted(async () => {
 .preview-container {
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #ddd;
+  background: #f5f5f5;
+}
+
+.preview-wrapper {
+  transform: scale(0.75);
+  transform-origin: top left;
+  width: 133.33%;
+  min-height: 600px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .icon-btn-square {
   border-radius: 4px !important;
   border: 1px solid currentColor !important;
-}
-
-.preview-carousel {
-  border-radius: 8px;
-}
-
-.banner-overlay-preview {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.products-preview-grid {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 8px 0;
-}
-
-.product-preview-card {
-  min-width: 150px;
-  position: relative;
-}
-
-.product-badge-preview {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 1;
 }
 
 .cursor-pointer {
@@ -1110,5 +1011,50 @@ onMounted(async () => {
 
 .preview-container::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Responsive scaling */
+@media (max-width: 1400px) {
+  .preview-wrapper {
+    transform: scale(0.65);
+    width: 153.85%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .preview-wrapper {
+    transform: scale(0.55);
+    width: 181.82%;
+  }
+}
+
+@media (max-width: 992px) {
+  .preview-wrapper {
+    transform: scale(0.8);
+    width: 125%;
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-wrapper {
+    transform: scale(1);
+    width: 100%;
+  }
+}
+
+/* Hide any navbar/footer that might be in the index component */
+.preview-wrapper :deep(.navbar),
+.preview-wrapper :deep(.footer),
+.preview-wrapper :deep(nav),
+.preview-wrapper :deep(footer) {
+  display: none !important;
+}
+
+/* Ensure full width for preview content */
+.preview-wrapper :deep(.container),
+.preview-wrapper :deep(.v-container) {
+  max-width: 100% !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 </style>

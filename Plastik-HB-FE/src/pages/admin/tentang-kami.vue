@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+// Import the real about page component
+import AboutPage from '../tentang-kami.vue'
 
 interface AboutUsData {
   aboutImage: string
@@ -22,6 +24,10 @@ const alertMessage = ref('')
 const loading = ref(false)
 const saveLoading = ref(false)
 
+// Preview state
+const previewKey = ref(0)
+const previewTimestamp = ref(Date.now())
+
 // About Us data
 const aboutData = ref<AboutUsData>({
   aboutImage: '',
@@ -37,6 +43,16 @@ const aboutData = ref<AboutUsData>({
 // File input ref
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
+// Preview functions
+const refreshPreview = () => {
+  previewKey.value += 1
+  previewTimestamp.value = Date.now()
+}
+
+const openAboutPage = () => {
+  window.open('/tentang-kami', '_blank')
+}
+
 // Alert functions
 const showAlert = (type: 'success' | 'error', title: string, message: string) => {
   alertType.value = type
@@ -44,7 +60,6 @@ const showAlert = (type: 'success' | 'error', title: string, message: string) =>
   alertMessage.value = message
   alertVisible.value = true
   
-  // Auto hide after 5 seconds
   setTimeout(() => {
     alertVisible.value = false
   }, 5000)
@@ -143,6 +158,10 @@ const saveAboutData = async () => {
     
     if (response.ok) {
       showAlert('success', 'Berhasil', 'Data tentang kami berhasil disimpan!')
+      // Refresh preview after successful save
+      setTimeout(() => {
+        refreshPreview()
+      }, 1000)
     } else {
       throw new Error('Gagal menyimpan data tentang kami')
     }
@@ -150,6 +169,9 @@ const saveAboutData = async () => {
     console.error('Error saving about data:', error)
     // Simulasi berhasil untuk testing
     showAlert('success', 'Berhasil', 'Data tentang kami berhasil disimpan!')
+    setTimeout(() => {
+      refreshPreview()
+    }, 1000)
   } finally {
     saveLoading.value = false
   }
@@ -385,80 +407,36 @@ onMounted(() => {
       <!-- Right Side - Preview -->
       <v-col cols="12" lg="6">
         <v-card variant="outlined">
-          <v-card-title class="bg-grey text-white">
-            <v-icon class="mr-2">mdi-eye</v-icon>
-            Site Preview
+          <v-card-title class="bg-grey text-white d-flex justify-space-between align-center">
+            <div class="d-flex align-center">
+              <v-icon class="mr-2">mdi-eye</v-icon>
+              Live Preview
+            </div>
+            <div class="d-flex gap-2">
+              <v-btn
+                @click="refreshPreview"
+                icon="mdi-refresh"
+                variant="text"
+                size="small"
+                color="white"
+                title="Refresh preview"
+              />
+              <v-btn
+                @click="openAboutPage"
+                icon="mdi-open-in-new"
+                variant="text"
+                size="small"
+                color="white"
+                title="Open about page in new tab"
+              />
+            </div>
           </v-card-title>
           
           <v-card-text class="pa-0">
-            <!-- Preview Content - Mirroring public page -->
             <div class="preview-container">
-              <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
-                <!-- Hero Section -->
-                <v-row align="center" class="mb-6">
-                  <v-col cols="12" md="6">
-                    <h1 class="text-h5 font-weight-bold mb-2">{{ aboutData.headline || 'Headline' }}</h1>
-                    <p class="text-subtitle-2 mb-2">{{ aboutData.subheadline || 'Sub-headline' }}</p>
-                    <p class="text-body-2">{{ aboutData.description || 'Deskripsi perusahaan' }}</p>
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-img
-                      :src="aboutData.aboutImage || '/placeholder.jpg'"
-                      height="200"
-                      cover
-                      class="rounded elevation-1"
-                    />
-                  </v-col>
-                </v-row>
-
-                <!-- Our Values Section -->
-                <v-row class="mb-6">
-                  <v-col cols="12">
-                    <h2 class="text-h6 font-weight-bold mb-4 text-center">Our Values</h2>
-                  </v-col>
-                  <v-col
-                    v-for="(value, index) in aboutData.values.filter(v => v.trim())"
-                    :key="index"
-                    cols="6"
-                    class="pa-1"
-                  >
-                    <v-card class="pa-3 text-center bg-grey-darken-3 rounded elevation-1">
-                      <v-icon color="amber" size="24" class="mb-1">mdi-star-circle</v-icon>
-                      <p class="text-caption font-weight-medium">{{ value }}</p>
-                    </v-card>
-                  </v-col>
-                </v-row>
-
-                <!-- Mission / Vision -->
-                <v-row class="mb-6">
-                  <v-col cols="12" md="6">
-                    <v-card class="pa-4 bg-grey-darken-3 rounded elevation-1">
-                      <h3 class="text-subtitle-1 font-weight-bold mb-2">Our Mission</h3>
-                      <p class="text-caption">{{ aboutData.mission || 'Mission statement' }}</p>
-                    </v-card>
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-card class="pa-4 bg-grey-darken-3 rounded elevation-1">
-                      <h3 class="text-subtitle-1 font-weight-bold mb-2">Our Vision</h3>
-                      <p class="text-caption">{{ aboutData.vision || 'Vision statement' }}</p>
-                    </v-card>
-                  </v-col>
-                </v-row>
-
-                <!-- History -->
-                <v-row class="mb-6">
-                  <v-col cols="12">
-                    <v-card class="pa-4 bg-grey-darken-3 rounded elevation-1">
-                      <h3 class="text-subtitle-1 font-weight-bold mb-3">Our History</h3>
-                      <ul class="text-caption">
-                        <li v-for="item in aboutData.history.filter(h => h.trim())" :key="item" class="mb-1">
-                          <v-icon start color="amber" size="12">mdi-circle-small</v-icon> {{ item }}
-                        </li>
-                      </ul>
-                    </v-card>
-                  </v-col>
-                </v-row>
-              </v-container>
+              <div :key="previewKey" class="preview-wrapper">
+                <AboutPage />
+              </div>
             </div>
           </v-card-text>
         </v-card>
@@ -482,24 +460,25 @@ onMounted(() => {
 .preview-container {
   max-height: 80vh;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid #ddd;
+  background: #f5f5f5;
 }
 
-ul {
-  list-style-type: none;
-  padding-left: 0;
+.preview-wrapper {
+  transform: scale(0.75);
+  transform-origin: top left;
+  width: 133.33%;
+  min-height: 600px;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Square border for icon buttons */
 .icon-btn-square {
   border-radius: 4px !important;
   border: 1px solid currentColor !important;
-}
-
-/* History item button styling */
-.history-item .v-btn {
-  height: 40px !important;
-  min-width: 40px !important;
 }
 
 /* Scrollbar styling for preview */
@@ -518,5 +497,50 @@ ul {
 
 .preview-container::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Hide any navbar/footer that might be in the about page component */
+.preview-wrapper :deep(.navbar),
+.preview-wrapper :deep(.footer),
+.preview-wrapper :deep(nav),
+.preview-wrapper :deep(footer) {
+  display: none !important;
+}
+
+/* Ensure full width for preview content */
+.preview-wrapper :deep(.container),
+.preview-wrapper :deep(.v-container) {
+  max-width: 100% !important;
+  padding-left: 16px !important;
+  padding-right: 16px !important;
+}
+
+/* Responsive scaling */
+@media (max-width: 1400px) {
+  .preview-wrapper {
+    transform: scale(0.65);
+    width: 153.85%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .preview-wrapper {
+    transform: scale(0.55);
+    width: 181.82%;
+  }
+}
+
+@media (max-width: 992px) {
+  .preview-wrapper {
+    transform: scale(0.8);
+    width: 125%;
+  }
+}
+
+@media (max-width: 768px) {
+  .preview-wrapper {
+    transform: scale(1);
+    width: 100%;
+  }
 }
 </style>
