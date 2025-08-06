@@ -1,6 +1,5 @@
 import { Table, Model, Column, DataType, HasMany } from 'sequelize-typescript';
-import { ProductImage } from './ProductImage';
-import { Analytic } from './Analytic';
+import { Asset } from './Asset';
 
 @Table({
     tableName: "products",
@@ -21,37 +20,39 @@ export class Product extends Model {
 
     @Column({
         type: DataType.STRING,
-        allowNull: false
+        allowNull: false,
     })
     declare name: string;
 
     @Column({
         type: DataType.FLOAT,
-        allowNull: false
+        allowNull: false,
     })
     declare price: number;
 
     @Column({
         type: DataType.TEXT,
-        allowNull: false
+        allowNull: true,
+    })
+    declare description: string;
+
+    @Column({
+        type: DataType.TEXT,
+        allowNull: true,
     })
     declare specification: string;
 
     @Column({
-        type: DataType.TEXT,
-        allowNull: false
+        type: DataType.BOOLEAN,
+        allowNull: true,
     })
-    declare description: string;
+    declare featured: boolean;
 
-    @HasMany(() => ProductImage, {
+    @HasMany(() => Asset, {
         foreignKey: 'product_id',
-        sourceKey: 'id'
+        sourceKey: 'id',
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
     })
-    declare productImages: ProductImage[];
-
-    @HasMany(() => Analytic, {
-        foreignKey: 'analytic_id',
-        sourceKey: 'id'
-    })
-    declare analytics: Analytic[];
+    assets?: Asset[];
 }

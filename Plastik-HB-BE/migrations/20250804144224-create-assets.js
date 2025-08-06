@@ -1,37 +1,40 @@
-'use strict';
+"use strict";
 
-/** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    await queryInterface.createTable("buttons", {
+  async up(queryInterface, Sequelize) {
+    await queryInterface.createTable("assets", {
       id: {
         type: Sequelize.UUID,
         primaryKey: true,
         allowNull: false,
         defaultValue: Sequelize.UUIDV4,
       },
-      label: {
+      url: {
         type: Sequelize.STRING,
         allowNull: false,
       },
-      action: {
+      alt: {
         type: Sequelize.STRING,
+        allowNull: false,
+      },
+      type: {
+        type: Sequelize.ENUM("IMAGE", "VIDEO"),
         allowNull: false,
       },
       created_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.NOW,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
       updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.NOW,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
     });
   },
 
-  async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable("buttons");
-  }
+  async down(queryInterface) {
+    await queryInterface.dropTable("assets");
+  },
 };

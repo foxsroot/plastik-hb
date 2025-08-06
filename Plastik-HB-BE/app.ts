@@ -17,6 +17,19 @@ import { Session } from './models/Session';
 import { Shop } from './models/Shop';
 import { User } from './models/User';
 import { Image } from './models/Image';
+import achievementRouter from './routes/achievementRoutes';
+import analyticsRouter from './routes/analyticRoutes';
+import bannerRouter from './routes/bannerRoutes';
+import buttonRouter from './routes/buttonRoutes';
+import contentRouter from './routes/contentRoutes';
+import headingRouter from './routes/headingRoutes';
+import imageRouter from './routes/imageRoutes';
+import productRouter from './routes/productRoutes';
+import productImageRouter from './routes/productImageRoutes';
+import sessionRouter from './routes/sessionRoutes';
+import shopRouter from './routes/shopRoutes';
+import userRouter from './routes/userRoutes';
+import pageRouter from './routes/pageRoutes';
 
 dotenv.config();
 
@@ -54,6 +67,19 @@ app.get('/', (req, res) => {
   res.send('Backend is running!');
 });
 
+app.use('/api/achievement', achievementRouter);
+app.use('/api/analytic', analyticsRouter);
+app.use('/api/banner', bannerRouter);
+app.use('/api/button', buttonRouter);
+app.use('/api/content', contentRouter);
+app.use('/api/heading', headingRouter);
+app.use('/api/image', imageRouter);
+app.use('/api/page', pageRouter);
+app.use('/api/product', productRouter);
+app.use('/api/product-image', productImageRouter);
+app.use('/api/session', sessionRouter);
+app.use('/api/shop', shopRouter);
+app.use('/api/user', userRouter);
 
 // ENDS HERE
 

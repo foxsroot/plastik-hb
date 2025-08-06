@@ -1,13 +1,13 @@
 import { Table, Model, Column, DataType } from 'sequelize-typescript';
 
 @Table({
-    tableName: "shops",
+    tableName: "assets",
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at"
 })
 
-export class Shop extends Model {
+export class Asset extends Model {
     @Column({
         type: DataType.UUID,
         primaryKey: true,
@@ -19,31 +19,19 @@ export class Shop extends Model {
 
     @Column({
         type: DataType.STRING,
-        allowNull: false,
-        validate: {
-            isEmail: true
-        }
+        allowNull: false
     })
-    declare contactEmail: string;
-
-    @Column({
-        type: DataType.STRING,
-        allowNull: false,
-        validate: {
-            is: /^[0-9]+$/
-        }
-    })
-    declare phoneNumber: string;
+    declare url: string;
 
     @Column({
         type: DataType.STRING,
         allowNull: false
     })
-    declare address: string;
+    declare alt: string;
 
     @Column({
-        type: DataType.STRING,
-        allowNull: false
+        type: DataType.ENUM('IMAGE', 'VIDEO'),
+        allowNull: false,
     })
-    declare mapsUrl: string;
+    declare type: 'IMAGE' | 'VIDEO';
 }
