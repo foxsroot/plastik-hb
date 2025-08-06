@@ -11,6 +11,7 @@ import { Page } from './models/Page';
 import { Product } from './models/Product';
 import { Section } from './models/Section';
 import { Session } from './models/Session';
+import pageRouter from './routes/pageRoutes';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/authentication', authenticationRouter);
+app.use('/api/pages', pageRouter);
 
 // ENDS HERE
 

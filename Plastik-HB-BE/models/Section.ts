@@ -33,10 +33,10 @@ export class Section extends Model {
     page?: Page;
 
     @Column({
-        type: DataType.ENUM('HERO', 'ACHIEVEMENTS', 'PRODUCTS', 'TESTIMONIALS', 'ADDRESS'),
+        type: DataType.ENUM('BANNER', 'ACHIEVEMENTS', 'VALUES', 'ADDRESS', 'INFO', 'GOALS', 'HISTORY'),
         allowNull: false,
     })
-    declare type: 'HERO' | 'ACHIEVEMENTS' | 'PRODUCTS' | 'TESTIMONIALS' | 'ADDRESS';
+    declare type: 'BANNER' | 'ACHIEVEMENTS' | 'VALUES' | 'ADDRESS' | 'INFO' | 'GOALS' | 'HISTORY';
 
     @Column({
         type: DataType.NUMBER,
