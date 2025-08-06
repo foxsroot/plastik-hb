@@ -3,6 +3,7 @@
 <route>
 {
     meta: {
+      requiresAuth: true,
         layout: 'admin'
     }
 }
