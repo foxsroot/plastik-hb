@@ -13,6 +13,8 @@ import { Section } from './models/Section';
 import { Session } from './models/Session';
 import pageRouter from './routes/pageRoutes';
 import contactRouter from './routes/contactRoutes';
+import productRouter from './routes/productRoutes';
+import { Category } from './models/Category';
 
 dotenv.config();
 
@@ -33,7 +35,7 @@ const sequelize = new Sequelize({
     database: process.env.DB_NAME,
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
-    models: [User, Analytic, Asset, Page, Product, Section, Session],
+    models: [User, Analytic, Asset, Page, Product, Section, Session, Category],
 });
 
 // Test database connection
@@ -53,6 +55,7 @@ app.get('/', (req, res) => {
 app.use('/api/authentication', authenticationRouter);
 app.use('/api/pages', pageRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/products', productRouter);
 
 // ENDS HERE
 
