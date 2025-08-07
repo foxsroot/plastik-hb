@@ -52,7 +52,8 @@ export class Analytic extends Model {
 
     @Column({
         type: DataType.STRING,
-        allowNull: false
+        allowNull: false,
+        field: "ip_address"
     })
     declare ipAddress: string;
 

@@ -14,6 +14,7 @@ import { Session } from './models/Session';
 import pageRouter from './routes/pageRoutes';
 import contactRouter from './routes/contactRoutes';
 import productRouter from './routes/productRoutes';
+import analyticRouter from './routes/analyticRoutes';
 import { Category } from './models/Category';
 
 dotenv.config();
@@ -56,6 +57,7 @@ app.use('/api/authentication', authenticationRouter);
 app.use('/api/pages', pageRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/products', productRouter);
+app.use('/api/analytics', analyticRouter);
 
 // ENDS HERE
 
