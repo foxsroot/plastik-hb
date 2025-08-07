@@ -1,8 +1,27 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { fetchFeaturedProducts, getPage } from "../api/pageApi";
+
+interface PageData {
+  title: string;
+  slug: string;
+  description: string;
+  published: boolean;
+  sections: Array<{
+    type: string;
+    order: number;
+    visible: boolean;
+    data: {
+      banners?: Banner[];
+      achievements?: Achievement[];
+      featuredProducts?: FeaturedProduct[];
+    };
+  }>;
+}
 
 // Banner Types and Data
 interface Banner {
+  order: number
   image: string
   title: string
   subtitle: string
@@ -10,198 +29,181 @@ interface Banner {
   buttonLink?: string
 }
 
-const currentSlide = ref(0)
-let autoScrollInterval: number | null = null
-
-const banners = ref<Banner[]>([
-  {
-    image: '/src/assets/banner1.jpg',
-    title: 'Solusi Plastik Berkualitas Tinggi',
-    subtitle: 'Menyediakan berbagai produk plastik untuk kebutuhan industri dan rumah tangga',
-    buttonText: 'Lihat Produk',
-    buttonLink: '/katalog'
-  },
-  {
-    image: '/src/assets/banner2.jpg',
-    title: 'Custom Order Tersedia',
-    subtitle: 'Kami melayani pesanan custom sesuai dengan kebutuhan spesifik Anda',
-    buttonText: 'Pesan Sekarang',
-    buttonLink: '/custom-order'
-  },
-  {
-    image: '/src/assets/banner3.jpg',
-    title: 'Pembelian Grosir dengan Harga Terbaik',
-    subtitle: 'Dapatkan harga khusus untuk pembelian dalam jumlah besar',
-    buttonText: 'Hubungi Kami',
-    buttonLink: '/kontak'
-  }
-])
-
 // Achievement Types and Data
 interface Achievement {
-  id: number
+  order: number
   title: string
   percentage: number
   description: string
   image?: string
 }
 
-const achievements = ref<Achievement[]>([
-  {
-    id: 1,
-    title: 'Customer Satisfaction',
-    percentage: 95,
-    description: 'Tingkat kepuasan pelanggan terhadap produk dan layanan kami',
-    image: ''
-  },
-  {
-    id: 2,
-    title: 'Quality Products',
-    percentage: 98,
-    description: 'Produk berkualitas tinggi yang memenuhi standar internasional',
-    image: ''
-  },
-  {
-    id: 3,
-    title: 'On-Time Delivery',
-    percentage: 92,
-    description: 'Ketepatan waktu pengiriman pesanan kepada pelanggan',
-    image: ''
-  },
-  {
-    id: 4,
-    title: 'Environmental Friendly',
-    percentage: 88,
-    description: 'Komitmen terhadap produk ramah lingkungan dan berkelanjutan',
-    image: ''
-  },
-  {
-    id: 5,
-    title: 'Innovation',
-    percentage: 90,
-    description: 'Inovasi berkelanjutan dalam pengembangan produk plastik',
-    image: ''
-  }
-])
+const pageData = ref<PageData | null>(null);
+const errorMessage = ref("");
 
-// Featured Products Types and Data
-interface FeaturedProduct {
-  id: number
-  name: string
-  description: string
-  price: number
-  originalPrice?: number
-  image: string
-  rating: number
-  badge?: string
-  badgeColor?: string
-  category: string
+async function fetchPageData() {
+  try {
+    pageData.value = (await getPage("homepage")) as PageData; // Fetch data by slug
+    // console.log("Page Data:", pageData.value);
+  } catch (error: any) {
+    console.error("Failed to fetch page data:", error);
+    errorMessage.value =
+      error.response?.data?.message || "Failed to load page data.";
+  }
 }
 
-const featuredProducts = ref<FeaturedProduct[]>([
-  {
-    id: 1,
-    name: 'Kantong Plastik HD Premium',
-    description: 'Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging',
-    price: 25000,
-    originalPrice: 30000,
-    image: '/src/assets/products/kantong-plastik-1.jpg',
-    rating: 4.8,
-    badge: 'Best Seller',
-    badgeColor: 'success',
-    category: 'Kantong Plastik'
-  },
-  {
-    id: 2,
-    name: 'Wadah Makanan Food Grade',
-    description: 'Wadah plastik food grade aman untuk makanan dan minuman',
-    price: 45000,
-    image: '/src/assets/products/wadah-makanan-1.jpg',
-    rating: 4.9,
-    badge: 'New',
-    badgeColor: 'info',
-    category: 'Wadah Makanan'
-  },
-  {
-    id: 3,
-    name: 'Botol Plastik 500ml',
-    description: 'Botol plastik transparan untuk minuman dengan tutup rapat',
-    price: 15000,
-    image: '/src/assets/products/botol-plastik-1.jpg',
-    rating: 4.7,
-    category: 'Botol'
-  },
-  {
-    id: 4,
-    name: 'Ember Plastik Multi Fungsi',
-    description: 'Ember plastik kuat dan tahan lama untuk berbagai keperluan',
-    price: 75000,
-    image: '/src/assets/products/ember-plastik-1.jpg',
-    rating: 4.6,
-    category: 'Alat Rumah Tangga'
-  },
-  {
-    id: 5,
-    name: 'Gelas Plastik Set 12pcs',
-    description: 'Set gelas plastik untuk acara dan penggunaan sehari-hari',
-    price: 35000,
-    originalPrice: 40000,
-    image: '/src/assets/products/gelas-plastik-1.jpg',
-    rating: 4.5,
-    badge: 'Promo',
-    badgeColor: 'error',
-    category: 'Peralatan Makan'
-  },
-  {
-    id: 6,
-    name: 'Kotak Penyimpanan 10L',
-    description: 'Kotak penyimpanan transparan dengan tutup kedap udara',
-    price: 55000,
-    image: '/src/assets/products/kotak-penyimpanan-1.jpg',
-    rating: 4.8,
-    category: 'Penyimpanan'
-  },
-  {
-    id: 7,
-    name: 'Piring Plastik Melamin',
-    description: 'Piring plastik melamin tahan pecah dan aman untuk microwave',
-    price: 20000,
-    image: '/src/assets/products/piring-plastik-1.jpg',
-    rating: 4.4,
-    category: 'Peralatan Makan'
-  },
-  {
-    id: 8,
-    name: 'Tempat Sampah 50L',
-    description: 'Tempat sampah plastik dengan penutup dan roda untuk kemudahan',
-    price: 125000,
-    image: '/src/assets/products/tempat-sampah-1.jpg',
-    rating: 4.7,
-    badge: 'Eco Friendly',
-    badgeColor: 'green',
-    category: 'Kebersihan'
-  },
-  {
-    id: 9,
-    name: 'Sedotan Plastik Biodegradable',
-    description: 'Sedotan plastik ramah lingkungan yang dapat terurai',
-    price: 12000,
-    image: '/src/assets/products/sedotan-plastik-1.jpg',
-    rating: 4.9,
-    badge: 'Eco',
-    badgeColor: 'green',
-    category: 'Aksesoris'
-  },
-  {
-    id: 10,
-    name: 'Keranjang Plastik Anyam',
-    description: 'Keranjang plastik dengan desain anyam untuk dekorasi dan penyimpanan',
-    price: 65000,
-    image: '/src/assets/products/keranjang-plastik-1.jpg',
-    rating: 4.6,
-    category: 'Dekorasi'
+const currentSlide = ref(0)
+let autoScrollInterval: number | null = null
+
+// Featured Products Types and Data
+interface Asset {
+  id: string;
+  url: string;
+  alt: string;
+  type: 'IMAGE' | 'VIDEO';
+  created_at: string;
+  updated_at: string;
+  product_id: string;
+}
+
+interface CategoryObj {
+  id: string;
+  category: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface FeaturedProduct {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  specification: string;
+  category_id: string;
+  discount?: number;
+  featured: boolean;
+  created_at: string;
+  updated_at: string;
+  assets: Asset[];
+  category: CategoryObj;
+}
+
+const featuredProducts = ref<FeaturedProduct[]>([]);
+
+async function fetchFeatured() {
+  try {
+    const response = await fetchFeaturedProducts();
+    console.log("Featured Products:", response);
+    featuredProducts.value = response;
+  } catch (error: any) {
+    errorMessage.value = error;
   }
-])
+}
+
+// const featuredProducts = ref<FeaturedProduct[]>([
+//   {
+//     id: 1,
+//     name: 'Kantong Plastik HD Premium',
+//     description: 'Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging',
+//     price: 25000,
+//     originalPrice: 30000,
+//     image: '/src/assets/products/kantong-plastik-1.jpg',
+//     rating: 4.8,
+//     badge: 'Best Seller',
+//     badgeColor: 'success',
+//     category: 'Kantong Plastik'
+//   },
+//   {
+//     id: 2,
+//     name: 'Wadah Makanan Food Grade',
+//     description: 'Wadah plastik food grade aman untuk makanan dan minuman',
+//     price: 45000,
+//     image: '/src/assets/products/wadah-makanan-1.jpg',
+//     rating: 4.9,
+//     badge: 'New',
+//     badgeColor: 'info',
+//     category: 'Wadah Makanan'
+//   },
+//   {
+//     id: 3,
+//     name: 'Botol Plastik 500ml',
+//     description: 'Botol plastik transparan untuk minuman dengan tutup rapat',
+//     price: 15000,
+//     image: '/src/assets/products/botol-plastik-1.jpg',
+//     rating: 4.7,
+//     category: 'Botol'
+//   },
+//   {
+//     id: 4,
+//     name: 'Ember Plastik Multi Fungsi',
+//     description: 'Ember plastik kuat dan tahan lama untuk berbagai keperluan',
+//     price: 75000,
+//     image: '/src/assets/products/ember-plastik-1.jpg',
+//     rating: 4.6,
+//     category: 'Alat Rumah Tangga'
+//   },
+//   {
+//     id: 5,
+//     name: 'Gelas Plastik Set 12pcs',
+//     description: 'Set gelas plastik untuk acara dan penggunaan sehari-hari',
+//     price: 35000,
+//     originalPrice: 40000,
+//     image: '/src/assets/products/gelas-plastik-1.jpg',
+//     rating: 4.5,
+//     badge: 'Promo',
+//     badgeColor: 'error',
+//     category: 'Peralatan Makan'
+//   },
+//   {
+//     id: 6,
+//     name: 'Kotak Penyimpanan 10L',
+//     description: 'Kotak penyimpanan transparan dengan tutup kedap udara',
+//     price: 55000,
+//     image: '/src/assets/products/kotak-penyimpanan-1.jpg',
+//     rating: 4.8,
+//     category: 'Penyimpanan'
+//   },
+//   {
+//     id: 7,
+//     name: 'Piring Plastik Melamin',
+//     description: 'Piring plastik melamin tahan pecah dan aman untuk microwave',
+//     price: 20000,
+//     image: '/src/assets/products/piring-plastik-1.jpg',
+//     rating: 4.4,
+//     category: 'Peralatan Makan'
+//   },
+//   {
+//     id: 8,
+//     name: 'Tempat Sampah 50L',
+//     description: 'Tempat sampah plastik dengan penutup dan roda untuk kemudahan',
+//     price: 125000,
+//     image: '/src/assets/products/tempat-sampah-1.jpg',
+//     rating: 4.7,
+//     badge: 'Eco Friendly',
+//     badgeColor: 'green',
+//     category: 'Kebersihan'
+//   },
+//   {
+//     id: 9,
+//     name: 'Sedotan Plastik Biodegradable',
+//     description: 'Sedotan plastik ramah lingkungan yang dapat terurai',
+//     price: 12000,
+//     image: '/src/assets/products/sedotan-plastik-1.jpg',
+//     rating: 4.9,
+//     badge: 'Eco',
+//     badgeColor: 'green',
+//     category: 'Aksesoris'
+//   },
+//   {
+//     id: 10,
+//     name: 'Keranjang Plastik Anyam',
+//     description: 'Keranjang plastik dengan desain anyam untuk dekorasi dan penyimpanan',
+//     price: 65000,
+//     image: '/src/assets/products/keranjang-plastik-1.jpg',
+//     rating: 4.6,
+//     category: 'Dekorasi'
+//   }
+// ])
 
 // Banner Functions
 const goToSlide = (index: number) => {
@@ -210,7 +212,7 @@ const goToSlide = (index: number) => {
 
 const startAutoScroll = () => {
   autoScrollInterval = setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % banners.value.length
+    currentSlide.value = (currentSlide.value + 1) % 3 // Assuming 3 banners, adjust as needed
   }, 5000)
 }
 
@@ -222,18 +224,21 @@ const stopAutoScroll = () => {
 }
 
 // Achievement Computed Properties
+const achievements = computed(() => {
+  return pageData.value?.sections.find(s => s.type === "ACHIEVEMENTS")?.data.achievements || [];
+});
+
 const leftSideAchievements = computed(() => {
-  const total = achievements.value.length
-  if (total === 0) return []
-  
-  const leftCount = Math.ceil(total / 2)
-  return achievements.value.slice(0, leftCount)
-})
+  const total = achievements.value.length;
+  if (total === 0) return [];
+  const leftCount = Math.ceil(total / 2);
+  return achievements.value.slice(0, leftCount);
+});
 
 const rightSideAchievements = computed(() => {
-  const total = achievements.value.length
-  const leftCount = Math.ceil(total / 2)
-  return achievements.value.slice(leftCount)
+  const total = achievements.value.length;
+  const leftCount = Math.ceil(total / 2);
+  return achievements.value.slice(leftCount);
 })
 
 // Product Functions
@@ -258,6 +263,8 @@ const formatPrice = (price: number) => {
 
 // Lifecycle
 onMounted(async () => {
+  await fetchPageData();
+  await fetchFeatured();
   startAutoScroll()
   await nextTick()
   updateScrollPosition()
@@ -287,7 +294,7 @@ onUnmounted(() => {
               class="custom-carousel"
             >
               <v-carousel-item
-                v-for="(banner, index) in banners"
+                v-for="(banner, index) in pageData?.sections[0].data.banners"
                 :key="index"
                 :src="banner.image"
                 cover
@@ -323,7 +330,7 @@ onUnmounted(() => {
             <!-- Custom Dots Indicator -->
             <div class="banner-dots">
               <div
-                v-for="(banner, index) in banners"
+                v-for="(banner, index) in pageData?.sections[0].data.banners"
                 :key="index"
                 class="banner-dot"
                 :class="{ 'active': currentSlide === index }"
@@ -363,7 +370,7 @@ onUnmounted(() => {
           <div v-else class="achievement-grid">
             <v-card
               v-for="achievement in leftSideAchievements"
-              :key="achievement.id"
+              :key="achievement.order"
               class="achievement-card mb-4 pa-6 bg-grey-darken-3 rounded-lg elevation-1"
             >
               <v-card-text class="d-flex align-center pa-0">
@@ -398,7 +405,7 @@ onUnmounted(() => {
           <div class="achievement-grid">
             <v-card
               v-for="achievement in rightSideAchievements"
-              :key="achievement.id"
+              :key="achievement.order"
               class="achievement-card mb-4 pa-6 bg-grey-darken-3 rounded-lg elevation-1"
             >
               <v-card-text class="d-flex align-center pa-0">
@@ -464,7 +471,7 @@ onUnmounted(() => {
                   <!-- Product Image -->
                   <div class="product-image-container">
                     <v-img
-                      :src="product.image"
+                      :src="product.assets[0]?.url || '/src/assets/placeholder.png'"
                       :alt="product.name"
                       height="200"
                       cover
@@ -477,15 +484,6 @@ onUnmounted(() => {
                       </template>
                     </v-img>
                     
-                    <!-- Product Badge -->
-                    <v-chip
-                      v-if="product.badge"
-                      :color="product.badgeColor || 'amber'"
-                      size="small"
-                      class="product-badge"
-                    >
-                      {{ product.badge }}
-                    </v-chip>
                   </div>
 
                   <!-- Product Content -->
@@ -503,8 +501,8 @@ onUnmounted(() => {
                         <span class="product-price text-h6 font-weight-bold text-amber">
                           {{ formatPrice(product.price) }}
                         </span>
-                        <span v-if="product.originalPrice" class="original-price text-body-2 text-grey ml-2">
-                          {{ formatPrice(product.originalPrice) }}
+                        <span v-if="product.discount" class="original-price text-body-2 text-grey ml-2">
+                          {{ formatPrice(product.discount) }}
                         </span>
                       </div>
                     </div>
