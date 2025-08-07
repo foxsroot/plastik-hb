@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import { fetchContactInfo, updateContactInfo } from "../../api/contactApi";
 
 interface ContactInfo {
@@ -67,6 +67,7 @@ const formatWhatsAppNumber = () => {
 const saveContactInfo = async () => {
   saveLoading.value = true;
   try {
+    await nextTick();
     await updateContactInfo({
       phoneNumber: formatWhatsAppNumber(),
       address: contactInfo.value.address,
@@ -74,6 +75,7 @@ const saveContactInfo = async () => {
     });
     showAlert("success", "Berhasil", "Informasi kontak berhasil disimpan!");
   } catch (error) {
+    console.log("Error saving contact info:", error);
     showAlert(
       "error",
       "Gagal",
@@ -88,7 +90,7 @@ const fetchData = async () => {
   loading.value = true;
   try {
     const data = await fetchContactInfo();
-    contactInfo.value = data;
+    contactInfo.value = { ...data };
   } catch (error) {
     showAlert(
       "error",
