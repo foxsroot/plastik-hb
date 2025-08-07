@@ -1,5 +1,6 @@
-import { Table, Model, Column, DataType, HasMany } from 'sequelize-typescript';
+import { Table, Model, Column, DataType, HasMany, ForeignKey, BelongsTo, AllowNull } from 'sequelize-typescript';
 import { Asset } from './Asset';
+import { Category } from './Category';
 
 @Table({
     tableName: "products",
@@ -41,6 +42,22 @@ export class Product extends Model {
         allowNull: true,
     })
     declare specification: string;
+
+    @ForeignKey(() => Category)
+    @Column({
+        type: DataType.UUID,
+        allowNull: false,
+    })
+    declare category_id: string;
+
+    @BelongsTo(() => Category)
+    category?: Category;
+
+    @Column({
+        type: DataType.FLOAT,
+        allowNull: true,
+    })
+    declare discount: number;
 
     @Column({
         type: DataType.BOOLEAN,
