@@ -33,4 +33,29 @@ export const getFeaturedProducts = async (req: Request, res: Response) => {
     return { data: products, status: 200 };
 };
 
-export default { getAllProducts, getFeaturedProducts };
+/**
+ * @desc Update featured products
+ * @route PUT /products/featured
+ * @body { productIds: string[] }
+ */
+export const updateFeaturedProducts = async (req: Request, res: Response) => {
+    const { productIds } = req.body;
+    if (!Array.isArray(productIds)) {
+        return res.status(400).json({ message: 'productIds must be an array' });
+    }
+    // Set all products to not featured
+    await Product.update({ featured: false }, { where: {} });
+    // Set selected products to featured
+    await Product.update({ featured: true }, { where: { id: productIds } });
+    // Return updated featured products
+    const featured = await Product.findAll({
+        where: { featured: true },
+        include: [
+            { model: Asset, as: 'assets' },
+            { model: Category, as: 'category' }
+        ]
+    });
+    return res.status(200).json({ message: 'Featured products updated', data: featured });
+};
+
+export default { getAllProducts, getFeaturedProducts, updateFeaturedProducts };
