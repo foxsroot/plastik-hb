@@ -8,6 +8,7 @@ interface Product {
   price: number
   status: 'active' | 'draft'
   image?: string
+  images?: string[]
   description?: string
   category?: string
   specifications?: string
@@ -18,6 +19,7 @@ interface NewProduct {
   price: number | null
   status: 'active' | 'draft'
   image?: string
+  images?: string[]
   description?: string
   category?: string
   specifications?: string
@@ -48,6 +50,7 @@ const newProduct = ref<NewProduct>({
   price: null,
   status: 'draft',
   image: '',
+  images: [],
   description: '',
   category: '',
   specifications: ''
@@ -55,6 +58,8 @@ const newProduct = ref<NewProduct>({
 
 // Ref for file input
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const additionalFileInputRef = ref<HTMLInputElement | null>(null)
+const imagesSlider = ref<HTMLElement | null>(null)
 
 const statusOptions = [
   { title: 'Semua Status', value: 'all' },
@@ -167,6 +172,7 @@ const fetchProducts = async () => {
         price: 15000, 
         status: 'active', 
         image: '/placeholder.jpg',
+        images: ['/placeholder.jpg', '/placeholder.jpg', '/placeholder.jpg'],
         description: 'Plastik PE berkualitas tinggi untuk berbagai keperluan industri',
         category: 'kategori1',
         specifications: 'Ketebalan: 0.5mm, Lebar: 100cm, Panjang: 50m'
@@ -177,6 +183,7 @@ const fetchProducts = async () => {
         price: 20000, 
         status: 'draft', 
         image: '/placeholder.jpg',
+        images: ['/placeholder.jpg', '/placeholder.jpg'],
         description: 'Plastik PP tahan panas dan tahan kimia',
         category: 'kategori2',
         specifications: 'Ketebalan: 0.8mm, Lebar: 120cm, Panjang: 30m'
@@ -187,6 +194,7 @@ const fetchProducts = async () => {
         price: 25000, 
         status: 'active', 
         image: '/placeholder.jpg',
+        images: ['/placeholder.jpg', '/placeholder.jpg', '/placeholder.jpg', '/placeholder.jpg', '/placeholder.jpg'],
         description: 'Plastik PVC fleksibel untuk aplikasi outdoor',
         category: 'kategori1',
         specifications: 'Ketebalan: 1mm, Lebar: 150cm, Panjang: 25m'
@@ -197,6 +205,7 @@ const fetchProducts = async () => {
         price: 18000, 
         status: 'active', 
         image: '/placeholder.jpg',
+        images: [],
         description: 'Plastik HDPE ramah lingkungan dan dapat didaur ulang',
         category: 'kategori3',
         specifications: 'Ketebalan: 0.6mm, Lebar: 80cm, Panjang: 40m'
@@ -233,12 +242,43 @@ const handleImageUpload = (event: Event) => {
   }
 }
 
+const handleAdditionalImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const files = target.files
+  
+  if (files && files.length > 0) {
+    Array.from(files).forEach(file => {
+      if (newProduct.value.images && newProduct.value.images.length < 7) { // Max 7 additional images (8 total with main image)
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          if (!newProduct.value.images) {
+            newProduct.value.images = []
+          }
+          newProduct.value.images.push(e.target?.result as string)
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+}
+
+const removeAdditionalImage = (index: number) => {
+  if (newProduct.value.images) {
+    newProduct.value.images.splice(index, 1)
+  }
+}
+
+const openAdditionalFileInput = () => {
+  additionalFileInputRef.value?.click()
+}
+
 const resetForm = () => {
   newProduct.value = {
     name: '',
     price: null,
     status: 'draft',
     image: '',
+    images: [],
     description: '',
     category: '',
     specifications: ''
@@ -252,6 +292,7 @@ const loadProductData = () => {
       price: editingProduct.value.price,
       status: editingProduct.value.status,
       image: editingProduct.value.image || '',
+      images: editingProduct.value.images || [],
       description: editingProduct.value.description || '',
       category: editingProduct.value.category || '',
       specifications: editingProduct.value.specifications || ''
@@ -353,6 +394,7 @@ const saveProduct = async () => {
         price: newProduct.value.price!,
         status: newProduct.value.status,
         image: newProduct.value.image || '/placeholder.jpg',
+        images: newProduct.value.images || [],
         description: newProduct.value.description,
         category: newProduct.value.category,
         specifications: newProduct.value.specifications
@@ -597,6 +639,7 @@ onMounted(() => {
               <!-- Image Upload Section -->
               <v-col cols="12" md="4">
                 <div class="image-upload-section">
+                  <!-- Main Image -->
                   <v-card
                     height="200"
                     variant="outlined"
@@ -605,7 +648,7 @@ onMounted(() => {
                   >
                     <div v-if="!newProduct.image" class="text-center">
                       <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-camera</v-icon>
-                      <p class="text-grey-darken-1">Gambar Produk</p>
+                      <p class="text-grey-darken-1">Gambar Utama</p>
                     </div>
                     <v-img 
                       v-else
@@ -621,17 +664,113 @@ onMounted(() => {
                     variant="outlined"
                     prepend-icon="mdi-pencil"
                     @click="openFileInput"
+                    class="mb-4"
                   >
-                    Edit Gambar
+                    Edit Gambar Utama
                   </v-btn>
+
+                  <!-- Additional Images Section -->
+                  <div class="additional-images-section">
+                    <div class="d-flex align-center justify-space-between mb-3">
+                      <h4 class="text-subtitle-1 font-weight-medium">Gambar Tambahan</h4>
+                      <v-chip 
+                        size="small" 
+                        color="primary" 
+                        variant="outlined"
+                      >
+                        {{ (newProduct.images?.length || 0) }}/7
+                      </v-chip>
+                    </div>
+
+                    <!-- Additional Images Slider -->
+                    <div class="additional-images-container mb-3">
+                      <div class="images-slider-wrapper">
+                        <div 
+                          class="images-slider" 
+                          ref="imagesSlider"
+                        >
+                          <!-- Existing Images -->
+                          <div
+                            v-for="(imageUrl, index) in newProduct.images"
+                            :key="index"
+                            class="image-item-slider"
+                          >
+                            <v-card
+                              height="45"
+                              width="45"
+                              variant="outlined"
+                              class="image-preview-card position-relative flex-shrink-0"
+                              @mouseenter="$event.currentTarget.classList.add('image-hover')"
+                              @mouseleave="$event.currentTarget.classList.remove('image-hover')"
+                            >
+                              <v-img
+                                :src="imageUrl"
+                                cover
+                                height="100%"
+                                class="rounded image-preview"
+                              />
+                              <div class="image-overlay">
+                                <v-btn
+                                  icon
+                                  size="x-small"
+                                  color="error"
+                                  variant="elevated"
+                                  class="delete-btn"
+                                  @click="removeAdditionalImage(index)"
+                                >
+                                  <v-icon size="12">mdi-close</v-icon>
+                                </v-btn>
+                              </div>
+                            </v-card>
+                          </div>
+                          
+                          <!-- Add more images button -->
+                          <div
+                            v-if="!newProduct.images || newProduct.images.length < 7"
+                            class="image-item-slider"
+                          >
+                            <v-card
+                              height="45"
+                              width="45"
+                              variant="outlined"
+                              class="d-flex align-center justify-center image-upload-card add-image-card flex-shrink-0"
+                              @click="openAdditionalFileInput"
+                            >
+                              <v-icon size="20" color="grey-lighten-1">mdi-plus</v-icon>
+                            </v-card>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Add images button -->
+                    <v-btn
+                      block
+                      variant="outlined"
+                      prepend-icon="mdi-image-multiple"
+                      @click="openAdditionalFileInput"
+                      :disabled="newProduct.images && newProduct.images.length >= 7"
+                      size="small"
+                    >
+                      {{ newProduct.images && newProduct.images.length > 0 ? 'Tambah Gambar' : 'Tambah Gambar Lainnya' }}
+                    </v-btn>
+                  </div>
                   
-                  <!-- Hidden file input -->
+                  <!-- Hidden file inputs -->
                   <input
                     ref="fileInputRef"
                     type="file"
                     accept="image/*"
                     style="display: none"
                     @change="handleImageUpload"
+                  />
+                  <input
+                    ref="additionalFileInputRef"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style="display: none"
+                    @change="handleAdditionalImageUpload"
                   />
                 </div>
               </v-col>
@@ -679,7 +818,7 @@ onMounted(() => {
                       v-model="newProduct.specifications"
                       label="Spesifikasi Produk"
                       variant="outlined"
-                      rows="3"
+                      rows="9"
                       placeholder="Masukkan spesifikasi produk..."
                     />
                   </v-col>
@@ -768,5 +907,170 @@ onMounted(() => {
 .image-upload-card:hover {
   border-color: rgb(var(--v-theme-primary));
   background-color: rgba(var(--v-theme-primary), 0.05);
+}
+
+/* Additional Images Styling */
+.additional-images-section {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 16px;
+}
+
+.additional-images-container {
+  width: 100%;
+}
+
+.images-slider-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  background: #fafafa;
+  padding: 8px;
+}
+
+.images-slider {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 4px 0;
+  /* Hide scrollbar for cleaner look while keeping functionality */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+.images-slider::-webkit-scrollbar {
+  height: 6px;
+}
+
+.images-slider::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.images-slider::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.images-slider::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.image-item-slider {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Remove old grid styling */
+.images-grid {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+}
+
+.image-item {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.image-preview-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.image-preview {
+  transition: all 0.3s ease;
+}
+
+.image-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 4px;
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.image-preview-card.image-hover .image-overlay {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: all;
+}
+
+.image-preview-card.image-hover .image-preview {
+  filter: blur(2px);
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.delete-btn:hover {
+  transform: scale(1.1);
+}
+
+.add-image-card {
+  border: 2px dashed #ccc;
+  transition: all 0.3s ease;
+}
+
+.add-image-card:hover {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.05);
+}
+
+/* Navigation buttons styling */
+.additional-images-container .v-btn--icon {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .images-slider {
+    gap: 6px;
+  }
+  
+  .image-item-slider .image-preview-card,
+  .image-item-slider .add-image-card {
+    height: 60px !important;
+    width: 60px !important;
+  }
+  
+  .images-slider-wrapper {
+    padding: 6px;
+  }
+}
+
+/* Enhanced slider styling */
+.images-slider-wrapper:hover .images-slider::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Smooth transitions */
+.image-item-slider {
+  transition: transform 0.2s ease;
+}
+
+.image-item-slider:hover {
+  transform: translateY(-2px);
+}
+
+/* Counter chip styling */
+.v-chip {
+  font-size: 0.75rem;
+  height: 20px;
 }
 </style>
