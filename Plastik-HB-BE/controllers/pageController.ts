@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getPageBySlug } from '../services/pageService';
+import { getPageBySlug, updateHomepageData } from '../services/pageService';
 
 /**
  * @desc Fetch page data by slug
@@ -17,4 +17,22 @@ export const getPage = async (req: Request, res: Response) => {
     const pageData = await getPageBySlug(slug);
 
     return { data: pageData, status: 200 };
+};
+
+/**
+ * @desc Update homepage data
+ * @route PUT /homepage
+ */
+export const updateHomepage = async (req: Request, res: Response) => {
+    try {
+        const { title, description, published, sections } = req.body;
+        if (!title || !sections) {
+            return res.status(400).json({ message: 'Title and sections are required.' });
+        }
+        // Delegate to service layer (implement updateHomepageData in pageService)
+        const updatedHomepage = await updateHomepageData({ title, description, published, sections });
+        return res.status(200).json({ message: 'Homepage updated', data: updatedHomepage });
+    } catch (err: any) {
+        return res.status(500).json({ message: 'Server error', error: err.message || err });
+    }
 };

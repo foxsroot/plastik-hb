@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { fetchFeaturedProducts, getPage } from "../api/pageApi";
+import { getPage } from "../api/pageApi";
+import { fetchFeaturedProducts } from "../api/productApi";
 
 interface PageData {
   title: string;
@@ -92,118 +93,12 @@ const featuredProducts = ref<FeaturedProduct[]>([]);
 
 async function fetchFeatured() {
   try {
-    const response = await fetchFeaturedProducts();
-    console.log("Featured Products:", response);
+    const response = await fetchFeaturedProducts() as FeaturedProduct[];
     featuredProducts.value = response;
   } catch (error: any) {
     errorMessage.value = error;
   }
 }
-
-// const featuredProducts = ref<FeaturedProduct[]>([
-//   {
-//     id: 1,
-//     name: 'Kantong Plastik HD Premium',
-//     description: 'Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging',
-//     price: 25000,
-//     originalPrice: 30000,
-//     image: '/src/assets/products/kantong-plastik-1.jpg',
-//     rating: 4.8,
-//     badge: 'Best Seller',
-//     badgeColor: 'success',
-//     category: 'Kantong Plastik'
-//   },
-//   {
-//     id: 2,
-//     name: 'Wadah Makanan Food Grade',
-//     description: 'Wadah plastik food grade aman untuk makanan dan minuman',
-//     price: 45000,
-//     image: '/src/assets/products/wadah-makanan-1.jpg',
-//     rating: 4.9,
-//     badge: 'New',
-//     badgeColor: 'info',
-//     category: 'Wadah Makanan'
-//   },
-//   {
-//     id: 3,
-//     name: 'Botol Plastik 500ml',
-//     description: 'Botol plastik transparan untuk minuman dengan tutup rapat',
-//     price: 15000,
-//     image: '/src/assets/products/botol-plastik-1.jpg',
-//     rating: 4.7,
-//     category: 'Botol'
-//   },
-//   {
-//     id: 4,
-//     name: 'Ember Plastik Multi Fungsi',
-//     description: 'Ember plastik kuat dan tahan lama untuk berbagai keperluan',
-//     price: 75000,
-//     image: '/src/assets/products/ember-plastik-1.jpg',
-//     rating: 4.6,
-//     category: 'Alat Rumah Tangga'
-//   },
-//   {
-//     id: 5,
-//     name: 'Gelas Plastik Set 12pcs',
-//     description: 'Set gelas plastik untuk acara dan penggunaan sehari-hari',
-//     price: 35000,
-//     originalPrice: 40000,
-//     image: '/src/assets/products/gelas-plastik-1.jpg',
-//     rating: 4.5,
-//     badge: 'Promo',
-//     badgeColor: 'error',
-//     category: 'Peralatan Makan'
-//   },
-//   {
-//     id: 6,
-//     name: 'Kotak Penyimpanan 10L',
-//     description: 'Kotak penyimpanan transparan dengan tutup kedap udara',
-//     price: 55000,
-//     image: '/src/assets/products/kotak-penyimpanan-1.jpg',
-//     rating: 4.8,
-//     category: 'Penyimpanan'
-//   },
-//   {
-//     id: 7,
-//     name: 'Piring Plastik Melamin',
-//     description: 'Piring plastik melamin tahan pecah dan aman untuk microwave',
-//     price: 20000,
-//     image: '/src/assets/products/piring-plastik-1.jpg',
-//     rating: 4.4,
-//     category: 'Peralatan Makan'
-//   },
-//   {
-//     id: 8,
-//     name: 'Tempat Sampah 50L',
-//     description: 'Tempat sampah plastik dengan penutup dan roda untuk kemudahan',
-//     price: 125000,
-//     image: '/src/assets/products/tempat-sampah-1.jpg',
-//     rating: 4.7,
-//     badge: 'Eco Friendly',
-//     badgeColor: 'green',
-//     category: 'Kebersihan'
-//   },
-//   {
-//     id: 9,
-//     name: 'Sedotan Plastik Biodegradable',
-//     description: 'Sedotan plastik ramah lingkungan yang dapat terurai',
-//     price: 12000,
-//     image: '/src/assets/products/sedotan-plastik-1.jpg',
-//     rating: 4.9,
-//     badge: 'Eco',
-//     badgeColor: 'green',
-//     category: 'Aksesoris'
-//   },
-//   {
-//     id: 10,
-//     name: 'Keranjang Plastik Anyam',
-//     description: 'Keranjang plastik dengan desain anyam untuk dekorasi dan penyimpanan',
-//     price: 65000,
-//     image: '/src/assets/products/keranjang-plastik-1.jpg',
-//     rating: 4.6,
-//     category: 'Dekorasi'
-//   }
-// ])
 
 // Banner Functions
 const goToSlide = (index: number) => {
@@ -661,6 +556,7 @@ onUnmounted(() => {
   gap: 20px;
   padding: 20px 40px;
   min-width: max-content;
+  justify-content: center;
 }
 
 .product-card {
