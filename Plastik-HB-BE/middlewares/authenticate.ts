@@ -39,8 +39,6 @@ const authenticate = async (req: Request, res: Response, next: NextFunction) => 
 
     // Attach session info to request for potential use in controllers
     req.session = session;
-
-    next();
 };
 
 export default middlewareWrapper(authenticate);
