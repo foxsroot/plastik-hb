@@ -322,11 +322,19 @@ const fetchCatalogProducts = async () => {
 const fetchPageData = async () => {
   loading.value = true
   try {
-    pageData.value = (await getPage("homepage")) as PageData; // Fetch data by slug
+    const response = await getPage("homepage");
+    // Handle both direct data and wrapped response
+    pageData.value = response as PageData;
+    
+    if (!pageData.value) {
+      throw new Error('No page data received from server');
+    }
+    
+    console.log('Page data loaded successfully:', pageData.value);
   } catch (error: any) {
     console.error("Failed to fetch page data:", error);
-    errorMessage.value =
-      error.response?.data?.message || "Failed to load page data.";
+    errorMessage.value = error.response?.data?.message || error.message || "Failed to load page data.";
+    showAlert('error', 'Gagal', 'Gagal memuat data halaman utama');
   } finally {
     loading.value = false
   }
@@ -336,7 +344,22 @@ const fetchPageData = async () => {
 const saveHomepageData = async () => {
   saveLoading.value = true
   try {
-    if (!pageData.value) throw new Error('No page data to save');
+    // Validate pageData exists
+    if (!pageData.value) {
+      throw new Error('No page data to save');
+    }
+    
+    // Validate required fields
+    if (!pageData.value.title || !pageData.value.sections) {
+      throw new Error('Missing required fields: title and sections');
+    }
+
+    // Sync banners and achievements to pageData before saving
+    syncBannersToPageData();
+    syncAchievementsToPageData();
+    
+    console.log('Saving homepage data:', pageData.value);
+    
     // Save homepage content
     const response = await updateHomepage({
       title: pageData.value.title,
@@ -344,13 +367,16 @@ const saveHomepageData = async () => {
       published: pageData.value.published,
       sections: pageData.value.sections
     });
+    
     // Save featured products
     await updateFeaturedProducts(featuredProducts.value.map(p => p.id));
+    
     showAlert('success', 'Berhasil', 'Data halaman utama & produk andalan berhasil disimpan!')
+    
     // Auto reload after successful save
     setTimeout(() => {
       window.location.reload();
-    }, 1000); // Give user a moment to see the alert
+    }, 1000);
   } catch (error: any) {
     console.error('Error saving homepage data:', error)
     showAlert('error', 'Gagal', error?.message || 'Gagal menyimpan data halaman utama')
