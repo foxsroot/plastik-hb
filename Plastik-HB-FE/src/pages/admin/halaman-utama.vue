@@ -462,6 +462,162 @@ const clearBannerImage = (index: number) => {
   banners.value[index].image = '';
 };
 
+// --- Banner Editor Modal State ---
+const bannerEditorDialog = ref(false);
+const editingBannerIndex = ref<number | null>(null);
+const editingBanner = ref<Banner | null>(null);
+const bannerEditorFileInputRef = ref<HTMLInputElement | null>(null);
+
+// --- Banner Card Menu State ---
+const bannerMenuOpenIndex = ref<number | null>(null);
+
+// --- Banner Drag State (for new editor) ---
+const dragBannerIndex = ref<number | null>(null);
+const dragOverBannerEditorIndex = ref<number | null>(null);
+
+// --- Banner Editor Functions ---
+const openBannerMenu = (index: number) => {
+  bannerMenuOpenIndex.value = index;
+};
+const closeBannerMenu = () => {
+  bannerMenuOpenIndex.value = null;
+};
+const openBannerEditor = (index: number) => {
+  editingBannerIndex.value = index;
+  editingBanner.value = { ...banners.value[index] };
+  bannerEditorDialog.value = true;
+  closeBannerMenu();
+};
+const closeBannerEditor = () => {
+  bannerEditorDialog.value = false;
+  editingBannerIndex.value = null;
+  editingBanner.value = null;
+};
+const saveBannerEdit = () => {
+  if (editingBannerIndex.value !== null && editingBanner.value) {
+    banners.value[editingBannerIndex.value] = { ...editingBanner.value };
+    closeBannerEditor();
+  }
+};
+const handleBannerEditorImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file && editingBanner.value) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      editingBanner.value!.image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+const openBannerEditorFileInput = () => {
+  bannerEditorFileInputRef.value?.click();
+};
+const clearBannerEditorImage = () => {
+  if (editingBanner.value) editingBanner.value.image = '';
+};
+const deleteBannerFromMenu = (index: number) => {
+  if (banners.value.length > 1) banners.value.splice(index, 1);
+  closeBannerMenu();
+};
+// Drag-and-drop for new editor
+const onBannerEditorDragStart = (index: number) => {
+  dragBannerIndex.value = index;
+};
+const onBannerEditorDragOver = (index: number) => {
+  dragOverBannerEditorIndex.value = index;
+};
+const onBannerEditorDrop = (index: number) => {
+  if (dragBannerIndex.value !== null && dragBannerIndex.value !== index) {
+    const moved = banners.value.splice(dragBannerIndex.value, 1)[0];
+    banners.value.splice(index, 0, moved);
+  }
+  dragBannerIndex.value = null;
+  dragOverBannerEditorIndex.value = null;
+};
+const onBannerEditorDragEnd = () => {
+  dragBannerIndex.value = null;
+  dragOverBannerEditorIndex.value = null;
+};
+
+// --- Achievement Drag State ---
+const dragAchievementIndex = ref<number | null>(null);
+const dragOverAchievementIndex = ref<number | null>(null);
+
+const onAchievementDragStart = (index: number) => {
+  dragAchievementIndex.value = index;
+};
+const onAchievementDragOver = (index: number) => {
+  dragOverAchievementIndex.value = index;
+};
+const onAchievementDrop = (index: number) => {
+  if (dragAchievementIndex.value !== null && dragAchievementIndex.value !== index) {
+    const moved = achievements.value.splice(dragAchievementIndex.value, 1)[0];
+    achievements.value.splice(index, 0, moved);
+  }
+  dragAchievementIndex.value = null;
+  dragOverAchievementIndex.value = null;
+};
+const onAchievementDragEnd = () => {
+  dragAchievementIndex.value = null;
+  dragOverAchievementIndex.value = null;
+};
+
+// --- Achievement Card Menu & Editor State ---
+const achievementMenuOpenIndex = ref<number | null>(null);
+const achievementEditorDialog = ref(false);
+const editingAchievementIndex = ref<number | null>(null);
+const editingAchievement = ref<Achievement | null>(null);
+const achievementEditorFileInputRef = ref<HTMLInputElement | null>(null);
+
+// --- Achievement Card Menu Functions ---
+const openAchievementMenu = (index: number) => {
+  achievementMenuOpenIndex.value = index;
+};
+const closeAchievementMenu = () => {
+  achievementMenuOpenIndex.value = null;
+};
+
+// --- Achievement Editor Functions ---
+const openAchievementEditor = (index: number) => {
+  editingAchievementIndex.value = index;
+  editingAchievement.value = { ...achievements.value[index] };
+  achievementEditorDialog.value = true;
+  closeAchievementMenu();
+};
+const closeAchievementEditor = () => {
+  achievementEditorDialog.value = false;
+  editingAchievementIndex.value = null;
+  editingAchievement.value = null;
+};
+const saveAchievementEdit = () => {
+  if (editingAchievementIndex.value !== null && editingAchievement.value) {
+    achievements.value[editingAchievementIndex.value] = { ...editingAchievement.value };
+    closeAchievementEditor();
+  }
+};
+const handleAchievementEditorImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file && editingAchievement.value) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      editingAchievement.value!.image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+const openAchievementEditorFileInput = () => {
+  achievementEditorFileInputRef.value?.click();
+};
+const clearAchievementEditorImage = () => {
+  if (editingAchievement.value) editingAchievement.value.image = '';
+};
+const deleteAchievementFromMenu = (index: number) => {
+  if (achievements.value.length > 1) achievements.value.splice(index, 1);
+  closeAchievementMenu();
+};
+
 onMounted(async () => {
   await fetchPageData();
   await fetchAllProducts();
@@ -594,104 +750,93 @@ onMounted(async () => {
 
           <v-card-text class="pa-6">
             <v-form @submit.prevent="saveHomepageData">
-              <!-- Banner Section (keeping existing) -->
+              <!-- Banner Section (replace old with new editor, styled like Achievement) -->
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Banner Carousel</h3>
-                  <v-btn @click="addBanner" icon="mdi-plus" variant="outlined" size="small" color="primary"
-                    class="icon-btn-square" />
+                  <v-btn @click="addBanner" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
                 </div>
-
-                <!-- Banner forms (keeping existing implementation) -->
-                <div v-for="(banner, index) in banners" :key="index" class="mb-4">
-                  <v-card variant="outlined" class="pa-4">
-                    <div class="d-flex align-center mb-3">
-                      <h4 class="text-subtitle-1 flex-grow-1">Banner {{ index + 1 }}</h4>
-                      <v-btn @click="removeBanner(index)" icon="mdi-delete" variant="text" size="small" color="error"
-                        :disabled="banners.length <= 1" />
-                    </div>
-
-                    <!-- Image Upload -->
-                    <div class="mb-3">
-                      <v-card height="150" variant="outlined"
-                        class="d-flex align-center justify-center mb-2 image-upload-card drag-drop-banner"
-                        @click="openBannerFileInput(index)" @dragover.prevent="onBannerDragOver($event, index)"
-                        @dragleave.prevent="onBannerDragLeave($event, index)"
-                        @drop.prevent="onBannerDrop($event, index)"
-                        :class="{ 'drag-over': dragOverBannerIndex === index }">
-                        <div v-if="!banner.image" class="text-center">
-                          <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
-                          <p class="text-caption text-grey-darken-1">Banner Image<br />(Drag & Drop or Click)</p>
-                        </div>
-                        <div v-else class="banner-image-wrapper" @mouseenter="hoveredBannerIndex = index"
-                          @mouseleave="hoveredBannerIndex = null">
-                          <v-img :src="banner.image" cover height="100%" class="rounded" />
-                          <v-btn v-if="hoveredBannerIndex === index" icon="mdi-close-circle" size="small" color="error"
-                            class="clear-image-btn" @click.stop="clearBannerImage(index)"
-                            style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
-                        </div>
-                      </v-card>
-
-                      <input :ref="el => bannerFileInputRefs[index] = el as HTMLInputElement" type="file" accept="image"
-                        style="display: none" @change="handleBannerImageUpload($event, index)" />
-                    </div>
-
-                    <v-text-field v-model="banner.title" label="Title" variant="outlined" density="compact"
-                      class="mb-2" />
-
-                    <v-text-field v-model="banner.subtitle" label="Subtitle" variant="outlined" density="compact"
-                      class="mb-2" />
-
-                    <v-text-field v-model="banner.buttonText" label="Button Text" variant="outlined" density="compact"
-                      class="mb-2" />
-
-                    <v-text-field v-model="banner.buttonLink" label="Button Link" variant="outlined"
-                      density="compact" />
-                  </v-card>
+                <div class="banner-list">
+                  <div v-for="(banner, index) in banners" :key="'editor-form-' + index" class="mb-3">
+                    <v-card
+                      class="d-flex align-center pa-2 mb-2 banner-card"
+                      variant="outlined"
+                      draggable="true"
+                      @dragstart="onBannerEditorDragStart(index)"
+                      @dragover.prevent="onBannerEditorDragOver(index)"
+                      @drop.prevent="onBannerEditorDrop(index)"
+                      @dragend="onBannerEditorDragEnd"
+                      :class="{ 'banner-card--dragover': dragOverBannerEditorIndex === index }"
+                      style="transition: background 0.2s, border 0.2s;"
+                    >
+                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-avatar size="40" class="mr-3">
+                        <v-img :src="banner.image || '/placeholder.jpg'" cover />
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <div class="font-weight-bold text-white text-truncate">{{ banner.title || 'Judul Banner ' + (index + 1) }}</div>
+                        <div class="text-caption text-grey-lighten-1 text-truncate">{{ banner.subtitle }}</div>
+                      </div>
+                      <v-menu :model-value="bannerMenuOpenIndex === index" @update:model-value="val => bannerMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                        <template #activator="{ props }">
+                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openBannerMenu(index)" class="menu-btn" />
+                        </template>
+                        <v-list>
+                          <v-list-item @click="openBannerEditor(index)">
+                            <v-list-item-title>Edit</v-list-item-title>
+                          </v-list-item>
+                          <v-list-item @click="deleteBannerFromMenu(index)">
+                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </v-card>
+                  </div>
                 </div>
               </div>
 
-              <!-- Achievement Section (keeping existing) -->
+              <!-- Achievement Section (styled like Banner Promosi, now draggable) -->
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Achievement</h3>
-                  <v-btn @click="addAchievement" icon="mdi-plus" variant="outlined" size="small" color="primary"
-                    class="icon-btn-square" />
+                  <v-btn @click="addAchievement" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
                 </div>
-
-                <div v-for="(achievement, index) in achievements" :key="achievement.order" class="mb-3">
-                  <v-card variant="outlined" class="pa-4">
-                    <div class="d-flex align-center mb-3">
-                      <h4 class="text-subtitle-1 flex-grow-1">Achievement {{ index + 1 }}</h4>
-                      <v-btn @click="removeAchievement(index)" icon="mdi-delete" variant="text" size="small"
-                        color="error" :disabled="achievements.length <= 1" />
-                    </div>
-
-                    <!-- Image Upload -->
-                    <div class="mb-3">
-                      <v-card height="100" variant="outlined"
-                        class="d-flex align-center justify-center mb-2 image-upload-card"
-                        @click="openAchievementFileInput(index)">
-                        <div v-if="!achievement.image" class="text-center">
-                          <v-icon size="24" color="grey-lighten-1" class="mb-1">mdi-trophy</v-icon>
-                          <p class="text-caption text-grey-darken-1">Icon</p>
-                        </div>
-                        <v-img v-else :src="achievement.image" cover height="100%" class="rounded" />
-                      </v-card>
-
-                      <input :ref="el => achievementFileInputRefs[index] = el as HTMLInputElement" type="file"
-                        accept="image" style="display: none" @change="handleAchievementImageUpload($event, index)" />
-                    </div>
-
-                    <v-text-field v-model="achievement.title" label="Title" variant="outlined" density="compact"
-                      class="mb-2" />
-
-                    <v-text-field v-model.number="achievement.percentage" label="Percentage" type="number" min="0"
-                      max="100" variant="outlined" density="compact" class="mb-2" />
-
-                    <v-textarea v-model="achievement.description" label="Description" variant="outlined"
-                      density="compact" rows="2" />
-                  </v-card>
+                <div class="achievement-list">
+                  <div v-for="(achievement, index) in achievements" :key="achievement.order ?? index" class="mb-3">
+                    <v-card
+                      variant="outlined"
+                      class="d-flex align-center pa-2 mb-2 achievement-card"
+                      draggable="true"
+                      @dragstart="onAchievementDragStart(index)"
+                      @dragover.prevent="onAchievementDragOver(index)"
+                      @drop.prevent="onAchievementDrop(index)"
+                      @dragend="onAchievementDragEnd"
+                      :class="{ 'achievement-card--dragover': dragOverAchievementIndex === index }"
+                      style="transition: background 0.2s, border 0.2s;"
+                    >
+                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-avatar size="40" class="mr-3">
+                        <v-img :src="achievement.image || '/placeholder.jpg'" cover />
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <div class="font-weight-bold text-white text-truncate">{{ achievement.title || 'Achievement ' + (index + 1) }}</div>
+                        <div class="text-caption text-grey-lighten-1 text-truncate">{{ achievement.description }}</div>
+                      </div>
+                      <v-menu :model-value="achievementMenuOpenIndex === index" @update:model-value="val => achievementMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                        <template #activator="{ props }">
+                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openAchievementMenu(index)" class="menu-btn" />
+                        </template>
+                        <v-list>
+                          <v-list-item @click="openAchievementEditor(index)">
+                            <v-list-item-title>Edit</v-list-item-title>
+                          </v-list-item>
+                          <v-list-item @click="deleteAchievementFromMenu(index)">
+                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </v-card>
+                  </div>
                 </div>
               </div>
 
@@ -788,6 +933,67 @@ onMounted(async () => {
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Banner Editor Modal -->
+    <v-dialog v-model="bannerEditorDialog" max-width="500px">
+      <v-card>
+        <v-card-title class="bg-primary text-white">Edit Banner</v-card-title>
+        <v-card-text class="pa-6">
+          <div class="mb-4">
+            <v-card height="150" variant="outlined" class="d-flex align-center justify-center image-upload-card" @click="openBannerEditorFileInput">
+              <div v-if="!editingBanner?.image" class="text-center">
+                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
+                <p class="text-caption text-grey-darken-1">Banner Image<br /></p>
+              </div>
+              <div v-else class="banner-image-wrapper">
+                <v-img :src="editingBanner?.image" cover height="100%" class="rounded" />
+                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearBannerEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
+              </div>
+            </v-card>
+            <input ref="bannerEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleBannerEditorImageUpload" />
+          </div>
+          <v-text-field v-if="editingBanner" v-model="editingBanner.title" label="Title" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingBanner" v-model="editingBanner.subtitle" label="Subtitle" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonText" label="Button Text" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonLink" label="Button Link" variant="outlined" density="compact" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="closeBannerEditor">Batal</v-btn>
+          <v-btn color="primary" @click="saveBannerEdit">Simpan</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Achievement Editor Modal -->
+    <v-dialog v-model="achievementEditorDialog" max-width="500px">
+      <v-card>
+        <v-card-title class="bg-primary text-white">Edit Achievement</v-card-title>
+        <v-card-text class="pa-6">
+          <div class="mb-4">
+            <v-card height="100" variant="outlined" class="d-flex align-center justify-center image-upload-card" @click="openAchievementEditorFileInput">
+              <div v-if="!editingAchievement?.image" class="text-center">
+                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-trophy</v-icon>
+                <p class="text-caption text-grey-darken-1">Icon<br /></p>
+              </div>
+              <div v-else class="achievement-image-wrapper">
+                <v-img :src="editingAchievement?.image" cover height="100%" class="rounded" />
+                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearAchievementEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
+              </div>
+            </v-card>
+            <input ref="achievementEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleAchievementEditorImageUpload" />
+          </div>
+          <v-text-field v-if="editingAchievement" v-model="editingAchievement.title" label="Title" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingAchievement" v-model.number="editingAchievement.percentage" label="Percentage" type="number" min="0" max="100" variant="outlined" density="compact" class="mb-2" />
+          <v-textarea v-if="editingAchievement" v-model="editingAchievement.description" label="Description" variant="outlined" density="compact" rows="2" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="closeAchievementEditor">Batal</v-btn>
+          <v-btn color="primary" @click="saveAchievementEdit">Simpan</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -918,5 +1124,79 @@ onMounted(async () => {
   right: 8px;
   z-index: 2;
   background: white;
+}
+
+.banner-list {
+  background: transparent;
+  padding: 16px 12px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+.banner-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1.5px solid #fff;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #fff;
+}
+.banner-card--dragover {
+  border-color: var(--v-theme-primary, #1976d2) !important;
+  background: rgba(25, 118, 210, 0.08) !important;
+}
+.drag-btn {
+  color: #bbb !important;
+}
+.menu-btn {
+  color: #bbb !important;
+}
+.banner-card .v-avatar {
+  background: #222;
+}
+.banner-card .v-img {
+  border-radius: 50%;
+}
+.banner-card .font-weight-bold {
+  color: #fff;
+}
+.banner-card .text-caption {
+  color: #b0b0b0 !important;
+}
+
+.achievement-list {
+  background: transparent;
+  padding: 16px 12px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+.achievement-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1.5px solid #fff;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #fff;
+}
+.achievement-card--dragover {
+  border-color: var(--v-theme-primary, #1976d2) !important;
+  background: rgba(25, 118, 210, 0.08) !important;
+}
+.drag-btn {
+  color: #bbb !important;
+}
+.menu-btn {
+  color: #bbb !important;
+}
+.achievement-card .v-avatar {
+  background: #222;
+}
+.achievement-card .v-img {
+  border-radius: 50%;
+}
+.achievement-card .font-weight-bold {
+  color: #fff;
+}
+.achievement-card .text-caption {
+  color: #b0b0b0 !important;
 }
 </style>
