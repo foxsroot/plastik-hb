@@ -65,6 +65,13 @@ export class Product extends Model {
     })
     declare featured: boolean;
 
+    @Column({
+        type: DataType.ENUM('Aktif', 'Draft'),
+        allowNull: false,
+        defaultValue: 'Draft',
+    })
+    declare status: 'Aktif' | 'Draft';
+
     @HasMany(() => Asset, {
         foreignKey: 'product_id',
         sourceKey: 'id',

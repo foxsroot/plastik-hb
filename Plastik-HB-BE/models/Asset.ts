@@ -34,4 +34,20 @@ export class Asset extends Model {
         allowNull: false,
     })
     declare type: 'IMAGE' | 'VIDEO';
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare order: number;
+
+    @ForeignKey(() => Product)
+    @Column({
+        type: DataType.UUID,
+        allowNull: false,
+    })
+    declare product_id: string;
+
+    @BelongsTo(() => Product)
+    product?: Product;
 }
