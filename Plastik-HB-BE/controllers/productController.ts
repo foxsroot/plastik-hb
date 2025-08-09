@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { ProductService, CreateProductData } from '../services/productService';
+import { Product } from '../models/Product';
+import { Asset } from '../models/Asset';
+import { Category } from '../models/Category';
 
 /**
  * @desc Fetch all products with assets and category
@@ -208,19 +211,7 @@ export const reorderAssets = async (req: Request, res: Response) => {
     };
 };
 
-export default { 
-    getAllProducts, 
-    getFeaturedProducts, 
-    createProduct, 
-    updateProduct, 
-    deleteProduct, 
-    deleteProductAsset, 
-    replaceMainImage,
-    replaceAsset,
-    reorderAssets
-};
-
- * @desc Update featured products
+/* @desc Update featured products
  * @route PUT /products/featured
  * @body { productIds: string[] }
  */
@@ -244,5 +235,16 @@ export const updateFeaturedProducts = async (req: Request, res: Response) => {
     return res.status(200).json({ message: 'Featured products updated', data: featured });
 };
 
-export default { getAllProducts, getFeaturedProducts, updateFeaturedProducts };
+export default { 
+    getAllProducts, 
+    getFeaturedProducts, 
+    createProduct, 
+    updateProduct, 
+    deleteProduct, 
+    deleteProductAsset, 
+    replaceMainImage,
+    replaceAsset,
+    reorderAssets,
+    updateFeaturedProducts
+};
 

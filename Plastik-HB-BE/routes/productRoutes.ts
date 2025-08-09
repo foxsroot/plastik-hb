@@ -1,6 +1,5 @@
 import { Router } from 'express';
-import { getAllProducts, getFeaturedProducts, createProduct, updateProduct, deleteProduct, deleteProductAsset, replaceMainImage, replaceAsset, reorderAssets} from '../controllers/productController';
-import { getAllProducts, getFeaturedProducts, updateFeaturedProducts } from '../controllers/productController';
+import { getAllProducts, getFeaturedProducts, createProduct, updateProduct, deleteProduct, deleteProductAsset, replaceMainImage, replaceAsset, reorderAssets, updateFeaturedProducts } from '../controllers/productController';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { uploadProductImages } from '../utils/uploadImageMiddleware';
 
