@@ -2,6 +2,7 @@ import express from 'express';
 import { Sequelize } from 'sequelize-typescript';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import authenticationRouter from './routes/authenticationRoutes';
 import { errorHandler } from './utils/errorHandler';
 import { User } from './models/User';
@@ -14,6 +15,7 @@ import { Session } from './models/Session';
 import pageRouter from './routes/pageRoutes';
 import contactRouter from './routes/contactRoutes';
 import productRouter from './routes/productRoutes';
+import categoryRouter from './routes/categoryRoutes';
 import analyticRouter from './routes/analyticRoutes';
 import { Category } from './models/Category';
 
@@ -29,6 +31,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Serve static files for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve static files from frontend productImage folder
+app.use('/images/products', express.static(path.join(__dirname, '../Plastik-HB-FE/src/assets/productImage')));
 
 const sequelize = new Sequelize({
     dialect: 'postgres',
@@ -57,6 +64,7 @@ app.use('/api/authentication', authenticationRouter);
 app.use('/api/pages', pageRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/products', productRouter);
+app.use('/api/categories', categoryRouter);
 app.use('/api/analytics', analyticRouter);
 
 // ENDS HERE
