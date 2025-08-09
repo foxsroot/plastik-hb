@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getAllProducts, getFeaturedProducts, createProduct, updateProduct, deleteProduct, deleteProductAsset, replaceMainImage, replaceAsset, reorderAssets} from '../controllers/productController';
+import { getAllProducts, getFeaturedProducts, updateFeaturedProducts } from '../controllers/productController';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { uploadProductImages } from '../utils/uploadImageMiddleware';
 
@@ -17,5 +18,6 @@ productRouter.delete('/:id/assets/:assetId', controllerWrapper(deleteProductAsse
 productRouter.put('/:id/assets/:assetId', uploadProductImages, controllerWrapper(replaceAsset));
 productRouter.patch('/:id/assets/reorder', controllerWrapper(reorderAssets));
 productRouter.put('/:id/main-image', uploadProductImages, controllerWrapper(replaceMainImage));
+productRouter.put('/featured', controllerWrapper(updateFeaturedProducts));
 
 export default productRouter;

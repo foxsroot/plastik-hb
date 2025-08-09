@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import index from "../index.vue";
+import { ref, onMounted, computed, watch } from 'vue'
+import index from '../index.vue'
+import { getPage, updateHomepage } from '@/api/pageApi'
+import { fetchFeaturedProducts, fetchProducts } from '@/api/productApi'
+import { updateFeaturedProducts } from '@/api/updateFeaturedProducts'
 
 // Banner Interface
 interface Banner {
+  order: number;
   image: string;
   title: string;
   subtitle: string;
@@ -13,242 +17,387 @@ interface Banner {
 
 // Achievement Interface
 interface Achievement {
-  id: number;
+  order: number;
   title: string;
   percentage: number;
   description: string;
   image?: string;
 }
 
-// Product Interface (from catalog)
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  rating: number;
+// Asset Interface
+interface Asset {
+  id: string;
+  url: string;
+  alt: string;
+  type: 'IMAGE' | 'VIDEO';
+  created_at: string;
+  updated_at: string;
+  product_id: string;
+}
+
+// Category Interface
+interface CategoryObj {
+  id: string;
   category: string;
-  stock?: number;
-  isActive?: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-// Featured Product Interface (selected from catalog)
-interface FeaturedProduct {
-  productId: number;
-  badge?: string;
-  badgeColor?: string;
-  displayOrder?: number;
+// Featured Product Interface
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  specification: string;
+  category_id: string;
+  discount?: number;
+  featured: boolean;
+  created_at: string;
+  updated_at: string;
+  assets: Asset[];
+  category: CategoryObj;
 }
 
-// Homepage Data Interface
-interface HomepageData {
-  banners: Banner[];
-  achievements: Achievement[];
-  featuredProducts: FeaturedProduct[];
+// Page Data Interface
+interface PageData {
+  title: string;
+  slug: string;
+  description: string;
+  published: boolean;
+  sections: Array<{
+    type: string;
+    order: number;
+    visible: boolean;
+    data: {
+      banners?: Banner[];
+      achievements?: Achievement[];
+    };
+  }>;
 }
 
 // Alert state
-const alertVisible = ref(false);
-const alertType = ref<"success" | "error">("success");
-const alertTitle = ref("");
-const alertMessage = ref("");
+const alertVisible = ref(false)
+const alertType = ref<'success' | 'error'>('success')
+const alertTitle = ref('')
+const alertMessage = ref('')
 
 // Form state
-const loading = ref(false);
-const saveLoading = ref(false);
-const catalogLoading = ref(false);
+const loading = ref(false)
+const saveLoading = ref(false)
+const catalogLoading = ref(false)
 
 // All products from catalog
 const catalogProducts = ref<Product[]>([]);
+const pageData = ref<PageData | null>(null);
+const errorMessage = ref("");
 
-// Homepage data
-const homepageData = ref<HomepageData>({
-  banners: [
-    {
-      image: "",
-      title: "",
-      subtitle: "",
-      buttonText: "",
-      buttonLink: "",
-    },
-  ],
-  achievements: [
-    {
-      id: 1,
-      title: "",
-      percentage: 0,
-      description: "",
-      image: "",
-    },
-  ],
-  featuredProducts: [],
-});
+async function fetchAllProducts() {
+  try {
+    if (Array.isArray((await fetchProducts()))) {
+      catalogProducts.value = (await fetchProducts()) as Product[];
+    } else {
+      const response = await fetchProducts();
+      catalogProducts.value = (response as any).data || (response as any).products || [];
+    }
+  } catch (error: any) {
+    showAlert('error', 'Gagal', error);
+  }
+}
+
 
 // Product selection dialog
-const productSelectionDialog = ref(false);
-const selectedProductId = ref<number | null>(null);
+const productSelectionDialog = ref(false)
+const selectedProductId = ref<string | null>(null)
 
 // File input refs
-const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
-const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
+const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([])
+const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([])
 
 // Computed properties
 const selectedProductIds = computed(() =>
-  homepageData.value.featuredProducts.map((fp) => fp.productId)
+  featuredProducts.value.map(p => p.id)
 );
 
 const availableProducts = computed(() =>
-  catalogProducts.value.filter(
-    (product) =>
-      !selectedProductIds.value.includes(product.id) &&
-      product.isActive !== false
+  catalogProducts.value.filter(product =>
+    !selectedProductIds.value.includes(product.id)
   )
 );
 
-const featuredProductsWithDetails = computed(() => {
-  return homepageData.value.featuredProducts
-    .map((fp) => {
-      const product = catalogProducts.value.find((p) => p.id === fp.productId);
-      return {
-        ...fp,
-        product: product,
-      };
-    })
-    .filter((fp) => fp.product); // Only include products that exist in catalog
+// Product search for selection dialog
+const productSearch = ref('');
+const filteredAvailableProducts = computed(() => {
+  if (!productSearch.value) return availableProducts.value;
+  return availableProducts.value.filter(product =>
+    product.name.toLowerCase().includes(productSearch.value.toLowerCase()) ||
+    product.description?.toLowerCase().includes(productSearch.value.toLowerCase())
+  );
 });
 
+// Remove featuredProducts computed and instead fetch featured products from API
+const featuredProducts = ref<Product[]>([]);
+
+async function fetchFeatured() {
+  try {
+    const response = await fetchFeaturedProducts();
+    featuredProducts.value = Array.isArray(response) ? response : (response as any).data || [];
+  } catch (error: any) {
+    errorMessage.value = error;
+  }
+}
+
 // Alert functions
-const showAlert = (
-  type: "success" | "error",
-  title: string,
-  message: string
-) => {
-  alertType.value = type;
-  alertTitle.value = title;
-  alertMessage.value = message;
-  alertVisible.value = true;
+const showAlert = (type: 'success' | 'error', title: string, message: string) => {
+  alertType.value = type
+  alertTitle.value = title
+  alertMessage.value = message
+  alertVisible.value = true
 
   setTimeout(() => {
-    alertVisible.value = false;
-  }, 5000);
+    alertVisible.value = false
+  }, 5000)
+}
+
+// --- Banner State as Ref ---
+const banners = ref<Banner[]>([]);
+
+// Sync banners with pageData on fetch
+watch(
+  () => pageData.value,
+  (val) => {
+    // Accept both BANNER and BANNERS for section type
+    const arr = val?.sections.find(s => s.type === "BANNERS" || s.type === "BANNER")?.data.banners;
+    banners.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
+    // Always show at least one banner form
+    if (banners.value.length === 0) {
+      banners.value.push({
+        order: 1,
+        image: '',
+        title: '',
+        subtitle: '',
+        buttonText: '',
+        buttonLink: ''
+      });
+    }
+  },
+  { immediate: true }
+);
+
+// Automatically sync banners to pageData.sections[0] when they change
+watch(banners, (newBanners) => {
+  if (
+    pageData.value &&
+    pageData.value.sections &&
+    pageData.value.sections[0] &&
+    pageData.value.sections[0].data
+  ) {
+    pageData.value.sections[0].data.banners = JSON.parse(JSON.stringify(newBanners));
+  }
+}, { deep: true });
+
+// Update pageData banners before save
+const syncBannersToPageData = () => {
+  if (pageData.value) {
+    const section = pageData.value.sections.find(s => s.type === "BANNERS");
+    if (section) section.data.banners = JSON.parse(JSON.stringify(banners.value));
+  }
 };
 
 // Banner functions (keeping existing banner functions)
 const addBanner = () => {
-  homepageData.value.banners.push({
-    image: "",
-    title: "",
-    subtitle: "",
-    buttonText: "",
-    buttonLink: "",
-  });
-};
+  banners.value.push({
+    order: banners.value.length + 1,
+    image: '',
+    title: '',
+    subtitle: '',
+    buttonText: '',
+    buttonLink: ''
+  })
+}
 
 const removeBanner = (index: number) => {
-  if (homepageData.value.banners.length > 1) {
-    homepageData.value.banners.splice(index, 1);
+  if (banners.value.length > 1) {
+    banners.value.splice(index, 1)
   }
-};
+}
 
 const handleBannerImageUpload = (event: Event, index: number) => {
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0];
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
 
   if (file) {
-    const reader = new FileReader();
+    const reader = new FileReader()
     reader.onload = (e) => {
-      homepageData.value.banners[index].image = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      banners.value[index].image = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
   }
-};
+}
 
 const openBannerFileInput = (index: number) => {
-  bannerFileInputRefs.value[index]?.click();
-};
+  bannerFileInputRefs.value[index]?.click()
+}
 
-// Achievement functions (keeping existing achievement functions)
-const addAchievement = () => {
-  const newId =
-    Math.max(...homepageData.value.achievements.map((a) => a.id), 0) + 1;
-  homepageData.value.achievements.push({
-    id: newId,
-    title: "",
-    percentage: 0,
-    description: "",
-    image: "",
-  });
-};
+// --- Achievements State as Ref ---
+const achievements = ref<Achievement[]>([]);
 
-const removeAchievement = (index: number) => {
-  if (homepageData.value.achievements.length > 1) {
-    homepageData.value.achievements.splice(index, 1);
+// Sync achievements with pageData on fetch
+watch(
+  () => pageData.value,
+  (val) => {
+    const arr = val?.sections.find(s => s.type === "ACHIEVEMENTS")?.data.achievements;
+    achievements.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
+  },
+  { immediate: true }
+);
+
+// Automatically sync banners and achievements to pageData.sections when they change
+watch(achievements, (newAchievements) => {
+  if (
+    pageData.value &&
+    pageData.value.sections &&
+    pageData.value.sections[1] &&
+    pageData.value.sections[1].data
+  ) {
+    pageData.value.sections[1].data.achievements = JSON.parse(JSON.stringify(newAchievements));
+  }
+}, { deep: true });
+
+// Update pageData achievements before save
+const syncAchievementsToPageData = () => {
+  if (pageData.value) {
+    const section = pageData.value.sections.find(s => s.type === "ACHIEVEMENTS");
+    if (section) section.data.achievements = JSON.parse(JSON.stringify(achievements.value));
   }
 };
 
+// Update add/remove/clear/upload to use achievements ref
+const addAchievement = () => {
+  achievements.value.push({
+    order: achievements.value.length + 1,
+    title: '',
+    percentage: 0,
+    description: '',
+    image: ''
+  });
+};
+const removeAchievement = (index: number) => {
+  if (achievements.value.length > 1) achievements.value.splice(index, 1);
+};
 const handleAchievementImageUpload = (event: Event, index: number) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-
   if (file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-      homepageData.value.achievements[index].image = e.target?.result as string;
+      achievements.value[index].image = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   }
 };
-
 const openAchievementFileInput = (index: number) => {
   achievementFileInputRefs.value[index]?.click();
 };
 
-// Featured Products functions (NEW)
-const openProductSelection = () => {
-  selectedProductId.value = null;
-  productSelectionDialog.value = true;
-};
+// Fetch catalog products
+const fetchCatalogProducts = async () => {
+  catalogLoading.value = true
+  try {
+    if (Array.isArray((await fetchProducts()))) {
+      catalogProducts.value = (await fetchProducts()) as Product[];
+    } else {
+      const response = await fetchProducts();
+      catalogProducts.value = (response as any).data || (response as any).products || [];
+    }
+  } catch (error) {
+    console.error('Error fetching catalog products:', error)
+    // Optionally show an alert or handle error
+  } finally {
+    catalogLoading.value = false
+  }
+}
 
-const addSelectedProduct = () => {
-  if (selectedProductId.value) {
-    const maxOrder = Math.max(
-      ...homepageData.value.featuredProducts.map((fp) => fp.displayOrder || 0),
-      0
-    );
-    homepageData.value.featuredProducts.push({
-      productId: selectedProductId.value,
-      badge: "",
-      badgeColor: "amber",
-      displayOrder: maxOrder + 1,
+// Fetch homepage data
+const fetchPageData = async () => {
+  loading.value = true
+  try {
+    const response = await getPage("homepage");
+    // Handle both direct data and wrapped response
+    pageData.value = response as PageData;
+    
+    if (!pageData.value) {
+      throw new Error('No page data received from server');
+    }
+    
+    console.log('Page data loaded successfully:', pageData.value);
+  } catch (error: any) {
+    console.error("Failed to fetch page data:", error);
+    errorMessage.value = error.response?.data?.message || error.message || "Failed to load page data.";
+    showAlert('error', 'Gagal', 'Gagal memuat data halaman utama');
+  } finally {
+    loading.value = false
+  }
+}
+
+// Save homepage data
+const saveHomepageData = async () => {
+  saveLoading.value = true
+  try {
+    // Validate pageData exists
+    if (!pageData.value) {
+      throw new Error('No page data to save');
+    }
+    
+    // Validate required fields
+    if (!pageData.value.title || !pageData.value.sections) {
+      throw new Error('Missing required fields: title and sections');
+    }
+
+    // Sync banners and achievements to pageData before saving
+    syncBannersToPageData();
+    syncAchievementsToPageData();
+    
+    console.log('Saving homepage data:', pageData.value);
+    
+    // Save homepage content
+    const response = await updateHomepage({
+      title: pageData.value.title,
+      description: pageData.value.description,
+      published: pageData.value.published,
+      sections: pageData.value.sections
     });
-    productSelectionDialog.value = false;
-    selectedProductId.value = null;
+    
+    // Save featured products
+    await updateFeaturedProducts(featuredProducts.value.map(p => p.id));
+    
+    showAlert('success', 'Berhasil', 'Data halaman utama & produk andalan berhasil disimpan!')
+    
+    // Auto reload after successful save
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  } catch (error: any) {
+    console.error('Error saving homepage data:', error)
+    showAlert('error', 'Gagal', error?.message || 'Gagal menyimpan data halaman utama')
+  } finally {
+    saveLoading.value = false
   }
-};
+}
 
-const removeFeaturedProduct = (index: number) => {
-  homepageData.value.featuredProducts.splice(index, 1);
-};
+// Preview state
+const previewKey = ref(0)
+const previewTimestamp = ref(Date.now())
 
-const moveProductUp = (index: number) => {
-  if (index > 0) {
-    const temp = homepageData.value.featuredProducts[index];
-    homepageData.value.featuredProducts[index] =
-      homepageData.value.featuredProducts[index - 1];
-    homepageData.value.featuredProducts[index - 1] = temp;
-  }
-};
+// Preview functions
+const refreshPreview = () => {
+  previewKey.value += 1
+  previewTimestamp.value = Date.now()
+}
 
-const moveProductDown = (index: number) => {
-  if (index < homepageData.value.featuredProducts.length - 1) {
-    const temp = homepageData.value.featuredProducts[index];
-    homepageData.value.featuredProducts[index] =
-      homepageData.value.featuredProducts[index + 1];
-    homepageData.value.featuredProducts[index + 1] = temp;
-  }
-};
+const openHomepage = () => {
+  window.open('/', '_blank')
+}
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -258,197 +407,223 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
-// Fetch catalog products
-const fetchCatalogProducts = async () => {
-  catalogLoading.value = true;
-  try {
-    const response = await fetch("/api/products");
-    if (response.ok) {
-      const data = await response.json();
-      catalogProducts.value = data;
-    } else {
-      throw new Error("Gagal memuat katalog produk");
+
+// Featured Products Section (NEW)
+const removeFeaturedProduct = (index: number) => {
+  if (featuredProducts.value.length > 0) {
+    featuredProducts.value.splice(index, 1)
+  }
+}
+
+// Add product to featuredProducts
+const addSelectedProduct = () => {
+  if (selectedProductId.value) {
+    const product = catalogProducts.value.find(p => p.id === selectedProductId.value);
+    if (product && !featuredProducts.value.some(fp => fp.id === product.id)) {
+      featuredProducts.value.push(product);
+      selectedProductId.value = null;
+      productSelectionDialog.value = false;
     }
-  } catch (error) {
-    console.error("Error fetching catalog products:", error);
-    // Fallback data untuk testing
-    catalogProducts.value = [
-      {
-        id: 1,
-        name: "Kantong Plastik HD Premium",
-        description:
-          "Kantong plastik berkualitas tinggi untuk kebutuhan retail dan packaging",
-        price: 25000,
-        originalPrice: 30000,
-        image: "",
-        rating: 4.8,
-        category: "Kantong Plastik",
-        stock: 100,
-        isActive: true,
-      },
-      {
-        id: 2,
-        name: "Wadah Makanan Food Grade",
-        description: "Wadah plastik food grade aman untuk makanan dan minuman",
-        price: 45000,
-        image: "",
-        rating: 4.9,
-        category: "Wadah Makanan",
-        stock: 50,
-        isActive: true,
-      },
-      {
-        id: 3,
-        name: "Botol Plastik 500ml",
-        description:
-          "Botol plastik transparan untuk minuman dengan tutup rapat",
-        price: 15000,
-        image: "",
-        rating: 4.7,
-        category: "Botol",
-        stock: 200,
-        isActive: true,
-      },
-      {
-        id: 4,
-        name: "Ember Plastik Multi Fungsi",
-        description:
-          "Ember plastik kuat dan tahan lama untuk berbagai keperluan",
-        price: 75000,
-        image: "",
-        rating: 4.6,
-        category: "Alat Rumah Tangga",
-        stock: 30,
-        isActive: true,
-      },
-      {
-        id: 5,
-        name: "Gelas Plastik Set 12pcs",
-        description: "Set gelas plastik untuk acara dan penggunaan sehari-hari",
-        price: 35000,
-        originalPrice: 40000,
-        image: "",
-        rating: 4.5,
-        category: "Peralatan Makan",
-        stock: 80,
-        isActive: true,
-      },
-    ];
-  } finally {
-    catalogLoading.value = false;
   }
 };
 
-// Fetch homepage data
-const fetchHomepageData = async () => {
-  loading.value = true;
-  try {
-    const response = await fetch("/api/homepage");
-    if (response.ok) {
-      const data = await response.json();
-      homepageData.value = data;
-    } else {
-      throw new Error("Gagal memuat data halaman utama");
-    }
-  } catch (error) {
-    console.error("Error fetching homepage data:", error);
-    // Fallback data untuk testing
-    homepageData.value = {
-      banners: [
-        {
-          image:
-            "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg",
-          title: "Solusi Plastik Berkualitas Tinggi",
-          subtitle:
-            "Menyediakan berbagai produk plastik untuk kebutuhan industri dan rumah tangga",
-          buttonText: "Lihat Produk",
-          buttonLink: "/katalog",
-        },
-        {
-          image:
-            "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg",
-          title: "Custom Order Tersedia",
-          subtitle:
-            "Kami melayani pesanan custom sesuai dengan kebutuhan spesifik Anda",
-          buttonText: "Pesan Sekarang",
-          buttonLink: "/custom-order",
-        },
-      ],
-      achievements: [
-        {
-          id: 1,
-          title: "Customer Satisfaction",
-          percentage: 95,
-          description:
-            "Tingkat kepuasan pelanggan terhadap produk dan layanan kami",
-          image: "",
-        },
-        {
-          id: 2,
-          title: "Quality Products",
-          percentage: 98,
-          description:
-            "Produk berkualitas tinggi yang memenuhi standar internasional",
-          image: "",
-        },
-      ],
-      featuredProducts: [
-        {
-          productId: 1,
-          badge: "Best Seller",
-          badgeColor: "success",
-          displayOrder: 1,
-        },
-      ],
+// Drag and drop states for banners
+const dragOverBannerIndex = ref<number | null>(null);
+const hoveredBannerIndex = ref<number | null>(null);
+
+const onBannerDragOver = (event: DragEvent, index: number) => {
+  event.preventDefault();
+  dragOverBannerIndex.value = index;
+};
+
+const onBannerDragLeave = (event: DragEvent, index: number) => {
+  event.preventDefault();
+  if (dragOverBannerIndex.value === index) {
+    dragOverBannerIndex.value = null;
+  }
+};
+
+const onBannerDrop = (event: DragEvent, index: number) => {
+  event.preventDefault();
+  dragOverBannerIndex.value = null;
+  const files = event.dataTransfer?.files;
+  if (files && files.length > 0) {
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      banners.value[index].image = e.target?.result as string;
     };
-  } finally {
-    loading.value = false;
+    reader.readAsDataURL(file);
   }
 };
 
-// Save homepage data
-const saveHomepageData = async () => {
-  saveLoading.value = true;
-  try {
-    const response = await fetch("/api/homepage", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(homepageData.value),
-    });
+// Clear banner image
+const clearBannerImage = (index: number) => {
+  banners.value[index].image = '';
+};
 
-    if (response.ok) {
-      showAlert("success", "Berhasil", "Data halaman utama berhasil disimpan!");
-    } else {
-      throw new Error("Gagal menyimpan data halaman utama");
-    }
-  } catch (error) {
-    console.error("Error saving homepage data:", error);
-    showAlert("success", "Berhasil", "Data halaman utama berhasil disimpan!");
-  } finally {
-    saveLoading.value = false;
+// --- Banner Editor Modal State ---
+const bannerEditorDialog = ref(false);
+const editingBannerIndex = ref<number | null>(null);
+const editingBanner = ref<Banner | null>(null);
+const bannerEditorFileInputRef = ref<HTMLInputElement | null>(null);
+
+// --- Banner Card Menu State ---
+const bannerMenuOpenIndex = ref<number | null>(null);
+
+// --- Banner Drag State (for new editor) ---
+const dragBannerIndex = ref<number | null>(null);
+const dragOverBannerEditorIndex = ref<number | null>(null);
+
+// --- Banner Editor Functions ---
+const openBannerMenu = (index: number) => {
+  bannerMenuOpenIndex.value = index;
+};
+const closeBannerMenu = () => {
+  bannerMenuOpenIndex.value = null;
+};
+const openBannerEditor = (index: number) => {
+  editingBannerIndex.value = index;
+  editingBanner.value = { ...banners.value[index] };
+  bannerEditorDialog.value = true;
+  closeBannerMenu();
+};
+const closeBannerEditor = () => {
+  bannerEditorDialog.value = false;
+  editingBannerIndex.value = null;
+  editingBanner.value = null;
+};
+const saveBannerEdit = () => {
+  if (editingBannerIndex.value !== null && editingBanner.value) {
+    banners.value[editingBannerIndex.value] = { ...editingBanner.value };
+    closeBannerEditor();
   }
 };
-
-// Preview state
-const previewKey = ref(0);
-const previewTimestamp = ref(Date.now());
-
-// Preview functions
-const refreshPreview = () => {
-  previewKey.value += 1;
-  previewTimestamp.value = Date.now();
+const handleBannerEditorImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file && editingBanner.value) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      editingBanner.value!.image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+const openBannerEditorFileInput = () => {
+  bannerEditorFileInputRef.value?.click();
+};
+const clearBannerEditorImage = () => {
+  if (editingBanner.value) editingBanner.value.image = '';
+};
+const deleteBannerFromMenu = (index: number) => {
+  if (banners.value.length > 1) banners.value.splice(index, 1);
+  closeBannerMenu();
+};
+// Drag-and-drop for new editor
+const onBannerEditorDragStart = (index: number) => {
+  dragBannerIndex.value = index;
+};
+const onBannerEditorDragOver = (index: number) => {
+  dragOverBannerEditorIndex.value = index;
+};
+const onBannerEditorDrop = (index: number) => {
+  if (dragBannerIndex.value !== null && dragBannerIndex.value !== index) {
+    const moved = banners.value.splice(dragBannerIndex.value, 1)[0];
+    banners.value.splice(index, 0, moved);
+  }
+  dragBannerIndex.value = null;
+  dragOverBannerEditorIndex.value = null;
+};
+const onBannerEditorDragEnd = () => {
+  dragBannerIndex.value = null;
+  dragOverBannerEditorIndex.value = null;
 };
 
-const openHomepage = () => {
-  window.open("/", "_blank");
+// --- Achievement Drag State ---
+const dragAchievementIndex = ref<number | null>(null);
+const dragOverAchievementIndex = ref<number | null>(null);
+
+const onAchievementDragStart = (index: number) => {
+  dragAchievementIndex.value = index;
+};
+const onAchievementDragOver = (index: number) => {
+  dragOverAchievementIndex.value = index;
+};
+const onAchievementDrop = (index: number) => {
+  if (dragAchievementIndex.value !== null && dragAchievementIndex.value !== index) {
+    const moved = achievements.value.splice(dragAchievementIndex.value, 1)[0];
+    achievements.value.splice(index, 0, moved);
+  }
+  dragAchievementIndex.value = null;
+  dragOverAchievementIndex.value = null;
+};
+const onAchievementDragEnd = () => {
+  dragAchievementIndex.value = null;
+  dragOverAchievementIndex.value = null;
+};
+
+// --- Achievement Card Menu & Editor State ---
+const achievementMenuOpenIndex = ref<number | null>(null);
+const achievementEditorDialog = ref(false);
+const editingAchievementIndex = ref<number | null>(null);
+const editingAchievement = ref<Achievement | null>(null);
+const achievementEditorFileInputRef = ref<HTMLInputElement | null>(null);
+
+// --- Achievement Card Menu Functions ---
+const openAchievementMenu = (index: number) => {
+  achievementMenuOpenIndex.value = index;
+};
+const closeAchievementMenu = () => {
+  achievementMenuOpenIndex.value = null;
+};
+
+// --- Achievement Editor Functions ---
+const openAchievementEditor = (index: number) => {
+  editingAchievementIndex.value = index;
+  editingAchievement.value = { ...achievements.value[index] };
+  achievementEditorDialog.value = true;
+  closeAchievementMenu();
+};
+const closeAchievementEditor = () => {
+  achievementEditorDialog.value = false;
+  editingAchievementIndex.value = null;
+  editingAchievement.value = null;
+};
+const saveAchievementEdit = () => {
+  if (editingAchievementIndex.value !== null && editingAchievement.value) {
+    achievements.value[editingAchievementIndex.value] = { ...editingAchievement.value };
+    closeAchievementEditor();
+  }
+};
+const handleAchievementEditorImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file && editingAchievement.value) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      editingAchievement.value!.image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+const openAchievementEditorFileInput = () => {
+  achievementEditorFileInputRef.value?.click();
+};
+const clearAchievementEditorImage = () => {
+  if (editingAchievement.value) editingAchievement.value.image = '';
+};
+const deleteAchievementFromMenu = (index: number) => {
+  if (achievements.value.length > 1) achievements.value.splice(index, 1);
+  closeAchievementMenu();
 };
 
 onMounted(async () => {
+  await fetchPageData();
+  await fetchAllProducts();
+  await fetchFeatured();
   await fetchCatalogProducts();
-  await fetchHomepageData();
-});
+})
 </script>
 
 <route>
@@ -463,21 +638,8 @@ onMounted(async () => {
 <template>
   <v-container class="pa-6">
     <!-- Alert -->
-    <v-alert
-      v-model="alertVisible"
-      :type="alertType"
-      :title="alertTitle"
-      :text="alertMessage"
-      closable
-      class="mb-4"
-      style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 400px;
-      "
-    />
+    <v-alert v-model="alertVisible" :type="alertType" :title="alertTitle" :text="alertMessage" closable class="mb-4"
+      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;" />
 
     <!-- Product Selection Dialog -->
     <v-dialog v-model="productSelectionDialog" max-width="800px" scrollable>
@@ -489,6 +651,8 @@ onMounted(async () => {
 
         <v-card-text class="pa-0">
           <v-container class="pa-4">
+            <v-text-field v-model="productSearch" label="Cari Produk" prepend-inner-icon="mdi-magnify"
+              variant="outlined" density="compact" class="mb-4" />
             <v-row v-if="catalogLoading" class="justify-center">
               <v-col cols="12" class="text-center">
                 <v-progress-circular indeterminate color="primary" />
@@ -496,49 +660,23 @@ onMounted(async () => {
               </v-col>
             </v-row>
 
-            <v-row
-              v-else-if="availableProducts.length === 0"
-              class="justify-center"
-            >
+            <v-row v-else-if="filteredAvailableProducts.length === 0" class="justify-center">
               <v-col cols="12" class="text-center">
-                <v-icon size="64" color="grey-lighten-1"
-                  >mdi-package-variant-closed</v-icon
-                >
-                <p class="text-grey-darken-1 mt-2">
-                  Tidak ada produk yang tersedia untuk dipilih
-                </p>
+                <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
+                <p class="text-grey-darken-1 mt-2">Tidak ada produk yang tersedia untuk dipilih</p>
               </v-col>
             </v-row>
 
             <v-row v-else>
-              <v-col
-                v-for="product in availableProducts"
-                :key="product.id"
-                cols="12"
-                md="6"
-              >
-                <v-card
-                  variant="outlined"
-                  :class="{
-                    'v-card--selected': selectedProductId === product.id,
-                  }"
-                  @click="selectedProductId = product.id"
-                  class="cursor-pointer"
-                >
+              <v-col v-for="product in filteredAvailableProducts" :key="product.id" cols="12" md="6">
+                <v-card variant="outlined" :class="{ 'v-card--selected': selectedProductId === product.id }"
+                  @click="selectedProductId = product.id" class="cursor-pointer">
                   <v-row no-gutters>
                     <v-col cols="4">
-                      <v-img
-                        :src="product.image || '/placeholder.jpg'"
-                        height="100"
-                        cover
-                      >
+                      <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" height="100" cover>
                         <template v-slot:placeholder>
-                          <div
-                            class="d-flex align-center justify-center fill-height"
-                          >
-                            <v-icon size="40" color="grey-lighten-1"
-                              >mdi-package-variant</v-icon
-                            >
+                          <div class="d-flex align-center justify-center fill-height">
+                            <v-icon size="40" color="grey-lighten-1">mdi-package-variant</v-icon>
                           </div>
                         </template>
                       </v-img>
@@ -546,46 +684,26 @@ onMounted(async () => {
                     <v-col cols="8">
                       <v-card-text class="pa-3">
                         <h4 class="text-subtitle-2 mb-1">{{ product.name }}</h4>
-                        <p class="text-caption text-grey-darken-1 mb-2">
-                          {{ product.description }}
-                        </p>
+                        <p class="text-caption text-grey-darken-1 mb-2">{{ product.description }}</p>
                         <div class="d-flex align-center justify-space-between">
-                          <span
-                            class="text-subtitle-2 font-weight-bold text-primary"
-                          >
+                          <span v-if="product.discount && product.discount > 0"
+                            class="text-subtitle-2 font-weight-bold text-grey-darken-1 mr-2"
+                            style="text-decoration: line-through;">
                             {{ formatPrice(product.price) }}
                           </span>
-                          <v-chip
-                            size="x-small"
-                            color="success"
-                            v-if="product.stock && product.stock > 0"
-                          >
-                            Stock: {{ product.stock }}
-                          </v-chip>
-                        </div>
-                        <div class="d-flex align-center mt-1">
-                          <v-rating
-                            :model-value="product.rating"
-                            readonly
-                            size="x-small"
-                            density="compact"
-                            class="mr-2"
-                          />
-                          <span class="text-caption"
-                            >({{ product.rating }})</span
-                          >
+                          <span v-if="product.discount && product.discount > 0"
+                            class="text-subtitle-2 font-weight-bold text-primary">
+                            {{ formatPrice(product.discount) }}
+                          </span>
+                          <!-- <span v-else class="text-subtitle-2 font-weight-bold text-primary">
+                            {{ formatPrice(product.price) }}
+                          </span> -->
                         </div>
                       </v-card-text>
                     </v-col>
                   </v-row>
-
-                  <!-- Selection indicator -->
-                  <v-overlay
-                    v-if="selectedProductId === product.id"
-                    contained
-                    class="d-flex align-center justify-center"
-                    opacity="0.1"
-                  >
+                  <v-overlay v-if="selectedProductId === product.id" contained
+                    class="d-flex align-center justify-center" opacity="0.1">
                     <v-icon size="48" color="primary">mdi-check-circle</v-icon>
                   </v-overlay>
                 </v-card>
@@ -596,15 +714,11 @@ onMounted(async () => {
 
         <v-card-actions class="pa-4">
           <v-spacer />
+          <v-btn :disabled="!selectedProductId" color="primary" variant="elevated" @click="addSelectedProduct">
+            Tambahkan
+          </v-btn>
           <v-btn @click="productSelectionDialog = false" variant="outlined">
             Batal
-          </v-btn>
-          <v-btn
-            @click="addSelectedProduct"
-            color="primary"
-            :disabled="!selectedProductId"
-          >
-            Tambah Produk
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -614,9 +728,7 @@ onMounted(async () => {
     <v-row class="mb-6">
       <v-col cols="12">
         <h1 class="text-h4 font-weight-bold">Halaman Utama</h1>
-        <p class="text-body-2 text-grey-darken-1">
-          Kelola konten halaman utama website dan lihat preview
-        </p>
+        <p class="text-body-2 text-grey-darken-1">Kelola konten halaman utama website dan lihat preview</p>
       </v-col>
     </v-row>
 
@@ -638,202 +750,93 @@ onMounted(async () => {
 
           <v-card-text class="pa-6">
             <v-form @submit.prevent="saveHomepageData">
-              <!-- Banner Section (keeping existing) -->
+              <!-- Banner Section (replace old with new editor, styled like Achievement) -->
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Banner Carousel</h3>
-                  <v-btn
-                    @click="addBanner"
-                    icon="mdi-plus"
-                    variant="outlined"
-                    size="small"
-                    color="primary"
-                    class="icon-btn-square"
-                  />
+                  <v-btn @click="addBanner" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
                 </div>
-
-                <!-- Banner forms (keeping existing implementation) -->
-                <div
-                  v-for="(banner, index) in homepageData.banners"
-                  :key="index"
-                  class="mb-4"
-                >
-                  <v-card variant="outlined" class="pa-4">
-                    <div class="d-flex align-center mb-3">
-                      <h4 class="text-subtitle-1 flex-grow-1">
-                        Banner {{ index + 1 }}
-                      </h4>
-                      <v-btn
-                        @click="removeBanner(index)"
-                        icon="mdi-delete"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        :disabled="homepageData.banners.length <= 1"
-                      />
-                    </div>
-
-                    <!-- Image Upload -->
-                    <div class="mb-3">
-                      <v-card
-                        height="150"
-                        variant="outlined"
-                        class="d-flex align-center justify-center mb-2 image-upload-card"
-                        @click="openBannerFileInput(index)"
-                      >
-                        <div v-if="!banner.image" class="text-center">
-                          <v-icon size="32" color="grey-lighten-1" class="mb-1"
-                            >mdi-camera</v-icon
-                          >
-                          <p class="text-caption text-grey-darken-1">
-                            Banner Image
-                          </p>
-                        </div>
-                        <v-img
-                          v-else
-                          :src="banner.image"
-                          cover
-                          height="100%"
-                          class="rounded"
-                        />
-                      </v-card>
-
-                      <input
-                        :ref="el => bannerFileInputRefs[index] = el as HTMLInputElement"
-                        type="file"
-                        accept="image/*"
-                        style="display: none"
-                        @change="handleBannerImageUpload($event, index)"
-                      />
-                    </div>
-
-                    <v-text-field
-                      v-model="banner.title"
-                      label="Title"
+                <div class="banner-list">
+                  <div v-for="(banner, index) in banners" :key="'editor-form-' + index" class="mb-3">
+                    <v-card
+                      class="d-flex align-center pa-2 mb-2 banner-card"
                       variant="outlined"
-                      density="compact"
-                      class="mb-2"
-                    />
-
-                    <v-text-field
-                      v-model="banner.subtitle"
-                      label="Subtitle"
-                      variant="outlined"
-                      density="compact"
-                      class="mb-2"
-                    />
-
-                    <v-text-field
-                      v-model="banner.buttonText"
-                      label="Button Text"
-                      variant="outlined"
-                      density="compact"
-                      class="mb-2"
-                    />
-
-                    <v-text-field
-                      v-model="banner.buttonLink"
-                      label="Button Link"
-                      variant="outlined"
-                      density="compact"
-                    />
-                  </v-card>
+                      draggable="true"
+                      @dragstart="onBannerEditorDragStart(index)"
+                      @dragover.prevent="onBannerEditorDragOver(index)"
+                      @drop.prevent="onBannerEditorDrop(index)"
+                      @dragend="onBannerEditorDragEnd"
+                      :class="{ 'banner-card--dragover': dragOverBannerEditorIndex === index }"
+                      style="transition: background 0.2s, border 0.2s;"
+                    >
+                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-avatar size="40" class="mr-3">
+                        <v-img :src="banner.image || '/placeholder.jpg'" cover />
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <div class="font-weight-bold text-white text-truncate">{{ banner.title || 'Judul Banner ' + (index + 1) }}</div>
+                        <div class="text-caption text-grey-lighten-1 text-truncate">{{ banner.subtitle }}</div>
+                      </div>
+                      <v-menu :model-value="bannerMenuOpenIndex === index" @update:model-value="val => bannerMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                        <template #activator="{ props }">
+                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openBannerMenu(index)" class="menu-btn" />
+                        </template>
+                        <v-list>
+                          <v-list-item @click="openBannerEditor(index)">
+                            <v-list-item-title>Edit</v-list-item-title>
+                          </v-list-item>
+                          <v-list-item @click="deleteBannerFromMenu(index)">
+                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </v-card>
+                  </div>
                 </div>
               </div>
 
-              <!-- Achievement Section (keeping existing) -->
+              <!-- Achievement Section (styled like Banner Promosi, now draggable) -->
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Achievement</h3>
-                  <v-btn
-                    @click="addAchievement"
-                    icon="mdi-plus"
-                    variant="outlined"
-                    size="small"
-                    color="primary"
-                    class="icon-btn-square"
-                  />
+                  <v-btn @click="addAchievement" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
                 </div>
-
-                <div
-                  v-for="(achievement, index) in homepageData.achievements"
-                  :key="achievement.id"
-                  class="mb-3"
-                >
-                  <v-card variant="outlined" class="pa-4">
-                    <div class="d-flex align-center mb-3">
-                      <h4 class="text-subtitle-1 flex-grow-1">
-                        Achievement {{ index + 1 }}
-                      </h4>
-                      <v-btn
-                        @click="removeAchievement(index)"
-                        icon="mdi-delete"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        :disabled="homepageData.achievements.length <= 1"
-                      />
-                    </div>
-
-                    <!-- Image Upload -->
-                    <div class="mb-3">
-                      <v-card
-                        height="100"
-                        variant="outlined"
-                        class="d-flex align-center justify-center mb-2 image-upload-card"
-                        @click="openAchievementFileInput(index)"
-                      >
-                        <div v-if="!achievement.image" class="text-center">
-                          <v-icon size="24" color="grey-lighten-1" class="mb-1"
-                            >mdi-trophy</v-icon
-                          >
-                          <p class="text-caption text-grey-darken-1">Icon</p>
-                        </div>
-                        <v-img
-                          v-else
-                          :src="achievement.image"
-                          cover
-                          height="100%"
-                          class="rounded"
-                        />
-                      </v-card>
-
-                      <input
-                        :ref="el => achievementFileInputRefs[index] = el as HTMLInputElement"
-                        type="file"
-                        accept="image/*"
-                        style="display: none"
-                        @change="handleAchievementImageUpload($event, index)"
-                      />
-                    </div>
-
-                    <v-text-field
-                      v-model="achievement.title"
-                      label="Title"
+                <div class="achievement-list">
+                  <div v-for="(achievement, index) in achievements" :key="achievement.order ?? index" class="mb-3">
+                    <v-card
                       variant="outlined"
-                      density="compact"
-                      class="mb-2"
-                    />
-
-                    <v-text-field
-                      v-model.number="achievement.percentage"
-                      label="Percentage"
-                      type="number"
-                      min="0"
-                      max="100"
-                      variant="outlined"
-                      density="compact"
-                      class="mb-2"
-                    />
-
-                    <v-textarea
-                      v-model="achievement.description"
-                      label="Description"
-                      variant="outlined"
-                      density="compact"
-                      rows="2"
-                    />
-                  </v-card>
+                      class="d-flex align-center pa-2 mb-2 achievement-card"
+                      draggable="true"
+                      @dragstart="onAchievementDragStart(index)"
+                      @dragover.prevent="onAchievementDragOver(index)"
+                      @drop.prevent="onAchievementDrop(index)"
+                      @dragend="onAchievementDragEnd"
+                      :class="{ 'achievement-card--dragover': dragOverAchievementIndex === index }"
+                      style="transition: background 0.2s, border 0.2s;"
+                    >
+                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-avatar size="40" class="mr-3">
+                        <v-img :src="achievement.image || '/placeholder.jpg'" cover />
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <div class="font-weight-bold text-white text-truncate">{{ achievement.title || 'Achievement ' + (index + 1) }}</div>
+                        <div class="text-caption text-grey-lighten-1 text-truncate">{{ achievement.description }}</div>
+                      </div>
+                      <v-menu :model-value="achievementMenuOpenIndex === index" @update:model-value="val => achievementMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                        <template #activator="{ props }">
+                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openAchievementMenu(index)" class="menu-btn" />
+                        </template>
+                        <v-list>
+                          <v-list-item @click="openAchievementEditor(index)">
+                            <v-list-item-title>Edit</v-list-item-title>
+                          </v-list-item>
+                          <v-list-item @click="deleteAchievementFromMenu(index)">
+                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </v-card>
+                  </div>
                 </div>
               </div>
 
@@ -841,177 +844,62 @@ onMounted(async () => {
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Produk Andalan</h3>
-                  <v-btn
-                    @click="openProductSelection"
-                    icon="mdi-plus"
-                    variant="outlined"
-                    size="small"
-                    color="primary"
-                    class="icon-btn-square"
-                    :disabled="availableProducts.length === 0"
-                  />
+                  <v-btn @click="productSelectionDialog = true" icon="mdi-plus" variant="outlined" size="small"
+                    color="primary" class="icon-btn-square" :disabled="availableProducts.length === 0" />
                 </div>
-
-                <div
-                  v-if="featuredProductsWithDetails.length === 0"
-                  class="text-center pa-8"
-                >
-                  <v-icon size="64" color="grey-lighten-1"
-                    >mdi-package-variant-closed</v-icon
-                  >
-                  <p class="text-grey-darken-1 mt-2">
-                    Belum ada produk yang dipilih sebagai featured
-                  </p>
-                  <v-btn
-                    @click="openProductSelection"
-                    color="primary"
-                    variant="outlined"
-                    :disabled="availableProducts.length === 0"
-                  >
+                <div v-if="featuredProducts.length === 0" class="text-center pa-8">
+                  <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
+                  <p class="text-grey-darken-1 mt-2">Belum ada produk yang dipilih sebagai featured</p>
+                  <v-btn @click="productSelectionDialog = true" color="primary" variant="outlined"
+                    :disabled="availableProducts.length === 0">
                     Pilih Produk
                   </v-btn>
                 </div>
-
                 <div v-else>
-                  <div
-                    v-for="(
-                      featuredProduct, index
-                    ) in featuredProductsWithDetails"
-                    :key="featuredProduct.productId"
-                    class="mb-3"
-                  >
+                  <div v-for="(product, index) in featuredProducts" :key="product.id" class="mb-3">
                     <v-card variant="outlined" class="pa-4">
                       <div class="d-flex align-center mb-3">
                         <div class="flex-grow-1">
-                          <h4 class="text-subtitle-1">
-                            {{ featuredProduct.product?.name }}
-                          </h4>
-                          <p class="text-caption text-grey-darken-1 mb-0">
-                            {{ featuredProduct.product?.category }}
-                          </p>
+                          <h4 class="text-subtitle-1">{{ product.name }}</h4>
+                          <p class="text-caption text-grey-darken-1 mb-0">{{ product.category?.category }}</p>
                         </div>
-
-                        <!-- Order controls -->
-                        <div class="mr-2">
-                          <v-btn
-                            @click="moveProductUp(index)"
-                            icon="mdi-arrow-up"
-                            variant="text"
-                            size="small"
-                            :disabled="index === 0"
-                          />
-                          <v-btn
-                            @click="moveProductDown(index)"
-                            icon="mdi-arrow-down"
-                            variant="text"
-                            size="small"
-                            :disabled="
-                              index === featuredProductsWithDetails.length - 1
-                            "
-                          />
-                        </div>
-
-                        <v-btn
-                          @click="removeFeaturedProduct(index)"
-                          icon="mdi-delete"
-                          variant="text"
-                          size="small"
-                          color="error"
-                        />
+                        <v-btn @click="removeFeaturedProduct(index)" icon="mdi-delete" variant="text" size="small"
+                          color="error" />
                       </div>
-
-                      <!-- Product preview -->
                       <div class="d-flex mb-3">
-                        <v-img
-                          :src="
-                            featuredProduct.product?.image || '/placeholder.jpg'
-                          "
-                          width="80"
-                          height="80"
-                          cover
-                          class="rounded mr-3"
-                        >
+                        <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" width="80" height="80" cover
+                          class="rounded mr-3">
                           <template v-slot:placeholder>
-                            <div
-                              class="d-flex align-center justify-center fill-height"
-                            >
-                              <v-icon size="30" color="grey-lighten-1"
-                                >mdi-package-variant</v-icon
-                              >
+                            <div class="d-flex align-center justify-center fill-height">
+                              <v-icon size="30" color="grey-lighten-1">mdi-package-variant</v-icon>
                             </div>
                           </template>
                         </v-img>
                         <div class="flex-grow-1">
-                          <p class="text-body-2 mb-2">
-                            {{ featuredProduct.product?.description }}
-                          </p>
+                          <p class="text-body-2 mb-2">{{ product.description }}</p>
                           <div class="d-flex align-center">
-                            <span
-                              class="text-h6 font-weight-bold text-primary mr-2"
-                            >
-                              {{
-                                formatPrice(featuredProduct.product?.price || 0)
-                              }}
+                            <span v-if="product.discount && product.discount > 0"
+                              class="text-h6 font-weight-bold text-grey-darken-1 mr-2"
+                              style="text-decoration: line-through;">
+                              {{ formatPrice(product.price) }}
                             </span>
-                            <span
-                              v-if="featuredProduct.product?.originalPrice"
-                              class="text-body-2 text-grey"
-                              style="text-decoration: line-through"
-                            >
-                              {{
-                                formatPrice(
-                                  featuredProduct.product.originalPrice
-                                )
-                              }}
+                            <span v-if="product.discount && product.discount > 0"
+                              class="text-h6 font-weight-bold text-primary">
+                              {{ formatPrice(product.discount) }}
+                            </span>
+                            <span v-else class="text-h6 font-weight-bold text-primary">
+                              {{ formatPrice(product.price) }}
                             </span>
                           </div>
                         </div>
                       </div>
-
-                      <!-- Badge settings -->
-                      <v-row>
-                        <v-col cols="12" md="8">
-                          <v-text-field
-                            v-model="featuredProduct.badge"
-                            label="Badge (Optional)"
-                            variant="outlined"
-                            density="compact"
-                            placeholder="e.g., Best Seller, New, Promo"
-                          />
-                        </v-col>
-                        <v-col cols="12" md="4">
-                          <v-select
-                            v-model="featuredProduct.badgeColor"
-                            label="Badge Color"
-                            :items="[
-                              { title: 'Primary', value: 'primary' },
-                              { title: 'Secondary', value: 'secondary' },
-                              { title: 'Success', value: 'success' },
-                              { title: 'Info', value: 'info' },
-                              { title: 'Warning', value: 'warning' },
-                              { title: 'Error', value: 'error' },
-                              { title: 'Amber', value: 'amber' },
-                              { title: 'Green', value: 'green' },
-                            ]"
-                            variant="outlined"
-                            density="compact"
-                          />
-                        </v-col>
-                      </v-row>
                     </v-card>
                   </div>
                 </div>
               </div>
 
               <!-- Save Button -->
-              <v-btn
-                type="submit"
-                color="primary"
-                variant="elevated"
-                :loading="saveLoading"
-                block
-                size="large"
-              >
+              <v-btn type="submit" color="primary" variant="elevated" :loading="saveLoading" block size="large">
                 Simpan Perubahan
               </v-btn>
             </v-form>
@@ -1022,30 +910,16 @@ onMounted(async () => {
       <!-- Right Side - Preview -->
       <v-col cols="12" lg="6">
         <v-card variant="outlined">
-          <v-card-title
-            class="bg-grey text-white d-flex justify-space-between align-center"
-          >
+          <v-card-title class="bg-grey text-white d-flex justify-space-between align-center">
             <div class="d-flex align-center">
               <v-icon class="mr-2">mdi-eye</v-icon>
               Live Preview
             </div>
             <div class="d-flex gap-2">
-              <v-btn
-                @click="refreshPreview"
-                icon="mdi-refresh"
-                variant="text"
-                size="small"
-                color="white"
-                title="Refresh preview"
-              />
-              <v-btn
-                @click="openHomepage"
-                icon="mdi-open-in-new"
-                variant="text"
-                size="small"
-                color="white"
-                title="Open homepage in new tab"
-              />
+              <v-btn @click="refreshPreview" icon="mdi-refresh" variant="text" size="small" color="white"
+                title="Refresh preview" />
+              <v-btn @click="openHomepage" icon="mdi-open-in-new" variant="text" size="small" color="white"
+                title="Open homepage in new tab" />
             </div>
           </v-card-title>
 
@@ -1059,6 +933,67 @@ onMounted(async () => {
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Banner Editor Modal -->
+    <v-dialog v-model="bannerEditorDialog" max-width="500px">
+      <v-card>
+        <v-card-title class="bg-primary text-white">Edit Banner</v-card-title>
+        <v-card-text class="pa-6">
+          <div class="mb-4">
+            <v-card height="150" variant="outlined" class="d-flex align-center justify-center image-upload-card" @click="openBannerEditorFileInput">
+              <div v-if="!editingBanner?.image" class="text-center">
+                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
+                <p class="text-caption text-grey-darken-1">Banner Image<br /></p>
+              </div>
+              <div v-else class="banner-image-wrapper">
+                <v-img :src="editingBanner?.image" cover height="100%" class="rounded" />
+                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearBannerEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
+              </div>
+            </v-card>
+            <input ref="bannerEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleBannerEditorImageUpload" />
+          </div>
+          <v-text-field v-if="editingBanner" v-model="editingBanner.title" label="Title" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingBanner" v-model="editingBanner.subtitle" label="Subtitle" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonText" label="Button Text" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonLink" label="Button Link" variant="outlined" density="compact" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="closeBannerEditor">Batal</v-btn>
+          <v-btn color="primary" @click="saveBannerEdit">Simpan</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Achievement Editor Modal -->
+    <v-dialog v-model="achievementEditorDialog" max-width="500px">
+      <v-card>
+        <v-card-title class="bg-primary text-white">Edit Achievement</v-card-title>
+        <v-card-text class="pa-6">
+          <div class="mb-4">
+            <v-card height="100" variant="outlined" class="d-flex align-center justify-center image-upload-card" @click="openAchievementEditorFileInput">
+              <div v-if="!editingAchievement?.image" class="text-center">
+                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-trophy</v-icon>
+                <p class="text-caption text-grey-darken-1">Icon<br /></p>
+              </div>
+              <div v-else class="achievement-image-wrapper">
+                <v-img :src="editingAchievement?.image" cover height="100%" class="rounded" />
+                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearAchievementEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
+              </div>
+            </v-card>
+            <input ref="achievementEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleAchievementEditorImageUpload" />
+          </div>
+          <v-text-field v-if="editingAchievement" v-model="editingAchievement.title" label="Title" variant="outlined" density="compact" class="mb-2" />
+          <v-text-field v-if="editingAchievement" v-model.number="editingAchievement.percentage" label="Percentage" type="number" min="0" max="100" variant="outlined" density="compact" class="mb-2" />
+          <v-textarea v-if="editingAchievement" v-model="editingAchievement.description" label="Description" variant="outlined" density="compact" rows="2" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="closeAchievementEditor">Batal</v-btn>
+          <v-btn color="primary" @click="saveAchievementEdit">Simpan</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -1166,5 +1101,102 @@ onMounted(async () => {
   max-width: 100% !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
+}
+
+.drag-drop-banner {
+  position: relative;
+}
+
+.drag-drop-banner.drag-over {
+  border-color: rgb(var(--v-theme-primary)) !important;
+  background-color: rgba(var(--v-theme-primary), 0.1) !important;
+}
+
+.banner-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.clear-image-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  background: white;
+}
+
+.banner-list {
+  background: transparent;
+  padding: 16px 12px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+.banner-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1.5px solid #fff;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #fff;
+}
+.banner-card--dragover {
+  border-color: var(--v-theme-primary, #1976d2) !important;
+  background: rgba(25, 118, 210, 0.08) !important;
+}
+.drag-btn {
+  color: #bbb !important;
+}
+.menu-btn {
+  color: #bbb !important;
+}
+.banner-card .v-avatar {
+  background: #222;
+}
+.banner-card .v-img {
+  border-radius: 50%;
+}
+.banner-card .font-weight-bold {
+  color: #fff;
+}
+.banner-card .text-caption {
+  color: #b0b0b0 !important;
+}
+
+.achievement-list {
+  background: transparent;
+  padding: 16px 12px;
+  border: 2px solid #fff;
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+.achievement-card {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1.5px solid #fff;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #fff;
+}
+.achievement-card--dragover {
+  border-color: var(--v-theme-primary, #1976d2) !important;
+  background: rgba(25, 118, 210, 0.08) !important;
+}
+.drag-btn {
+  color: #bbb !important;
+}
+.menu-btn {
+  color: #bbb !important;
+}
+.achievement-card .v-avatar {
+  background: #222;
+}
+.achievement-card .v-img {
+  border-radius: 50%;
+}
+.achievement-card .font-weight-bold {
+  color: #fff;
+}
+.achievement-card .text-caption {
+  color: #b0b0b0 !important;
 }
 </style>

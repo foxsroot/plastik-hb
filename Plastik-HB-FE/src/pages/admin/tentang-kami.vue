@@ -417,16 +417,30 @@ onMounted(() => {
               </div>
 
               <!-- Save Button -->
-              <v-btn
-                type="submit"
-                color="primary"
-                variant="elevated"
-                :loading="saveLoading"
-                block
-                size="large"
-              >
-                Simpan Perubahan
-              </v-btn>
+              <!-- Map URL + Save Button in One Line -->
+              <v-row align="center" class="mb-4">
+                <v-col cols="12" md="8">
+                  <v-text-field
+                    v-model="aboutData.mapUrl"
+                    label="Link Google Maps"
+                    variant="outlined"
+                  />
+                </v-col>
+
+                <v-col cols="12" md="4" class="d-flex align-center">
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    variant="elevated"
+                    :loading="saveLoading"
+                    block
+                    size="large"
+                    class="mt-0"
+                  >
+                    Simpan Perubahan
+                  </v-btn>
+                </v-col>
+              </v-row>
             </v-form>
           </v-card-text>
         </v-card>

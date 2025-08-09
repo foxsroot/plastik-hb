@@ -31,5 +31,6 @@
     "@types/cors": "^2.8.19",
     "sequelize-cli": "^6.6.3",
     "ts-node": "^10.9.2"
+    "@types/multer": "^2.0.0"
   }
 }
