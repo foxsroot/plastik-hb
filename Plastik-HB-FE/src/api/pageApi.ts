@@ -19,3 +19,8 @@ export const updateHomepage = async (data: {
   const response = await axiosInstance.put('/pages/homepage', data);
   return response.data; // Extract updated homepage data from response
 }
+
+export const updateAboutPage = async (pageId: string, data: object): Promise<object> => {
+  const response = await axiosInstance.put('/pages/tentang-kami', data);
+  return response.data;
+};

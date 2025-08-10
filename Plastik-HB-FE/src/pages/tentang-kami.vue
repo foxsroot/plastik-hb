@@ -43,6 +43,12 @@ async function fetchPageData() {
   }
 }
 
+function getImageUrl(imagePath?: string): string {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  return `http://localhost:5000${imagePath}`;
+}
+
 onMounted(async () => {
   await fetchPageData();
   trackPageView(
@@ -60,14 +66,11 @@ onMounted(async () => {
         <h1 class="text-h4 font-weight-bold mb-4">
           {{ pageData?.sections[0].data.title }}
         </h1>
-        <p class="text-subtitle-1 mb-3">
-          {{ pageData?.sections[0].data.description }}
-        </p>
         <p class="text-body-1">{{ pageData?.sections[0].data.description }}</p>
       </v-col>
       <v-col cols="12" md="6">
         <v-img
-          :src="pageData?.sections[0].data.imageUrl"
+          :src="getImageUrl(pageData?.sections[0].data.imageUrl)"
           height="320"
           cover
           class="rounded-lg elevation-1"
