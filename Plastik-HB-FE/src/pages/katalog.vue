@@ -4,12 +4,20 @@
     <v-row>
       <!-- Filter Sidebar -->
       <v-col cols="12" md="3" lg="2" class="mb-4 mb-md-0">
-        <v-card class="pa-3 elevation-2 rounded-lg filter-sidebar" color="white">
+        <v-card
+          class="pa-3 elevation-2 rounded-lg filter-sidebar"
+          color="white"
+        >
           <!-- Header with Filter Count Badge -->
           <div class="d-flex align-center justify-space-between mb-2">
             <div class="d-flex align-center">
-              <v-icon size="18" class="mr-2" color="grey-darken-2">mdi-filter</v-icon>
-              <span class="text-subtitle-2 font-weight-medium text-grey-darken-2">Filter Produk</span>
+              <v-icon size="18" class="mr-2" color="grey-darken-2"
+                >mdi-filter</v-icon
+              >
+              <span
+                class="text-subtitle-2 font-weight-medium text-grey-darken-2"
+                >Filter Produk</span
+              >
             </div>
             <!-- Total Active Filters Badge -->
             <v-badge
@@ -21,15 +29,22 @@
               <v-icon size="16" color="primary">mdi-filter-check</v-icon>
             </v-badge>
           </div>
-          
+
           <!-- Active Filters Summary - Always Present -->
           <div class="active-filters-section mb-3">
             <!-- Category Filters -->
             <div class="filter-group">
               <div class="d-flex align-center justify-space-between mb-1">
-                <span class="text-caption text-grey-darken-1 font-weight-medium">
+                <span
+                  class="text-caption text-grey-darken-1 font-weight-medium"
+                >
                   <v-icon size="10" class="mr-1">mdi-tag-multiple</v-icon>
-                  Kategori {{ selectedCategories.length > 0 ? `(${selectedCategories.length})` : '' }}
+                  Kategori
+                  {{
+                    selectedCategories.length > 0
+                      ? `(${selectedCategories.length})`
+                      : ""
+                  }}
                 </span>
                 <v-btn
                   v-if="selectedCategories.length > 0"
@@ -40,7 +55,10 @@
                   @click="clearCategoryFilter"
                 />
               </div>
-              <div class="filter-chips-container category-chips" :class="{ 'empty-state': selectedCategories.length === 0 }">
+              <div
+                class="filter-chips-container category-chips"
+                :class="{ 'empty-state': selectedCategories.length === 0 }"
+              >
                 <template v-if="selectedCategories.length > 0">
                   <v-chip
                     v-for="categoryId in selectedCategories"
@@ -56,7 +74,10 @@
                     {{ getCategoryName(categoryId) }}
                   </v-chip>
                 </template>
-                <span v-else class="empty-placeholder text-caption text-grey-lighten-1">
+                <span
+                  v-else
+                  class="empty-placeholder text-caption text-grey-lighten-1"
+                >
                   Tidak ada kategori dipilih
                 </span>
               </div>
@@ -65,7 +86,9 @@
             <!-- Price Filter -->
             <div class="filter-group">
               <div class="d-flex align-center justify-space-between mb-1">
-                <span class="text-caption text-grey-darken-1 font-weight-medium">
+                <span
+                  class="text-caption text-grey-darken-1 font-weight-medium"
+                >
                   <v-icon size="10" class="mr-1">mdi-currency-usd</v-icon>
                   Harga
                 </span>
@@ -78,7 +101,10 @@
                   @click="clearPriceFilter"
                 />
               </div>
-              <div class="filter-chips-container" :class="{ 'empty-state': !priceFilterActive }">
+              <div
+                class="filter-chips-container"
+                :class="{ 'empty-state': !priceFilterActive }"
+              >
                 <v-chip
                   v-if="priceFilterActive"
                   size="small"
@@ -87,14 +113,18 @@
                   class="elegant-active-chip"
                 >
                   <v-icon start size="12">mdi-currency-usd</v-icon>
-                  {{ formatPriceShort(priceMin) }} - {{ formatPriceShort(priceMax) }}
+                  {{ formatPriceShort(priceMin) }} -
+                  {{ formatPriceShort(priceMax) }}
                 </v-chip>
-                <span v-else class="empty-placeholder text-caption text-grey-lighten-1">
+                <span
+                  v-else
+                  class="empty-placeholder text-caption text-grey-lighten-1"
+                >
                   Rentang harga default
                 </span>
               </div>
             </div>
-            
+
             <!-- Reset Filter Button - Always Present -->
             <v-btn
               size="small"
@@ -106,24 +136,34 @@
               @click="clearAllFilters"
             >
               <v-icon start size="14">mdi-filter-off</v-icon>
-              Reset {{ hasActiveFilters ? totalActiveFilters : '' }} Filter{{ totalActiveFilters > 1 ? 's' : '' }}
+              Reset {{ hasActiveFilters ? totalActiveFilters : "" }} Filter{{
+                totalActiveFilters > 1 ? "s" : ""
+              }}
             </v-btn>
-            
+
             <v-divider class="my-2" color="#e0e0e0" />
           </div>
-          
+
           <!-- Sort Options with Enhanced UX -->
           <div class="filter-section mb-3">
             <div class="d-flex align-center justify-space-between mb-2">
               <div class="d-flex align-center">
-                <v-icon size="16" class="mr-2" color="grey-darken-2">mdi-sort</v-icon>
-                <span class="text-caption font-weight-medium text-grey-darken-2">Urutkan</span>
+                <v-icon size="16" class="mr-2" color="grey-darken-2"
+                  >mdi-sort</v-icon
+                >
+                <span class="text-caption font-weight-medium text-grey-darken-2"
+                  >Urutkan</span
+                >
               </div>
               <!-- Sort Direction Indicator -->
-              <v-icon v-if="sortBy.includes('desc')" size="14" color="orange">mdi-sort-descending</v-icon>
-              <v-icon v-else size="14" color="primary">mdi-sort-ascending</v-icon>
+              <v-icon v-if="sortBy.includes('desc')" size="14" color="orange"
+                >mdi-sort-descending</v-icon
+              >
+              <v-icon v-else size="14" color="primary"
+                >mdi-sort-ascending</v-icon
+              >
             </div>
-            
+
             <!-- Enhanced Sort Dropdown -->
             <v-select
               v-model="sortBy"
@@ -137,13 +177,17 @@
             >
               <template v-slot:selection="{ item }">
                 <div class="d-flex align-center">
-                  <v-icon size="12" class="mr-1" :color="getSortIcon(item.value).color">
+                  <v-icon
+                    size="12"
+                    class="mr-1"
+                    :color="getSortIcon(item.value).color"
+                  >
                     {{ getSortIcon(item.value).icon }}
                   </v-icon>
                   <span class="text-caption">{{ item.title }}</span>
                 </div>
               </template>
-              
+
               <template v-slot:item="{ item, props }">
                 <v-list-item v-bind="props" class="sort-item">
                   <template v-slot:prepend>
@@ -151,32 +195,39 @@
                       {{ getSortIcon(item.value).icon }}
                     </v-icon>
                   </template>
-                  <v-list-item-title class="text-caption">{{ item.title }}</v-list-item-title>
+                  <v-list-item-title class="text-caption">{{
+                    item.title
+                  }}</v-list-item-title>
                 </v-list-item>
               </template>
             </v-select>
           </div>
-          
+
           <v-divider class="my-1" color="#e0e0e0" />
-          
+
           <!-- Category Filter with Dropdown -->
           <div class="filter-section mb-2">
             <div class="d-flex align-center justify-space-between mb-2">
               <div class="d-flex align-center">
-                <v-icon size="16" class="mr-2" color="grey-darken-2">mdi-tag-multiple</v-icon>
-                <span class="text-caption font-weight-medium text-grey-darken-2">Kategori</span>
+                <v-icon size="16" class="mr-2" color="grey-darken-2"
+                  >mdi-tag-multiple</v-icon
+                >
+                <span class="text-caption font-weight-medium text-grey-darken-2"
+                  >Kategori</span
+                >
               </div>
-              <v-chip v-if="selectedCategories.length > 0" size="x-small" color="primary" variant="flat">
+              <v-chip
+                v-if="selectedCategories.length > 0"
+                size="x-small"
+                color="primary"
+                variant="flat"
+              >
                 {{ selectedCategories.length }}
               </v-chip>
             </div>
-            
+
             <!-- Category Dropdown with Checkboxes -->
-            <v-menu 
-              :close-on-content-click="false"
-              offset-y
-              max-height="200"
-            >
+            <v-menu :close-on-content-click="false" offset-y max-height="200">
               <template v-slot:activator="{ props }">
                 <v-btn
                   v-bind="props"
@@ -198,7 +249,7 @@
                   </template>
                 </v-btn>
               </template>
-              
+
               <v-card class="pa-2" max-width="220">
                 <!-- Quick Actions -->
                 <div class="d-flex gap-1 mb-2">
@@ -221,9 +272,9 @@
                     Hapus Semua
                   </v-btn>
                 </div>
-                
+
                 <v-divider class="mb-1" />
-                
+
                 <!-- Category Checkboxes -->
                 <div v-if="categories.length > 0" class="categories-dropdown">
                   <v-checkbox
@@ -238,8 +289,12 @@
                     @change="applyFilters"
                   >
                     <template v-slot:label>
-                      <div class="d-flex align-center justify-space-between w-100">
-                        <span class="text-caption text-grey-darken-2">{{ category.category }}</span>
+                      <div
+                        class="d-flex align-center justify-space-between w-100"
+                      >
+                        <span class="text-caption text-grey-darken-2">{{
+                          category.category
+                        }}</span>
                         <v-chip
                           v-if="getCategoryProductCount(category.id) > 0"
                           size="x-small"
@@ -253,24 +308,35 @@
                     </template>
                   </v-checkbox>
                 </div>
-                
-                <div v-else class="text-caption text-grey-darken-1 pa-2 text-center">
-                  <v-progress-circular size="14" indeterminate class="mr-1"></v-progress-circular>
+
+                <div
+                  v-else
+                  class="text-caption text-grey-darken-1 pa-2 text-center"
+                >
+                  <v-progress-circular
+                    size="14"
+                    indeterminate
+                    class="mr-1"
+                  ></v-progress-circular>
                   Loading...
                 </div>
               </v-card>
             </v-menu>
           </div>
-          
+
           <v-divider class="my-1" color="#e0e0e0" />
-          
+
           <!-- Price Filter - Simple Side by Side -->
           <div class="filter-section-last">
             <div class="d-flex align-center mb-1">
-              <v-icon size="16" class="mr-2" color="grey-darken-2">mdi-currency-usd</v-icon>
-              <span class="text-caption font-weight-medium text-grey-darken-2">Rentang Harga</span>
+              <v-icon size="16" class="mr-2" color="grey-darken-2"
+                >mdi-currency-usd</v-icon
+              >
+              <span class="text-caption font-weight-medium text-grey-darken-2"
+                >Rentang Harga</span
+              >
             </div>
-            
+
             <!-- Price Inputs Side by Side -->
             <v-row dense no-gutters class="mb-1">
               <v-col cols="5" class="pr-1">
@@ -288,7 +354,10 @@
                   @input="(e: Event) => onPriceInput(e, false)"
                 >
                   <template v-slot:prepend-inner>
-                    <span style="font-size: 7px; color: #616161; font-weight: 600;">Rp</span>
+                    <span
+                      style="font-size: 7px; color: #616161; font-weight: 600"
+                      >Rp</span
+                    >
                   </template>
                 </v-text-field>
               </v-col>
@@ -310,18 +379,23 @@
                   @input="(e: Event) => onPriceInput(e, true)"
                 >
                   <template v-slot:prepend-inner>
-                    <span style="font-size: 7px; color: #616161; font-weight: 600;">Rp</span>
+                    <span
+                      style="font-size: 7px; color: #616161; font-weight: 600"
+                      >Rp</span
+                    >
                   </template>
                 </v-text-field>
               </v-col>
             </v-row>
-            
+
             <!-- Quick Price Chips -->
             <div class="d-flex flex-wrap gap-1 mb-0">
               <v-chip
                 size="x-small"
                 :variant="isQuickPriceActive(0, 50000) ? 'flat' : 'outlined'"
-                :color="isQuickPriceActive(0, 50000) ? 'primary' : 'grey-darken-1'"
+                :color="
+                  isQuickPriceActive(0, 50000) ? 'primary' : 'grey-darken-1'
+                "
                 @click="setQuickPrice(0, 50000)"
                 class="elegant-chip quick-price-chip"
               >
@@ -329,8 +403,14 @@
               </v-chip>
               <v-chip
                 size="x-small"
-                :variant="isQuickPriceActive(50000, 100000) ? 'flat' : 'outlined'"
-                :color="isQuickPriceActive(50000, 100000) ? 'primary' : 'grey-darken-1'"
+                :variant="
+                  isQuickPriceActive(50000, 100000) ? 'flat' : 'outlined'
+                "
+                :color="
+                  isQuickPriceActive(50000, 100000)
+                    ? 'primary'
+                    : 'grey-darken-1'
+                "
                 @click="setQuickPrice(50000, 100000)"
                 class="elegant-chip quick-price-chip"
               >
@@ -338,8 +418,14 @@
               </v-chip>
               <v-chip
                 size="x-small"
-                :variant="isQuickPriceActive(100000, 500000) ? 'flat' : 'outlined'"
-                :color="isQuickPriceActive(100000, 500000) ? 'primary' : 'grey-darken-1'"
+                :variant="
+                  isQuickPriceActive(100000, 500000) ? 'flat' : 'outlined'
+                "
+                :color="
+                  isQuickPriceActive(100000, 500000)
+                    ? 'primary'
+                    : 'grey-darken-1'
+                "
                 @click="setQuickPrice(100000, 500000)"
                 class="elegant-chip quick-price-chip"
               >
@@ -347,8 +433,14 @@
               </v-chip>
               <v-chip
                 size="x-small"
-                :variant="isQuickPriceActive(500000, 10000000) ? 'flat' : 'outlined'"
-                :color="isQuickPriceActive(500000, 10000000) ? 'primary' : 'grey-darken-1'"
+                :variant="
+                  isQuickPriceActive(500000, 10000000) ? 'flat' : 'outlined'
+                "
+                :color="
+                  isQuickPriceActive(500000, 10000000)
+                    ? 'primary'
+                    : 'grey-darken-1'
+                "
                 @click="setQuickPrice(500000, 10000000)"
                 class="elegant-chip quick-price-chip"
               >
@@ -369,7 +461,9 @@
               <template v-if="totalPages > 1">
                 Halaman {{ currentPage }}: {{ products.length }} produk
                 <span class="text-caption">
-                  ({{ filteredProducts.length }} hasil{{ hasActiveFilters ? ' dengan filter' : '' }})
+                  ({{ filteredProducts.length }} hasil{{
+                    hasActiveFilters ? " dengan filter" : ""
+                  }})
                 </span>
               </template>
               <template v-else>
@@ -380,11 +474,15 @@
               </template>
             </div>
           </div>
-          
+
           <!-- Search Box - Right Side with Mobile Toggle -->
           <div class="d-flex align-center gap-2">
             <!-- Search Box -->
-            <v-card class="pa-2 elevation-2 rounded-lg search-card" color="#2c2c2c" style="width: 300px;">
+            <v-card
+              class="pa-2 elevation-2 rounded-lg search-card"
+              color="#2c2c2c"
+              style="width: 300px"
+            >
               <v-text-field
                 v-model="searchQuery"
                 label="Cari produk..."
@@ -399,12 +497,14 @@
               >
                 <template v-slot:append-inner>
                   <v-fade-transition>
-                    <v-icon v-if="searchQuery" color="white">mdi-filter-check</v-icon>
+                    <v-icon v-if="searchQuery" color="white"
+                      >mdi-filter-check</v-icon
+                    >
                   </v-fade-transition>
                 </template>
               </v-text-field>
             </v-card>
-            
+
             <!-- Mobile Filter Toggle -->
             <v-btn
               v-if="$vuetify.display.mobile"
@@ -434,7 +534,7 @@
                 height="150"
                 cover
                 class="rounded mb-2"
-                style="background: #222;"
+                style="background: #222"
                 :alt="product.name"
                 @error="() => handleImageError(product)"
               >
@@ -449,15 +549,21 @@
                   </div>
                 </template>
               </v-img>
-              <v-card-title class="text-subtitle-1 font-weight-medium mb-1 text-white">
+              <v-card-title
+                class="text-subtitle-1 font-weight-medium mb-1 text-white"
+              >
                 {{ product.name }}
               </v-card-title>
               <v-card-subtitle class="text-grey-lighten-2 mb-1">
-                {{ product.category?.category || 'Kategori tidak tersedia' }}
+                {{ product.category?.category || "Kategori tidak tersedia" }}
               </v-card-subtitle>
               <v-card-subtitle class="text-primary font-weight-bold mb-2">
                 <span v-if="product.discount > 0">
-                  {{ formatPrice(calculateDiscountedPrice(product.price, product.discount)) }}
+                  {{
+                    formatPrice(
+                      calculateDiscountedPrice(product.price, product.discount)
+                    )
+                  }}
                   <span class="text-red text-decoration-line-through ml-2">
                     {{ formatPrice(product.price) }}
                   </span>
@@ -513,7 +619,7 @@
                   :key="page"
                   :class="[
                     'pagination-dot',
-                    { 'pagination-dot-active': page === currentPage }
+                    { 'pagination-dot-active': page === currentPage },
                   ]"
                   @click="goToPage(page)"
                 >
@@ -538,8 +644,10 @@
           <!-- Page Info -->
           <div class="text-center mt-3">
             <span class="text-grey-lighten-2 text-caption">
-              Halaman {{ currentPage }} dari {{ totalPages }} 
-              ({{ filteredProducts.length }} produk dari {{ allProducts.length }} total)
+              Halaman {{ currentPage }} dari {{ totalPages }} ({{
+                filteredProducts.length
+              }}
+              produk dari {{ allProducts.length }} total)
             </span>
           </div>
         </div>
@@ -553,9 +661,7 @@
               <span v-if="hasActiveFilters">
                 Coba ubah atau hapus filter pencarian Anda
               </span>
-              <span v-else>
-                Belum ada produk yang tersedia
-              </span>
+              <span v-else> Belum ada produk yang tersedia </span>
             </div>
             <!-- Show active filters when no results -->
             <div v-if="hasActiveFilters" class="mt-3">
@@ -585,18 +691,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
-import axiosInstance from '@/utils/axiosInstance';
-import Loading from '@/components/Loading.vue';
-import { getImageUrl, formatPrice, calculateDiscountedPrice } from '@/utils/formatters';
+import { ref, onMounted, computed, watch } from "vue";
+import axiosInstance from "@/utils/axiosInstance";
+import Loading from "@/components/Loading.vue";
+import {
+  getImageUrl,
+  formatPrice,
+  calculateDiscountedPrice,
+} from "@/utils/formatters";
 
 // Alt image fallback - sama seperti di katalog-produk
-const ALT_IMAGE_FILENAME = 'Alt-Image-Produk.png';
+const ALT_IMAGE_FILENAME = "Alt-Image-Produk.png";
 
 // Computed untuk mendapatkan alt image URL
 const altImageUrl = computed(() => {
   const url = getImageUrl(ALT_IMAGE_FILENAME);
-  console.log('Alt image URL computed:', url);
+  console.log("Alt image URL computed:", url);
   return url;
 });
 
@@ -605,57 +715,70 @@ const failedImages = ref(new Set<string>());
 
 // Helper untuk get image URL atau fallback ke alt - sama seperti katalog-produk
 const getImageOrAlt = (imageFilename: string | null | undefined): string => {
-  if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') {
-    console.log('Using alt image for:', imageFilename);
+  if (
+    !imageFilename ||
+    imageFilename === "" ||
+    imageFilename === "/placeholder.jpg"
+  ) {
+    console.log("Using alt image for:", imageFilename);
     return altImageUrl.value;
   }
-  
+
   // Jika data URL (base64 dari file upload), return as is
-  if (imageFilename.startsWith('data:')) {
-    console.log('Using data URL:', imageFilename.substring(0, 50) + '...');
+  if (imageFilename.startsWith("data:")) {
+    console.log("Using data URL:", imageFilename.substring(0, 50) + "...");
     return imageFilename;
   }
-  
+
   // Jika sudah URL lengkap, return as is
-  if (imageFilename.startsWith('http')) {
+  if (imageFilename.startsWith("http")) {
     return imageFilename;
   }
-  
+
   // Convert ke URL lengkap
   const fullUrl = getImageUrl(imageFilename);
-  console.log('Generated URL:', fullUrl, 'from:', imageFilename);
+  console.log("Generated URL:", fullUrl, "from:", imageFilename);
   return fullUrl;
 };
 
 // Helper untuk cek apakah image sudah failed
-const shouldUseAltImage = (imageFilename: string | null | undefined): boolean => {
-  if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') return true;
-  
+const shouldUseAltImage = (
+  imageFilename: string | null | undefined
+): boolean => {
+  if (
+    !imageFilename ||
+    imageFilename === "" ||
+    imageFilename === "/placeholder.jpg"
+  )
+    return true;
+
   // Jika data URL (base64 dari file upload), jangan gunakan alt image
-  if (imageFilename.startsWith('data:')) return false;
-  
+  if (imageFilename.startsWith("data:")) return false;
+
   // Generate proper URL untuk cek di failedImages
-  const fullUrl = imageFilename.startsWith('http') ? imageFilename : getImageUrl(imageFilename);
+  const fullUrl = imageFilename.startsWith("http")
+    ? imageFilename
+    : getImageUrl(imageFilename);
   return failedImages.value.has(fullUrl);
 };
 
 // Mark image as failed
 const markImageAsFailed = (imageUrl: string) => {
-  console.log('Marking image as failed:', imageUrl);
+  console.log("Marking image as failed:", imageUrl);
   failedImages.value.add(imageUrl);
 };
 
 // Helper functions for price input formatting
 const formatPriceInput = (value: number): string => {
-  if (value < 0) return '0';
-  if (value === 0) return '0';
-  return value.toLocaleString('id-ID');
+  if (value < 0) return "0";
+  if (value === 0) return "0";
+  return value.toLocaleString("id-ID");
 };
 
 const parsePriceInput = (value: string): number => {
-  if (!value || value.trim() === '') return 0;
+  if (!value || value.trim() === "") return 0;
   // Remove all non-numeric characters (dots, commas, etc.)
-  const numericValue = value.replace(/[^\d]/g, '');
+  const numericValue = value.replace(/[^\d]/g, "");
   return parseInt(numericValue) || 0;
 };
 
@@ -663,45 +786,60 @@ const parsePriceInput = (value: string): number => {
 const validateNumberInput = (event: KeyboardEvent): boolean => {
   const char = event.key;
   const input = event.target as HTMLInputElement;
-  
+
   // Allow control keys (backspace, delete, arrow keys, etc.)
-  if (event.ctrlKey || event.metaKey || 
-      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(char)) {
+  if (
+    event.ctrlKey ||
+    event.metaKey ||
+    [
+      "Backspace",
+      "Delete",
+      "Tab",
+      "Escape",
+      "Enter",
+      "Home",
+      "End",
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+    ].includes(char)
+  ) {
     return true;
   }
-  
+
   // Only allow numeric characters (0-9)
   if (!/^[0-9]$/.test(char)) {
     event.preventDefault();
     return false;
   }
-  
+
   // Check if adding this digit would exceed 9 digits
-  const currentValue = input.value || '';
-  const numericValue = currentValue.replace(/[^\d]/g, '');
-  
+  const currentValue = input.value || "";
+  const numericValue = currentValue.replace(/[^\d]/g, "");
+
   if (numericValue.length >= 10) {
     event.preventDefault();
     return false;
   }
-  
+
   return true;
 };
 
 const validateMaxDigits = (value: string, maxDigits: number = 12): boolean => {
-  const numericValue = value.replace(/[^\d]/g, '');
+  const numericValue = value.replace(/[^\d]/g, "");
   return numericValue.length <= maxDigits;
 };
 
 const onPriceInput = (event: Event, isMaxPrice: boolean = false) => {
   const input = event.target as HTMLInputElement;
   const value = input.value;
-  
+
   // Simply enforce max digits by truncating if somehow exceeded
-  const numericValue = value.replace(/[^\d]/g, '');
+  const numericValue = value.replace(/[^\d]/g, "");
   if (numericValue.length > 12) {
     const truncated = numericValue.substring(0, 12);
-    input.value = parseInt(truncated).toLocaleString('id-ID');
+    input.value = parseInt(truncated).toLocaleString("id-ID");
   }
 };
 
@@ -714,13 +852,13 @@ const priceMin = ref<number>(0);
 const priceMax = ref<number>(10000000);
 const priceFilterActive = ref<boolean>(false); // Track if price filter is manually set
 // showFeaturedOnly removed - no longer needed
-const sortBy = ref('name');
+const sortBy = ref("name");
 const showMobileFilter = ref(false);
-const searchQuery = ref(''); // Add search functionality
+const searchQuery = ref(""); // Add search functionality
 
 // Error handling for price inputs
-const priceMinError = ref<string>('');
-const priceMaxError = ref<string>('');
+const priceMinError = ref<string>("");
+const priceMaxError = ref<string>("");
 
 // All products from API (before client-side filtering)
 const allProducts = ref<any[]>([]);
@@ -731,55 +869,57 @@ const itemsPerPage = ref(12); // Batas produk per halaman
 
 // Sort options
 const sortOptions = [
-  { title: 'Nama A-Z', value: 'name' },
-  { title: 'Nama Z-A', value: 'name_desc' },
-  { title: 'Harga Terendah', value: 'price_asc' },
-  { title: 'Harga Tertinggi', value: 'price_desc' },
-  { title: 'Terbaru', value: 'newest' }
+  { title: "Nama A-Z", value: "name" },
+  { title: "Nama Z-A", value: "name_desc" },
+  { title: "Harga Terendah", value: "price_asc" },
+  { title: "Harga Tertinggi", value: "price_desc" },
+  { title: "Terbaru", value: "newest" },
 ];
 
 // API functions
 const fetchCatalogProducts = async () => {
   try {
     loading.value = true;
-    
+
     const params: any = {};
-    
+
     // Apply backend filters
     // Price filter akan dilakukan di client-side untuk menggunakan harga setelah discount
     // if (priceMin.value > 0) params.priceMin = priceMin.value;
     // if (priceMax.value < 10000000) params.priceMax = priceMax.value;
     // Featured filter removed - no longer needed
-    
+
     // 🎯 NEW: Backend category filtering (more efficient!)
     if (selectedCategories.value.length === 1) {
       // Single category - use backend filter
       params.categoryId = selectedCategories.value[0];
     }
 
-    const response = await axiosInstance.get('/products/catalog', { params });
-    
+    const response = await axiosInstance.get("/products/catalog", { params });
+
     let fetchedProducts = response.data.data || [];
-    
+
     // 🎯 IMPROVED: Client-side category filtering only for multiple categories
     if (selectedCategories.value.length > 1) {
       // Multiple categories - use client-side filtering for OR condition
-      fetchedProducts = fetchedProducts.filter((product: any) => 
+      fetchedProducts = fetchedProducts.filter((product: any) =>
         selectedCategories.value.includes(product.category_id)
       );
     }
-    
+
     // Store all products for client-side filtering
     allProducts.value = fetchedProducts;
-    
-    console.log(`Fetched ${fetchedProducts.length} products with backend filters:`, {
-      categories: selectedCategories.value.length,
-      note: 'Price filtering dilakukan di client-side menggunakan harga setelah discount'
-      // Featured filter removed
-    });
-    
+
+    console.log(
+      `Fetched ${fetchedProducts.length} products with backend filters:`,
+      {
+        categories: selectedCategories.value.length,
+        note: "Price filtering dilakukan di client-side menggunakan harga setelah discount",
+        // Featured filter removed
+      }
+    );
   } catch (error) {
-    console.error('Error fetching catalog products:', error);
+    console.error("Error fetching catalog products:", error);
     allProducts.value = [];
   } finally {
     loading.value = false;
@@ -789,48 +929,54 @@ const fetchCatalogProducts = async () => {
 
 const fetchCategories = async () => {
   try {
-    console.log('🔄 Fetching categories from API...');
-    
+    console.log("🔄 Fetching categories from API...");
+
     // Try to get active categories first
-    let response = await axiosInstance.get('/products/categories');
-    console.log('✅ Active categories API response:', response.data);
-    
+    let response = await axiosInstance.get("/products/categories");
+    console.log("✅ Active categories API response:", response.data);
+
     let fetchedCategories = response.data.data || response.data || [];
-    
+
     // 🔄 Fallback: If no active categories, get all categories
     if (fetchedCategories.length === 0) {
-      console.log('⚠️ No active categories found, trying all categories...');
+      console.log("⚠️ No active categories found, trying all categories...");
       try {
-        response = await axiosInstance.get('/products/all-categories');
-        console.log('✅ All categories API response:', response.data);
+        response = await axiosInstance.get("/products/all-categories");
+        console.log("✅ All categories API response:", response.data);
         fetchedCategories = response.data.data || response.data || [];
       } catch (fallbackError) {
-        console.warn('⚠️ Fallback categories also failed:', fallbackError);
+        console.warn("⚠️ Fallback categories also failed:", fallbackError);
       }
     }
-    
+
     categories.value = fetchedCategories;
-    
-    console.log(`📋 Loaded ${fetchedCategories.length} categories:`, 
-      fetchedCategories.map((cat: any) => `${cat.category} (${cat.id})`));
-      
+
+    console.log(
+      `📋 Loaded ${fetchedCategories.length} categories:`,
+      fetchedCategories.map((cat: any) => `${cat.category} (${cat.id})`)
+    );
+
     if (fetchedCategories.length === 0) {
-      console.warn('⚠️ No categories found at all');
+      console.warn("⚠️ No categories found at all");
     }
-    
   } catch (error: any) {
-    console.error('❌ Error fetching categories:', error);
-    console.error('Response data:', error.response?.data);
-    console.error('Status:', error.response?.status);
-    
+    console.error("❌ Error fetching categories:", error);
+    console.error("Response data:", error.response?.data);
+    console.error("Status:", error.response?.status);
+
     // 🔄 Last resort: Try all categories endpoint
     try {
-      console.log('🔄 Last resort: Trying all categories endpoint...');
-      const fallbackResponse = await axiosInstance.get('/products/all-categories');
-      categories.value = fallbackResponse.data.data || fallbackResponse.data || [];
-      console.log(`✅ Fallback success: ${categories.value.length} categories loaded`);
+      console.log("🔄 Last resort: Trying all categories endpoint...");
+      const fallbackResponse = await axiosInstance.get(
+        "/products/all-categories"
+      );
+      categories.value =
+        fallbackResponse.data.data || fallbackResponse.data || [];
+      console.log(
+        `✅ Fallback success: ${categories.value.length} categories loaded`
+      );
     } catch (fallbackError) {
-      console.error('❌ All fallback attempts failed:', fallbackError);
+      console.error("❌ All fallback attempts failed:", fallbackError);
       categories.value = [];
     }
   }
@@ -843,24 +989,24 @@ const getMainImageUrl = (product: any): string => {
     const mainAsset = product.assets.find((asset: any) => asset.order === 1);
     if (mainAsset && mainAsset.url) {
       const imageUrl = getImageOrAlt(mainAsset.url);
-      
+
       // Cek apakah image sudah pernah failed
       if (shouldUseAltImage(mainAsset.url)) {
         return altImageUrl.value;
       }
-      
+
       return imageUrl;
     }
   }
-  
+
   // Fallback ke alt image jika tidak ada assets
   return altImageUrl.value;
 };
 
 // Handler untuk image error - simplified version
 const handleImageError = (product: any) => {
-  console.log('Image failed to load for product:', product.name);
-  
+  console.log("Image failed to load for product:", product.name);
+
   // Mark as failed and trigger reactivity
   if (product.assets && product.assets.length > 0) {
     const mainAsset = product.assets.find((asset: any) => asset.order === 1);
@@ -880,12 +1026,14 @@ const applyFilters = () => {
 
 // 🎯 NEW: Helper functions for enhanced category filtering
 const getCategoryName = (categoryId: string): string => {
-  const category = categories.value.find(cat => cat.id === categoryId);
-  return category?.category || 'Unknown Category';
+  const category = categories.value.find((cat) => cat.id === categoryId);
+  return category?.category || "Unknown Category";
 };
 
 const removeCategoryFilter = (categoryId: string) => {
-  selectedCategories.value = selectedCategories.value.filter(id => id !== categoryId);
+  selectedCategories.value = selectedCategories.value.filter(
+    (id) => id !== categoryId
+  );
   applyFilters();
 };
 
@@ -895,12 +1043,14 @@ const clearCategoryFilter = () => {
 };
 
 const selectAllCategories = () => {
-  selectedCategories.value = categories.value.map(cat => cat.id);
+  selectedCategories.value = categories.value.map((cat) => cat.id);
   applyFilters();
 };
 
 const isQuickPriceActive = (min: number, max: number): boolean => {
-  return priceMin.value === min && priceMax.value === max && priceFilterActive.value;
+  return (
+    priceMin.value === min && priceMax.value === max && priceFilterActive.value
+  );
 };
 
 const setQuickPrice = (min: number, max: number) => {
@@ -913,18 +1063,18 @@ const setQuickPrice = (min: number, max: number) => {
 // 🎯 NEW: Get sort icon for enhanced UX
 const getSortIcon = (sortValue: string) => {
   switch (sortValue) {
-    case 'name':
-      return { icon: 'mdi-sort-alphabetical-ascending', color: 'primary' };
-    case 'name_desc':
-      return { icon: 'mdi-sort-alphabetical-descending', color: 'primary' };
-    case 'price_asc':
-      return { icon: 'mdi-sort-numeric-ascending', color: 'success' };
-    case 'price_desc':
-      return { icon: 'mdi-sort-numeric-descending', color: 'success' };
-    case 'newest':
-      return { icon: 'mdi-clock-outline', color: 'orange' };
+    case "name":
+      return { icon: "mdi-sort-alphabetical-ascending", color: "primary" };
+    case "name_desc":
+      return { icon: "mdi-sort-alphabetical-descending", color: "primary" };
+    case "price_asc":
+      return { icon: "mdi-sort-numeric-ascending", color: "success" };
+    case "price_desc":
+      return { icon: "mdi-sort-numeric-descending", color: "success" };
+    case "newest":
+      return { icon: "mdi-clock-outline", color: "orange" };
     default:
-      return { icon: 'mdi-sort', color: 'grey' };
+      return { icon: "mdi-sort", color: "grey" };
   }
 };
 
@@ -972,16 +1122,16 @@ const onPriceMaxChange = () => {
 
 // Computed property to check if any filters are active
 const hasActiveFilters = computed(() => {
-  return selectedCategories.value.length > 0 || 
-         priceFilterActive.value;
-         // searchQuery removed from active filters
-         // showFeaturedOnly removed
+  return selectedCategories.value.length > 0 || priceFilterActive.value;
+  // searchQuery removed from active filters
+  // showFeaturedOnly removed
 });
 
 // 🎯 NEW: Count total active filters for badge (excluding search)
 const totalActiveFilters = computed(() => {
   let count = 0;
-  if (selectedCategories.value.length > 0) count += selectedCategories.value.length;
+  if (selectedCategories.value.length > 0)
+    count += selectedCategories.value.length;
   if (priceFilterActive.value) count += 1;
   // searchQuery removed from count
   return count;
@@ -992,43 +1142,43 @@ const displayPriceMin = computed({
   get: () => formatPriceInput(priceMin.value),
   set: (value: string) => {
     // If empty input, set to 0
-    if (!value || value.trim() === '') {
+    if (!value || value.trim() === "") {
       priceMin.value = 0;
       applyFilters();
       return;
     }
-    
+
     const numValue = parsePriceInput(value);
     priceMin.value = numValue;
-    
+
     // Set filter as active if value >= 0 (allowing 0)
     if (numValue >= 0) {
       priceFilterActive.value = true;
     }
     applyFilters();
-  }
+  },
 });
 
 const displayPriceMax = computed({
   get: () => formatPriceInput(priceMax.value),
   set: (value: string) => {
     // If empty input, set to 0
-    if (!value || value.trim() === '') {
+    if (!value || value.trim() === "") {
       priceMax.value = 0;
       priceFilterActive.value = true;
       applyFilters();
       return;
     }
-    
+
     const numValue = parsePriceInput(value);
     priceMax.value = numValue;
-    
+
     // Set filter as active for any valid number
     if (numValue >= 0) {
       priceFilterActive.value = true;
     }
     applyFilters();
-  }
+  },
 });
 
 // 🎯 NEW: Watch for sync between inputs and slider
@@ -1045,19 +1195,20 @@ const filteredProducts = computed(() => {
 
   // Apply category filter
   if (selectedCategories.value.length > 0) {
-    filtered = filtered.filter(product => 
+    filtered = filtered.filter((product) =>
       selectedCategories.value.includes(product.category_id)
     );
   }
 
   // Apply price filter (menggunakan harga setelah discount)
   if (priceFilterActive.value) {
-    filtered = filtered.filter(product => {
+    filtered = filtered.filter((product) => {
       // Hitung harga setelah discount
-      const finalPrice = product.discount > 0 
-        ? calculateDiscountedPrice(product.price, product.discount)
-        : product.price;
-      
+      const finalPrice =
+        product.discount > 0
+          ? calculateDiscountedPrice(product.price, product.discount)
+          : product.price;
+
       return finalPrice >= priceMin.value && finalPrice <= priceMax.value;
     });
   }
@@ -1065,12 +1216,12 @@ const filteredProducts = computed(() => {
   // Apply search filter
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase().trim();
-    
-    filtered = filtered.filter(product => {
+
+    filtered = filtered.filter((product) => {
       // Search ONLY by product name for more accurate results
-      const productName = product.name ? product.name.toLowerCase().trim() : '';
+      const productName = product.name ? product.name.toLowerCase().trim() : "";
       const matchesName = productName.length > 0 && productName.includes(query);
-      
+
       return matchesName;
     });
   }
@@ -1078,22 +1229,36 @@ const filteredProducts = computed(() => {
   // Apply sorting
   filtered.sort((a, b) => {
     switch (sortBy.value) {
-      case 'name':
+      case "name":
         return a.name.localeCompare(b.name);
-      case 'name_desc':
+      case "name_desc":
         return b.name.localeCompare(a.name);
-      case 'price_asc':
+      case "price_asc":
         // Gunakan harga setelah discount untuk sorting
-        const priceA = a.discount > 0 ? calculateDiscountedPrice(a.price, a.discount) : a.price;
-        const priceB = b.discount > 0 ? calculateDiscountedPrice(b.price, b.discount) : b.price;
+        const priceA =
+          a.discount > 0
+            ? calculateDiscountedPrice(a.price, a.discount)
+            : a.price;
+        const priceB =
+          b.discount > 0
+            ? calculateDiscountedPrice(b.price, b.discount)
+            : b.price;
         return priceA - priceB;
-      case 'price_desc':
+      case "price_desc":
         // Gunakan harga setelah discount untuk sorting
-        const priceDescA = a.discount > 0 ? calculateDiscountedPrice(a.price, a.discount) : a.price;
-        const priceDescB = b.discount > 0 ? calculateDiscountedPrice(b.price, b.discount) : b.price;
+        const priceDescA =
+          a.discount > 0
+            ? calculateDiscountedPrice(a.price, a.discount)
+            : a.price;
+        const priceDescB =
+          b.discount > 0
+            ? calculateDiscountedPrice(b.price, b.discount)
+            : b.price;
         return priceDescB - priceDescA;
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      case "newest":
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       default:
         return a.name.localeCompare(b.name);
     }
@@ -1127,19 +1292,23 @@ const formatPriceShort = (price: number): string => {
   } else if (price >= 1000000) {
     // Juta (1M+) - remove .0 if it's a whole number
     const juta = price / 1000000;
-    return juta % 1 === 0 ? `${juta.toFixed(0)} juta` : `${juta.toFixed(1)} juta`;
+    return juta % 1 === 0
+      ? `${juta.toFixed(0)} juta`
+      : `${juta.toFixed(1)} juta`;
   } else if (price >= 1000) {
     // Ribu (1K+)
     return `${(price / 1000).toFixed(0)} ribu`;
   } else {
     // Under 1000
-    return new Intl.NumberFormat('id-ID').format(price);
+    return new Intl.NumberFormat("id-ID").format(price);
   }
 };
 
 const getCategoryProductCount = (categoryId: string): number => {
   // Count products in this category from current filtered results
-  return allProducts.value.filter(product => product.category_id === categoryId).length;
+  return allProducts.value.filter(
+    (product) => product.category_id === categoryId
+  ).length;
 };
 
 const toggleMobileFilter = () => {
@@ -1151,7 +1320,7 @@ const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
     // Scroll to top saat ganti halaman
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 };
 
@@ -1181,10 +1350,7 @@ watch([selectedCategories, priceMin, priceMax, searchQuery, sortBy], () => {
 
 // Lifecycle
 onMounted(async () => {
-  await Promise.all([
-    fetchCategories(),
-    fetchCatalogProducts()
-  ]);
+  await Promise.all([fetchCategories(), fetchCatalogProducts()]);
 });
 </script>
 
@@ -1212,7 +1378,9 @@ onMounted(async () => {
 .dark-product-card {
   border: 1px solid #333 !important;
 }
-.v-card-title, .v-card-subtitle, .text-white {
+.v-card-title,
+.v-card-subtitle,
+.text-white {
   color: #fff !important;
 }
 
@@ -1318,7 +1486,7 @@ onMounted(async () => {
   .search-card {
     width: 200px !important;
   }
-  
+
   .dark-search-input .v-field__input {
     font-size: 14px !important;
   }
@@ -1342,7 +1510,9 @@ onMounted(async () => {
 .filter-sidebar {
   position: sticky;
   top: calc(var(--navbar-height, 64px) + var(--sidebar-offset, 20px));
-  max-height: calc(100vh - var(--navbar-height, 64px) - var(--sidebar-offset, 20px) - 16px);
+  max-height: calc(
+    100vh - var(--navbar-height, 64px) - var(--sidebar-offset, 20px) - 16px
+  );
   overflow-y: auto;
   background: white !important;
   border: 1px solid #e0e0e0 !important;
@@ -1436,7 +1606,9 @@ onMounted(async () => {
 .filter-sidebar {
   position: sticky;
   top: calc(var(--navbar-height, 64px) + var(--sidebar-offset, 32px));
-  max-height: calc(100vh - var(--navbar-height, 64px) - var(--sidebar-offset, 32px) - 16px) !important;
+  max-height: calc(
+    100vh - var(--navbar-height, 64px) - var(--sidebar-offset, 32px) - 16px
+  ) !important;
   overflow-y: auto;
   background: white !important;
   border: 1px solid #e0e0e0 !important;
@@ -1710,7 +1882,7 @@ onMounted(async () => {
 }
 
 .filter-loading::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -1757,7 +1929,11 @@ onMounted(async () => {
 }
 
 @keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
     transform: translateY(0);
   }
   40% {
@@ -2055,42 +2231,42 @@ onMounted(async () => {
     margin-bottom: 16px;
     top: 0;
   }
-  
+
   .gap-2 {
     gap: 4px;
   }
-  
+
   .gap-1 {
     gap: 2px;
   }
-  
+
   .quick-category-btn {
     font-size: 0.75rem;
     padding: 4px 8px;
   }
-  
+
   .categories-list {
     max-height: 200px;
   }
-  
+
   /* Responsive pagination */
   .pagination-dot {
     width: 35px;
     height: 35px;
     font-size: 10px;
   }
-  
+
   .pagination-dots {
     gap: 6px;
     padding: 4px 0;
   }
-  
+
   .pagination-container {
     gap: 8px;
     margin-top: 24px;
     padding: 16px 0;
   }
-  
+
   .pagination-arrow {
     min-width: 40px !important;
     height: 40px !important;
@@ -2103,11 +2279,11 @@ onMounted(async () => {
     height: 30px;
     font-size: 9px;
   }
-  
+
   .pagination-dots {
     gap: 4px;
   }
-  
+
   .pagination-arrow {
     min-width: 36px !important;
     height: 36px !important;

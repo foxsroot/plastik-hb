@@ -40,6 +40,8 @@ interface Achievement {
   image?: string;
 }
 
+const { trackPageView } = useAnalytics();
+
 const pageData = ref<PageData | null>(null);
 const errorMessage = ref("");
 
@@ -187,10 +189,6 @@ onMounted(async () => {
 onUnmounted(() => {
   stopAutoScroll();
 });
-
-function trackPageView(arg0: any, arg1: string) {
-  throw new Error("Function not implemented.");
-}
 </script>
 
 <template>
