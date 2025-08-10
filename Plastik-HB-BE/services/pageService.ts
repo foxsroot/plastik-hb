@@ -21,11 +21,12 @@ const storage = multer.diskStorage({
 export const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
-        // Only allow image files
-        if (file.mimetype.startsWith('image/')) {
+        // Allow common image formats: PNG, JPG, JPEG
+        const allowedMimeTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+        if (allowedMimeTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed'));
+            cb(new Error('Only PNG, JPG, and JPEG image files are allowed'));
         }
     },
     limits: {
