@@ -12,7 +12,7 @@ export function useAnalytics() {
         sendAnalyticsEvent({
             type: "PRODUCT",
             targetId: productId,
-            url: window.location.href,
+            url: productId,
         });
     }
     return { trackPageView, trackProductClick };
