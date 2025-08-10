@@ -201,3 +201,63 @@ export const updateBannerInSection = async (
 
     return section;
 };
+
+/**
+ * @desc Update About Page data and its sections
+ * @param data - About page data (id, title, description, published, sections)
+ * @returns Updated About Page with sections
+ */
+export const updateAboutPageData = async ({
+    id,
+    title,
+    description,
+    published,
+    sections
+}: {
+    id: string;
+    title: string;
+    description: string;
+    published: boolean;
+    sections: any[];
+}): Promise<object> => {
+    // --- Fetch Page ---
+    const aboutPage = await Page.findByPk(id, {
+        include: [{ model: Section, as: 'sections' }]
+    });
+    if (!aboutPage) throw new Error('About page not found');
+
+    // --- Update Main Fields ---
+    aboutPage.title = title;
+    aboutPage.description = description;
+    aboutPage.published = published;
+    await aboutPage.save();
+
+    // --- Update Sections ---
+    const existingSections = aboutPage.sections || [];
+    for (const sectionData of sections) {
+        let section = existingSections.find((s: any) => s.id === sectionData.id);
+
+        if (section) {
+            section.data = sectionData.data;
+            section.order = sectionData.order;
+            section.visible = sectionData.visible;
+            await section.save();
+        } else {
+            await Section.create({
+                page_id: aboutPage.id,
+                type: sectionData.type,
+                data: sectionData.data,
+                order: sectionData.order,
+                visible: sectionData.visible,
+            });
+        }
+    }
+
+    // --- Reload Updated Page ---
+    const updatedAboutPage = await Page.findByPk(id, {
+        include: [{ model: Section, as: 'sections' }],
+        order: [[{ model: Section, as: 'sections' }, 'order', 'ASC']],
+    });
+    if (!updatedAboutPage) throw new Error('About page not found after update');
+    return updatedAboutPage;
+};

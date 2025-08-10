@@ -27,12 +27,18 @@ use([
 
 // --- Export analyticsOverview as JSON ---
 const exportData = () => {
-  const dataStr = JSON.stringify(visitorData.value, null, 2);
+  const exportPayload = {
+    overview: analyticsOverview.value,
+    timeline: visitorData.value,
+    products: products.value,
+    productClicks: productClickData.value,
+  };
+  const dataStr = JSON.stringify(exportPayload, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "analytics-overview.json";
+  link.download = "analytics-data.json";
   link.click();
   URL.revokeObjectURL(url);
 };

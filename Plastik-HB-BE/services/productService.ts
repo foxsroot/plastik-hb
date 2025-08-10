@@ -42,7 +42,7 @@ export class ProductService {
      */
     static async getFeaturedProducts(): Promise<Product[]> {
         return await Product.findAll({
-            where: { featured: true },
+            where: { featured: true, status: 'active' },
             include: [
                 { 
                     model: Asset, 
@@ -51,6 +51,109 @@ export class ProductService {
                 },
                 { model: Category, as: 'category' }
             ]
+        });
+    }
+
+    /**
+     * Get single product by ID with associations
+     */
+    static async getProductById(id: string): Promise<Product | null> {
+        console.log('🔍 ProductService: Fetching product with ID:', id);
+        
+        const product = await Product.findByPk(id, {
+            include: [
+                { 
+                    model: Asset, 
+                    as: 'assets',
+                    order: [['order', 'ASC']]
+                },
+                { 
+                    model: Category, 
+                    as: 'category',
+                    required: false // LEFT JOIN instead of INNER JOIN
+                }
+            ]
+        });
+        
+        console.log('📦 ProductService: Found product:', {
+            id: product?.id,
+            name: product?.name,
+            category: product?.category?.category,
+            assetsCount: product?.assets?.length || 0
+        });
+        
+        return product;
+    }
+
+    /**
+     * Get all active products for public catalog with filtering
+     */
+    static async getActiveProducts(filters?: {
+        categoryId?: string;
+        priceMin?: number;
+        priceMax?: number;
+        featured?: boolean;
+    }): Promise<Product[]> {
+        const whereConditions: any = {
+            status: 'Aktif' // Only show active products
+        };
+
+        // Apply filters
+        if (filters?.categoryId) {
+            whereConditions.category_id = filters.categoryId;
+        }
+
+        if (filters?.priceMin !== undefined || filters?.priceMax !== undefined) {
+            whereConditions.price = {};
+            if (filters.priceMin !== undefined) {
+                whereConditions.price[Op.gte] = filters.priceMin;
+            }
+            if (filters.priceMax !== undefined) {
+                whereConditions.price[Op.lte] = filters.priceMax;
+            }
+        }
+
+        if (filters?.featured !== undefined) {
+            whereConditions.featured = filters.featured;
+        }
+
+        return await Product.findAll({
+            where: whereConditions,
+            include: [
+                { 
+                    model: Asset, 
+                    as: 'assets',
+                    order: [['order', 'ASC']]
+                },
+                { model: Category, as: 'category' }
+            ],
+            order: [['created_at', 'DESC']]
+        });
+    }
+
+    /**
+     * Get all categories that have active products
+     */
+    static async getActiveCategories(): Promise<Category[]> {
+        // 🔧 FIXED: Use a simpler approach without complex joins
+        const activeProducts = await Product.findAll({
+            where: { status: 'Aktif' },
+            attributes: ['category_id'],
+            group: ['category_id'],
+            raw: true
+        });
+
+        if (activeProducts.length === 0) {
+            return [];
+        }
+
+        const categoryIds = activeProducts.map((product: any) => product.category_id);
+
+        return await Category.findAll({
+            where: {
+                id: categoryIds
+            },
+            order: [['category', 'ASC']]
         });
     }
 

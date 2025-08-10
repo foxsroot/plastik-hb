@@ -17,6 +17,7 @@ import contactRouter from './routes/contactRoutes';
 import productRouter from './routes/productRoutes';
 import categoryRouter from './routes/categoryRoutes';
 import analyticRouter from './routes/analyticRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 import { Category } from './models/Category';
 
 dotenv.config();
@@ -66,6 +67,7 @@ app.use('/api/contact', contactRouter);
 app.use('/api/products', productRouter);
 app.use('/api/categories', categoryRouter);
 app.use('/api/analytics', analyticRouter);
+app.use('/api/uploads', uploadRoutes);
 
 // ENDS HERE
 
