@@ -7,7 +7,18 @@ import { CategoryService } from '../services/categoryService';
  */
 export const getAllCategories = async (req: Request, res: Response) => {
     const categories = await CategoryService.getAllCategories();
-    return { data: categories, status: 200 };
+    const categoriesWithCount = await Promise.all(categories.map(async (cat: any) => {
+        const base = cat.dataValues ? cat.dataValues : cat;
+        const products = await CategoryService.getProductsByCategory(base.id);
+        return {
+            id: base.id,
+            category: base.category,
+            created_at: base.created_at,
+            updated_at: base.updated_at,
+            productCount: Array.isArray(products) ? products.length : 0
+        };
+    }));
+    return { data: categoriesWithCount, status: 200 };
 };
 
 /**

@@ -42,7 +42,7 @@ export class ProductService {
      */
     static async getFeaturedProducts(): Promise<Product[]> {
         return await Product.findAll({
-            where: { featured: true },
+            where: { featured: true, status: 'active' },
             include: [
                 { 
                     model: Asset, 
