@@ -108,6 +108,8 @@ async function fetchAllProducts() {
 
 // Product selection dialog
 const productSelectionDialog = ref(false)
+const selectedProductIdsDialog = ref<string[]>([])
+// Single product selection (for addSelectedProduct, legacy support)
 const selectedProductId = ref<string | null>(null)
 
 // File input refs
@@ -427,6 +429,16 @@ const addSelectedProduct = () => {
   }
 };
 
+// Update addSelectedProduct for bulk add
+const addSelectedProducts = () => {
+  const newProducts = catalogProducts.value.filter(
+    p => selectedProductIdsDialog.value.includes(p.id) && !featuredProducts.value.some(fp => fp.id === p.id)
+  );
+  featuredProducts.value.push(...newProducts);
+  selectedProductIdsDialog.value = [];
+  productSelectionDialog.value = false;
+};
+
 // Drag and drop states for banners
 const dragOverBannerIndex = ref<number | null>(null);
 const hoveredBannerIndex = ref<number | null>(null);
@@ -618,6 +630,44 @@ const deleteAchievementFromMenu = (index: number) => {
   closeAchievementMenu();
 };
 
+// Toggle product selection in the dialog
+const toggleProductSelection = (productId: string) => {
+  const idx = selectedProductIdsDialog.value.indexOf(productId);
+  if (idx === -1) {
+    selectedProductIdsDialog.value.push(productId);
+  } else {
+    selectedProductIdsDialog.value.splice(idx, 1);
+  }
+};
+
+// Banner Editor: Drag & Drop Image Upload
+const handleBannerEditorImageDrop = (event: DragEvent) => {
+  event.preventDefault();
+  if (!editingBanner) return;
+  const file = event.dataTransfer?.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (editingBanner.value) editingBanner.value.image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Achievement Editor: Drag & Drop Image Upload
+const handleAchievementEditorImageDrop = (event: DragEvent) => {
+  event.preventDefault();
+  if (!editingAchievement) return;
+  const file = event.dataTransfer?.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (editingAchievement.value) editingAchievement.value.image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
 onMounted(async () => {
   await fetchPageData();
   await fetchAllProducts();
@@ -669,10 +719,20 @@ onMounted(async () => {
 
             <v-row v-else>
               <v-col v-for="product in filteredAvailableProducts" :key="product.id" cols="12" md="6">
-                <v-card variant="outlined" :class="{ 'v-card--selected': selectedProductId === product.id }"
-                  @click="selectedProductId = product.id" class="cursor-pointer">
+                <v-card variant="outlined" :class="['product-select-card', { 'v-card--selected': selectedProductIdsDialog.includes(product.id) }]"
+                  @click="toggleProductSelection(product.id)" class="cursor-pointer product-select-card">
                   <v-row no-gutters>
-                    <v-col cols="4">
+                    <v-col cols="1" class="d-flex align-center justify-center">
+                      <v-checkbox
+                        :model-value="selectedProductIdsDialog.includes(product.id)"
+                        @update:model-value="toggleProductSelection(product.id)"
+                        hide-details
+                        density="compact"
+                        color="primary"
+                        class="ma-0 pa-0"
+                      />
+                    </v-col>
+                    <v-col cols="3">
                       <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" height="100" cover>
                         <template v-slot:placeholder>
                           <div class="d-flex align-center justify-center fill-height">
@@ -693,16 +753,16 @@ onMounted(async () => {
                           </span>
                           <span v-if="product.discount && product.discount > 0"
                             class="text-subtitle-2 font-weight-bold text-primary">
-                            {{ formatPrice(product.discount) }}
+                            {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
                           </span>
-                          <!-- <span v-else class="text-subtitle-2 font-weight-bold text-primary">
+                          <span v-else class="text-subtitle-2 font-weight-bold text-primary">
                             {{ formatPrice(product.price) }}
-                          </span> -->
+                          </span>
                         </div>
                       </v-card-text>
                     </v-col>
                   </v-row>
-                  <v-overlay v-if="selectedProductId === product.id" contained
+                  <v-overlay v-if="selectedProductIdsDialog.includes(product.id)" contained
                     class="d-flex align-center justify-center" opacity="0.1">
                     <v-icon size="48" color="primary">mdi-check-circle</v-icon>
                   </v-overlay>
@@ -714,7 +774,7 @@ onMounted(async () => {
 
         <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn :disabled="!selectedProductId" color="primary" variant="elevated" @click="addSelectedProduct">
+          <v-btn :disabled="selectedProductIdsDialog.length === 0" color="primary" variant="elevated" @click="addSelectedProducts">
             Tambahkan
           </v-btn>
           <v-btn @click="productSelectionDialog = false" variant="outlined">
@@ -857,8 +917,11 @@ onMounted(async () => {
                 </div>
                 <div v-else>
                   <div v-for="(product, index) in featuredProducts" :key="product.id" class="mb-3">
-                    <v-card variant="outlined" class="pa-4">
+                    <v-card variant="outlined" class="pa-4 featured-product-card">
                       <div class="d-flex align-center mb-3">
+                        <div class="featured-product-img">
+                          <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" width="64" height="64" cover />
+                        </div>
                         <div class="flex-grow-1">
                           <h4 class="text-subtitle-1">{{ product.name }}</h4>
                           <p class="text-caption text-grey-darken-1 mb-0">{{ product.category?.category }}</p>
@@ -866,26 +929,18 @@ onMounted(async () => {
                         <v-btn @click="removeFeaturedProduct(index)" icon="mdi-delete" variant="text" size="small"
                           color="error" />
                       </div>
-                      <div class="d-flex mb-3">
-                        <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" width="80" height="80" cover
-                          class="rounded mr-3">
-                          <template v-slot:placeholder>
-                            <div class="d-flex align-center justify-center fill-height">
-                              <v-icon size="30" color="grey-lighten-1">mdi-package-variant</v-icon>
-                            </div>
-                          </template>
-                        </v-img>
+                      <div class="d-flex mb-3 align-center">
                         <div class="flex-grow-1">
                           <p class="text-body-2 mb-2">{{ product.description }}</p>
                           <div class="d-flex align-center">
                             <span v-if="product.discount && product.discount > 0"
+                              class="text-h6 font-weight-bold text-primary mr-2">
+                              {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
+                            </span>
+                            <span v-if="product.discount && product.discount > 0"
                               class="text-h6 font-weight-bold text-grey-darken-1 mr-2"
                               style="text-decoration: line-through;">
                               {{ formatPrice(product.price) }}
-                            </span>
-                            <span v-if="product.discount && product.discount > 0"
-                              class="text-h6 font-weight-bold text-primary">
-                              {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
                             </span>
                             <span v-else class="text-h6 font-weight-bold text-primary">
                               {{ formatPrice(product.price) }}
@@ -940,7 +995,11 @@ onMounted(async () => {
         <v-card-title class="bg-primary text-white">Edit Banner</v-card-title>
         <v-card-text class="pa-6">
           <div class="mb-4">
-            <v-card height="150" variant="outlined" class="d-flex align-center justify-center image-upload-card" @click="openBannerEditorFileInput">
+            <v-card height="150" variant="outlined" class="d-flex align-center justify-center image-upload-card"
+              @click="openBannerEditorFileInput"
+              @dragover.prevent
+              @drop="handleBannerEditorImageDrop"
+              >
               <div v-if="!editingBanner?.image" class="text-center">
                 <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
                 <p class="text-caption text-grey-darken-1">Banner Image<br /></p>
@@ -971,7 +1030,11 @@ onMounted(async () => {
         <v-card-title class="bg-primary text-white">Edit Achievement</v-card-title>
         <v-card-text class="pa-6">
           <div class="mb-4">
-            <v-card height="100" variant="outlined" class="d-flex align-center justify-center image-upload-card" @click="openAchievementEditorFileInput">
+            <v-card height="100" variant="outlined" class="d-flex align-center justify-center image-upload-card"
+              @click="openAchievementEditorFileInput"
+              @dragover.prevent
+              @drop="handleAchievementEditorImageDrop"
+              >
               <div v-if="!editingAchievement?.image" class="text-center">
                 <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-trophy</v-icon>
                 <p class="text-caption text-grey-darken-1">Icon<br /></p>
@@ -1039,6 +1102,26 @@ onMounted(async () => {
 .v-card--selected {
   border-color: rgb(var(--v-theme-primary)) !important;
   border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.15) !important;
+}
+
+.product-select-card {
+  min-height: 140px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.product-select-card .v-row {
+  height: 100%;
+}
+.product-select-card .v-card-text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .preview-container::-webkit-scrollbar {
@@ -1198,5 +1281,39 @@ onMounted(async () => {
 }
 .achievement-card .text-caption {
   color: #b0b0b0 !important;
+}
+
+.featured-product-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 160px;
+  height: 100%;
+  border-radius: 8px;
+  justify-content: stretch;
+}
+.featured-product-card .featured-product-img {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  min-height: 64px;
+  max-width: 64px;
+  max-height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #222;
+  margin-right: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 600px) {
+  .featured-product-card .featured-product-img {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    max-width: 48px;
+    max-height: 48px;
+  }
 }
 </style>

@@ -25,9 +25,11 @@ productRouter.get('/catalog', controllerWrapper(getCatalogProducts));
 productRouter.get('/categories', controllerWrapper(getActiveCategories));
 productRouter.get('/all-categories', controllerWrapper(getAllCategoriesForCatalog));
 productRouter.get('/featured', controllerWrapper(getFeaturedProducts));
+productRouter.post('/', uploadProductImages ,controllerWrapper(createProduct));
 
 // Admin routes
 productRouter.get('/', controllerWrapper(getAllProducts));
+productRouter.put('/featured', controllerWrapper(updateFeaturedProducts));
 
 // Public product detail route (no auth required) - Must be AFTER specific routes
 productRouter.get('/:id', controllerWrapper(getProductById));
@@ -40,6 +42,5 @@ productRouter.delete('/:id/assets/:assetId', controllerWrapper(deleteProductAsse
 productRouter.put('/:id/assets/:assetId', uploadProductImages, controllerWrapper(replaceAsset));
 productRouter.patch('/:id/assets/reorder', controllerWrapper(reorderAssets));
 productRouter.put('/:id/main-image', uploadProductImages, controllerWrapper(replaceMainImage));
-productRouter.put('/featured', controllerWrapper(updateFeaturedProducts));
 
 export default productRouter;
