@@ -27,8 +27,8 @@ export class ProductService {
     static async getAllProducts(): Promise<Product[]> {
         return await Product.findAll({
             include: [
-                { 
-                    model: Asset, 
+                {
+                    model: Asset,
                     as: 'assets',
                     order: [['order', 'ASC']]
                 },
@@ -44,8 +44,8 @@ export class ProductService {
         return await Product.findAll({
             where: { featured: true, status: 'active' },
             include: [
-                { 
-                    model: Asset, 
+                {
+                    model: Asset,
                     as: 'assets',
                     order: [['order', 'ASC']]
                 },
@@ -59,29 +59,29 @@ export class ProductService {
      */
     static async getProductById(id: string): Promise<Product | null> {
         console.log('🔍 ProductService: Fetching product with ID:', id);
-        
+
         const product = await Product.findByPk(id, {
             include: [
-                { 
-                    model: Asset, 
+                {
+                    model: Asset,
                     as: 'assets',
                     order: [['order', 'ASC']]
                 },
-                { 
-                    model: Category, 
+                {
+                    model: Category,
                     as: 'category',
                     required: false // LEFT JOIN instead of INNER JOIN
                 }
             ]
         });
-        
+
         console.log('📦 ProductService: Found product:', {
             id: product?.id,
             name: product?.name,
             category: product?.category?.category,
             assetsCount: product?.assets?.length || 0
         });
-        
+
         return product;
     }
 
@@ -95,7 +95,7 @@ export class ProductService {
         featured?: boolean;
     }): Promise<Product[]> {
         const whereConditions: any = {
-            status: 'Aktif' // Only show active products
+            status: 'active' // Only show active products
         };
 
         // Apply filters
@@ -120,8 +120,8 @@ export class ProductService {
         return await Product.findAll({
             where: whereConditions,
             include: [
-                { 
-                    model: Asset, 
+                {
+                    model: Asset,
                     as: 'assets',
                     order: [['order', 'ASC']]
                 },
@@ -137,7 +137,7 @@ export class ProductService {
     static async getActiveCategories(): Promise<Category[]> {
         // 🔧 FIXED: Use a simpler approach without complex joins
         const activeProducts = await Product.findAll({
-            where: { status: 'Aktif' },
+            where: { status: 'active' },
             attributes: ['category_id'],
             group: ['category_id'],
             raw: true
@@ -172,7 +172,7 @@ export class ProductService {
         if (category_name) {
             // Try to find existing category
             const categories = await CategoryService.getAllCategories();
-            const existingCategory = categories.find(cat => 
+            const existingCategory = categories.find(cat =>
                 cat.category.toLowerCase() === category_name.toLowerCase()
             );
 
@@ -256,12 +256,12 @@ export class ProductService {
             return completeProduct!;
         } catch (error) {
             await transaction.rollback();
-            
+
             // Clean up uploaded files if transaction fails
             if (uploadedFiles && uploadedFiles.length > 0) {
                 FileManager.cleanupFailedUpload(uploadedFiles);
             }
-            
+
             throw error;
         }
     }
@@ -296,14 +296,14 @@ export class ProductService {
 
         if (uploadedFiles && uploadedFiles.length > 0) {
             // Get current highest order for this product
-            const existingAssets = await Asset.findAll({ 
+            const existingAssets = await Asset.findAll({
                 where: { product_id: id },
                 order: [['order', 'DESC']],
                 limit: 1
             });
 
             let nextOrder = existingAssets.length > 0 ? existingAssets[0].order + 1 : 1;
-            
+
             const assetsData = uploadedFiles.map((file) => {
                 const assetData = {
                     product_id: id,
@@ -312,7 +312,7 @@ export class ProductService {
                     type: 'IMAGE' as const,
                     order: nextOrder
                 };
-                
+
                 nextOrder++;
                 return assetData;
             });
@@ -346,7 +346,7 @@ export class ProductService {
         }
 
         const productData = JSON.parse(JSON.stringify(existingProduct));
-        
+
         // Delete physical files before deleting database records
         if (existingProduct.assets && existingProduct.assets.length > 0) {
             const filesToDelete = existingProduct.assets.map((asset: any) => asset.url);
@@ -461,10 +461,10 @@ export class ProductService {
             return updatedProduct!;
         } catch (error) {
             await transaction.rollback();
-            
+
             // Clean up the new uploaded file if transaction fails
             FileManager.cleanupFailedUpload(newImageFile);
-            
+
             throw error;
         }
     }
@@ -515,10 +515,10 @@ export class ProductService {
             return updatedProduct!;
         } catch (error) {
             await transaction.rollback();
-            
+
             // Clean up the new uploaded file if transaction fails
             FileManager.cleanupFailedUpload(newImageFile);
-            
+
             throw error;
         }
     }
@@ -549,12 +549,12 @@ export class ProductService {
             for (const { assetId, newOrder } of assetOrderMap) {
                 await Asset.update(
                     { order: newOrder },
-                    { 
-                        where: { 
+                    {
+                        where: {
                             id: assetId,
-                            product_id: productId 
+                            product_id: productId
                         },
-                        transaction 
+                        transaction
                     }
                 );
             }

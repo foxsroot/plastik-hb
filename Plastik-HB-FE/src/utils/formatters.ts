@@ -9,48 +9,49 @@ export const calculateDiscountedPrice = (originalPrice: number, discountPercent:
   if (!originalPrice || !discountPercent || discountPercent <= 0) {
     return 0;
   }
-  
+
   const discountAmount = (originalPrice * discountPercent) / 100;
   const discountedPrice = originalPrice - discountAmount;
-  
+
   return Math.max(0, Math.round(discountedPrice));
 };
 
-export const getImageUrl = (filename: string | null | undefined): string => {
-  if (!filename || filename === '/placeholder.jpg') return '/placeholder.jpg';
-  if (filename.startsWith('http') || filename.startsWith('/')) return filename;
-  return `http://localhost:5000/images/products/${filename}`;
-};
+export function getImageUrl(imagePath: string): string {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  // For relative paths, prepend backend host
+  return `http://localhost:5000${imagePath}`;
+}
 
 // 🔸 Helper functions untuk format input harga
 export const formatPriceInput = (value: number | string): string => {
   if (!value) return '';
-  
+
   // Convert to number if string
   const numValue = typeof value === 'string' ? parseFloat(value.replace(/\./g, '')) : value;
-  
+
   if (isNaN(numValue)) return '';
-  
+
   // Format dengan pemisah ribuan (titik)
   return numValue.toLocaleString('id-ID');
 };
 
 export const parsePriceInput = (value: string): number => {
   if (!value) return 0;
-  
+
   // Remove all dots (thousand separators) and parse as number
   const cleanValue = value.replace(/\./g, '');
   const numValue = parseFloat(cleanValue);
-  
+
   return isNaN(numValue) ? 0 : numValue;
 };
 
 export const validatePriceInput = (value: string): boolean => {
   if (!value) return false;
-  
+
   // Remove dots and check if it's a valid number
   const cleanValue = value.replace(/\./g, '');
   const numValue = parseFloat(cleanValue);
-  
+
   return !isNaN(numValue) && numValue > 0;
 };
