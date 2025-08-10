@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import index from '../index.vue'
-import { getPage, updateHomepage } from '@/api/pageApi'
-import { fetchFeaturedProducts, fetchProducts } from '@/api/productApi'
-import { updateFeaturedProducts } from '@/api/updateFeaturedProducts'
+import { getPage, updateHomepage } from '../../api/pageApi'
+import { fetchFeaturedProducts, fetchProducts } from '../../api/productApi'
+import { updateFeaturedProducts } from '../../api/updateFeaturedProducts'
 
 // Banner Interface
 interface Banner {
