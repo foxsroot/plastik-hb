@@ -2,7 +2,36 @@
   <v-app class="black-background">
     <!-- Main Content -->
     <v-main class="black-background">
-      <v-container v-if="!product" fluid class="pa-8 text-center">
+      <v-container v-if="!product && !loading" fluid class="pa-8 text-center">
+        <div class="text-white">
+          <v-icon size="64" color="grey">mdi-alert-circle</v-icon>
+          <h3 class="mt-4 mb-2">Produk Tidak Ditemukan</h3>
+          <p class="text-grey-lighten-1">Produk dengan ID tersebut tidak tersedia dalam database.</p>
+          <p class="text-caption text-grey-lighten-2 mb-4">
+            Pastikan ID produk benar atau produk masih aktif.
+          </p>
+          <div class="d-flex justify-center gap-3">
+            <v-btn 
+              color="primary" 
+              variant="outlined"
+              @click="goBack"
+            >
+              <v-icon left>mdi-arrow-left</v-icon>
+              Kembali
+            </v-btn>
+            <v-btn 
+              color="primary" 
+              variant="flat"
+              @click="$router.push('/katalog')"
+            >
+              <v-icon left>mdi-view-grid</v-icon>
+              Lihat Katalog
+            </v-btn>
+          </div>
+        </div>
+      </v-container>
+
+      <v-container v-else-if="!product" fluid class="pa-8 text-center">
         <v-progress-circular indeterminate color="primary" size="64" />
         <div class="text-white mt-4">Loading...</div>
       </v-container>
@@ -14,8 +43,8 @@
           <v-col cols="12" md="6">
             <v-card 
               color="grey-lighten-4" 
-              height="400"
-              class="d-flex align-center justify-center position-relative overflow-hidden gallery-card"
+              height="480"
+              class="d-flex flex-column position-relative overflow-hidden gallery-card"
               @touchstart="handleTouchStart"
               @touchmove="handleTouchMove"
               @touchend="handleTouchEnd"
@@ -26,33 +55,44 @@
             >
               <!-- Navigation Arrows -->
               <v-btn 
-                v-show="currentImageIndex > 0"
+                v-show="currentImageIndex > 0 && product.assets && product.assets.length > 0"
                 icon 
                 color="black"
                 class="position-absolute left-arrow"
-                style="left: 20px; z-index: 3;"
+                style="left: 20px; top: 50%; transform: translateY(-50%); z-index: 3;"
                 @click="previousImage"
               >
                 <v-icon>mdi-chevron-left</v-icon>
               </v-btn>
               
               <v-btn 
-                v-show="currentImageIndex < product.images.length - 1"
+                v-show="product.assets && currentImageIndex < product.assets.length - 1"
                 icon 
                 color="black"
                 class="position-absolute right-arrow"
-                style="right: 20px; z-index: 3;"
+                style="right: 20px; top: 50%; transform: translateY(-50%); z-index: 3;"
                 @click="nextImage"
               >
                 <v-icon>mdi-chevron-right</v-icon>
               </v-btn>
 
-              <!-- Image with Transition -->
-              <div class="image-container">
+              <!-- Main Image Container -->
+              <div class="main-image-container flex-grow-1 d-flex align-center justify-center">
                 <transition :name="transitionName" mode="out-in">
                   <v-img
-                    :key="currentImageIndex"
-                    :src="product.images[currentImageIndex]"
+                    v-if="product.assets && product.assets.length > 0"
+                    :key="`asset-${currentImageIndex}`"
+                    :src="getCurrentImageUrl()"
+                    height="350"
+                    width="350"
+                    contain
+                    class="product-image"
+                    @error="handleImageError"
+                  />
+                  <v-img
+                    v-else
+                    key="no-image"
+                    :src="altImageUrl"
                     height="350"
                     width="350"
                     contain
@@ -61,10 +101,11 @@
                 </transition>
               </div>
 
-              <!-- Image Counter (Bottom Right) -->
+              <!-- Image Counter (Top Right) -->
               <div 
+                v-if="product.assets && product.assets.length > 0"
                 class="position-absolute image-counter"
-                style="bottom: 15px; right: 15px; z-index: 4;"
+                style="top: 15px; right: 15px; z-index: 4;"
               >
                 <v-chip 
                   color="rgba(0,0,0,0.8)" 
@@ -72,28 +113,47 @@
                   class="text-white font-weight-bold"
                   variant="elevated"
                 >
-                  {{ currentImageIndex + 1 }}/{{ product.images.length }}
+                  {{ currentImageIndex + 1 }}/{{ product.assets.length }}
                 </v-chip>
               </div>
 
-              <!-- Navigation Dots (Bottom Center) -->
+              <!-- Thumbnail Gallery Section - Fixed at Bottom -->
               <div 
-                v-if="product.images.length > 1"
-                class="position-absolute navigation-dots"
-                style="bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 3;"
+                v-if="product.assets && product.assets.length > 1" 
+                class="thumbnail-gallery-section"
               >
-                <v-btn
-                  v-for="(image, index) in product.images"
-                  :key="index"
-                  :color="currentImageIndex === index ? 'white' : 'grey'"
-                  size="x-small"
-                  icon
-                  variant="flat"
-                  class="ma-1 dot-button"
-                  @click="goToImage(index)"
-                >
-                  <div class="dot"></div>
-                </v-btn>
+                <div class="thumbnail-container-fixed">
+                  <div class="thumbnail-scroll-fixed">
+                    <v-card
+                      v-for="(asset, index) in product.assets"
+                      :key="`thumb-${index}`"
+                      :class="[
+                        'thumbnail-card-fixed',
+                        { 'thumbnail-active-fixed': currentImageIndex === index }
+                      ]"
+                      height="60"
+                      width="60"
+                      @click="goToImage(index)"
+                      style="cursor: pointer; overflow: hidden;"
+                    >
+                      <v-img
+                        :src="shouldUseAltImage(asset.url) ? altImageUrl : getImageOrAlt(asset.url)"
+                        height="58"
+                        width="58"
+                        cover
+                        class="thumbnail-image-fixed"
+                        @error="() => markImageAsFailed(getImageUrl(asset.url))"
+                      />
+                      <!-- Active indicator -->
+                      <div 
+                        v-if="currentImageIndex === index"
+                        class="thumbnail-overlay-fixed"
+                      >
+                        <v-icon color="white" size="14">mdi-check-circle</v-icon>
+                      </div>
+                    </v-card>
+                  </div>
+                </div>
               </div>
             </v-card>
           </v-col>
@@ -118,7 +178,23 @@
               
               <!-- Price -->
               <div class="text-h5 mb-4">
-                <span class="font-weight-medium text-primary">Rp {{ formatPrice(product.price) }}</span>
+                <span v-if="product.discount > 0" class="font-weight-medium text-primary">
+                  {{ formatPrice(calculateDiscountedPrice(product.price, product.discount)) }}
+                  <span class="text-red text-decoration-line-through ml-2 text-body-1">
+                    {{ formatPrice(product.price) }}
+                  </span>
+                  <v-chip
+                    size="small"
+                    color="error"
+                    variant="flat"
+                    class="ml-2"
+                  >
+                    -{{ product.discount }}%
+                  </v-chip>
+                </span>
+                <span v-else class="font-weight-medium text-primary">
+                  {{ formatPrice(product.price) }}
+                </span>
               </div>
 
               <!-- Product Specifications -->
@@ -129,78 +205,104 @@
               >
                 <h3 class="text-white mb-3">Spesifikasi Produk</h3>
                 <div class="text-white specifications-content">
-                  <p><strong>Material:</strong> {{ product.specifications.material }}</p>
-                  <p><strong>Dimensi:</strong> {{ product.specifications.dimensions }}</p>
-                  <p><strong>Berat:</strong> {{ product.specifications.weight }}</p>
-                  <p><strong>Warna:</strong> {{ product.specifications.colors }}</p>
-                  
-                  <!-- Additional specifications jika ada -->
-                  <template v-if="product.specifications.components">
-                    <h4 class="text-white mt-3 mb-2">Komponen:</h4>
-                    <ul class="text-white">
-                      <li v-for="component in product.specifications.components" :key="component">
-                        {{ component }}
-                      </li>
-                    </ul>
-                  </template>
-
-                  <template v-if="product.specifications.features">
-                    <h4 class="text-white mt-3 mb-2">Fitur:</h4>
-                    <ul class="text-white">
-                      <li v-for="feature in product.specifications.features" :key="feature">
-                        {{ feature }}
-                      </li>
-                    </ul>
-                  </template>
-
-                  <template v-if="product.specifications.setContents">
-                    <h4 class="text-white mt-3 mb-2">Isi Set:</h4>
-                    <ul class="text-white">
-                      <li v-for="content in product.specifications.setContents" :key="content">
-                        {{ content }}
-                      </li>
-                    </ul>
-                  </template>
-
-                  <template v-if="product.specifications.specifications_detail">
-                    <h4 class="text-white mt-3 mb-2">Detail Spesifikasi:</h4>
-                    <ul class="text-white">
-                      <li v-for="spec in product.specifications.specifications_detail" :key="spec">
-                        {{ spec }}
-                      </li>
-                    </ul>
-                  </template>
-
-                  <template v-if="product.specifications.warranty">
-                    <p class="mt-3"><strong>Garansi:</strong> {{ product.specifications.warranty }}</p>
-                  </template>
-
-                  <template v-if="product.specifications.certification">
-                    <p><strong>Sertifikasi:</strong> {{ product.specifications.certification }}</p>
-                  </template>
-
-                  <template v-if="product.specifications.maintenance">
-                    <p><strong>Perawatan:</strong> {{ product.specifications.maintenance }}</p>
-                  </template>
+                  <p><strong>Kategori:</strong> {{ product.category?.category || 'Tidak tersedia' }}</p>
+                  <div v-if="product.description" class="mt-3 description-text">
+                    {{ product.description }}
+                  </div>
                 </div>
               </v-card>
             </div>
           </v-col>
         </v-row>
 
-        <!-- Product Description -->
-        <v-row class="mt-8">
+        <!-- Additional Information Section (Optional) -->
+        <v-row v-if="product.specification" class="mt-8">
           <v-col cols="12">
             <v-card 
               color="grey-darken-4" 
               class="pa-6"
               outlined
             >
-              <h3 class="text-white mb-4">Deskripsi Produk</h3>
-              <div class="text-white">
-                <p>{{ product.description }}</p>
+              <h3 class="text-white mb-4">Spesifikasi Detail</h3>
+              <div class="text-white specification-detail-text">
+                {{ product.specification }}
               </div>
             </v-card>
+          </v-col>
+        </v-row>
+
+        <!-- Similar Products Section -->
+        <v-row class="mt-8">
+          <v-col cols="12">
+            <div class="text-white mb-4">
+              <h3 class="text-h5 font-weight-bold mb-2">Produk Serupa</h3>
+              <p class="text-grey-lighten-1 text-body-2">Produk lain yang mungkin Anda Cari</p>
+            </div>
+
+            <v-row v-if="similarProductsLoading" class="justify-center">
+              <v-col cols="12" class="text-center">
+                <v-progress-circular indeterminate color="primary" size="32" />
+                <div class="text-grey-lighten-1 mt-2">Memuat produk serupa...</div>
+              </v-col>
+            </v-row>
+
+            <v-row v-else-if="similarProducts.length > 0" no-gutters>
+              <v-col
+                v-for="similarProduct in similarProducts"
+                :key="similarProduct.id"
+                :cols="Math.floor(12 / Math.min(similarProducts.length, 5))"
+                class="pa-1"
+              >
+                <v-card
+                  class="product-card-similar dark-product-card transition-card"
+                  height="200"
+                  hover
+                  @click="navigateToProduct(similarProduct.id)"
+                  style="cursor: pointer;"
+                >
+                  <v-img
+                    :src="getSimilarProductImageUrl(similarProduct)"
+                    height="120"
+                    cover
+                    class="align-end"
+                    @error="() => handleSimilarImageError(similarProduct)"
+                  >
+                    <template v-slot:placeholder>
+                      <div class="d-flex align-center justify-center fill-height">
+                        <v-progress-circular indeterminate color="primary" size="20" />
+                      </div>
+                    </template>
+                  </v-img>
+                  
+                  <div class="pa-2" style="height: 80px;">
+                    <div class="text-white font-weight-medium mb-1" style="font-size: 11px; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;">
+                      {{ similarProduct.name }}
+                    </div>
+                    
+                    <div class="text-primary font-weight-bold" style="font-size: 10px;">
+                      <span v-if="similarProduct.discount > 0" class="d-flex align-center gap-1 flex-wrap">
+                        <span>{{ formatPrice(calculateDiscountedPrice(similarProduct.price, similarProduct.discount)) }}</span>
+                        <span class="text-red text-decoration-line-through" style="font-size: 9px;">
+                          {{ formatPrice(similarProduct.price) }}
+                        </span>
+                      </span>
+                      <span v-else>
+                        {{ formatPrice(similarProduct.price) }}
+                      </span>
+                    </div>
+                  </div>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <v-row v-else>
+              <v-col cols="12" class="text-center">
+                <div class="text-grey-lighten-1">
+                  <v-icon size="48" color="grey">mdi-package-variant</v-icon>
+                  <div class="mt-2">Tidak ada produk serupa ditemukan</div>
+                </div>
+              </v-col>
+            </v-row>
           </v-col>
         </v-row>
       </v-container>
@@ -209,15 +311,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import axiosInstance from '@/utils/axiosInstance'
+import { getImageUrl, formatPrice, calculateDiscountedPrice } from '@/utils/formatters'
 
 const router = useRouter()
 const route = useRoute()
 
+// Alt image fallback - sama seperti di katalog
+const ALT_IMAGE_FILENAME = 'Alt-Image-Produk.png'
+
+// Computed untuk mendapatkan alt image URL
+const altImageUrl = computed(() => {
+  const url = getImageUrl(ALT_IMAGE_FILENAME)
+  console.log('Alt image URL computed:', url)
+  return url
+})
+
+// Reactive state untuk tracking failed images
+const failedImages = ref(new Set<string>())
+
+// Helper untuk get image URL atau fallback ke alt - sama seperti katalog
+const getImageOrAlt = (imageFilename: string | null | undefined): string => {
+  if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') {
+    return altImageUrl.value
+  }
+  
+  // Jika data URL (base64 dari file upload), return as is
+  if (imageFilename.startsWith('data:')) {
+    return imageFilename
+  }
+  
+  // Jika sudah URL lengkap, return as is
+  if (imageFilename.startsWith('http')) {
+    return imageFilename
+  }
+  
+  // Convert ke URL lengkap
+  const fullUrl = getImageUrl(imageFilename)
+  console.log('Generated URL:', fullUrl, 'from:', imageFilename)
+  return fullUrl
+}
+
+// Helper untuk cek apakah image sudah failed
+const shouldUseAltImage = (imageFilename: string | null | undefined): boolean => {
+  if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') return true
+  
+  // Jika data URL (base64 dari file upload), jangan gunakan alt image
+  if (imageFilename.startsWith('data:')) return false
+  
+  // Generate proper URL untuk cek di failedImages
+  const fullUrl = imageFilename.startsWith('http') ? imageFilename : getImageUrl(imageFilename)
+  return failedImages.value.has(fullUrl)
+}
+
+// Mark image as failed
+const markImageAsFailed = (imageUrl: string) => {
+  console.log('Marking image as failed:', imageUrl)
+  failedImages.value.add(imageUrl)
+}
+
 const currentImageIndex = ref(0)
 const product = ref<any>(null)
 const transitionName = ref('slide-right')
+const loading = ref(true)
+
+// Similar products state
+const similarProducts = ref<any[]>([])
+const similarProductsLoading = ref(false)
+const failedSimilarImages = ref(new Set<string>())
 
 // Touch/Swipe gesture variables
 const touchStartX = ref(0)
@@ -225,307 +388,307 @@ const touchStartY = ref(0)
 const isDragging = ref(false)
 const isMouseDown = ref(false)
 
-// Data produk sesuai dengan katalog (10 produk dengan multiple images)
-const dummyProducts = [
-  {
-    id: 1,
-    name: 'Nama Barang 1',
-    price: 94882,
-    category: 'Kategori 1',
-    images: [
-      'https://via.placeholder.com/400x400/FF6B6B/FFFFFF?text=Produk+1+Img+1',
-      'https://via.placeholder.com/400x400/4ECDC4/FFFFFF?text=Produk+1+Img+2',
-      'https://via.placeholder.com/400x400/45B7D1/FFFFFF?text=Produk+1+Img+3',
-      'https://via.placeholder.com/400x400/96CEB4/FFFFFF?text=Produk+1+Img+4'
-    ],
-    specifications: {
-      material: 'Plastik ABS berkualitas tinggi',
-      dimensions: '25cm x 15cm x 10cm',
-      weight: '350g',
-      colors: 'Transparan, Biru, Hijau',
-      features: [
-        'Tahan suhu hingga 80°C',
-        'BPA Free dan food grade',
-        'Anti slip base',
-        'Mudah dibersihkan',
-        'Stackable design'
-      ],
-      warranty: '2 tahun garansi resmi',
-      certification: 'SNI, FDA approved'
-    },
-    description: 'Produk plastik berkualitas tinggi dengan desain modern dan fungsional untuk kebutuhan sehari-hari. Tahan lama dan mudah dibersihkan.'
-  },
-  {
-    id: 2,
-    name: 'Nama Barang 2',
-    price: 27501,
-    category: 'Kategori 2',
-    images: [
-      'https://via.placeholder.com/400x400/FFEAA7/333333?text=Produk+2+Img+1',
-      'https://via.placeholder.com/400x400/DDA0DD/333333?text=Produk+2+Img+2',
-      'https://via.placeholder.com/400x400/98D8C8/333333?text=Produk+2+Img+3'
-    ],
-    specifications: {
-      material: 'Tritan BPA Free',
-      dimensions: '7cm x 7cm x 25cm',
-      weight: '180g',
-      colors: 'Merah, Biru, Hitam, Pink'
-    },
-    description: 'Produk dengan desain ergonomis dan anti tumpah, cocok untuk aktivitas sehari-hari. Material food grade yang aman.'
-  },
-  {
-    id: 3,
-    name: 'Nama Barang 3',
-    price: 76609,
-    category: 'Kategori 1',
-    images: [
-      'https://via.placeholder.com/400x400/74B9FF/FFFFFF?text=Produk+3+Img+1',
-      'https://via.placeholder.com/400x400/0984E3/FFFFFF?text=Produk+3+Img+2',
-      'https://via.placeholder.com/400x400/6C5CE7/FFFFFF?text=Produk+3+Img+3',
-      'https://via.placeholder.com/400x400/A29BFE/FFFFFF?text=Produk+3+Img+4',
-      'https://via.placeholder.com/400x400/FD79A8/FFFFFF?text=Produk+3+Img+5'
-    ],
-    specifications: {
-      material: 'Melamin Food Grade',
-      dimensions: 'Berbagai ukuran (8cm-20cm)',
-      weight: '1.2kg (set)',
-      colors: 'Multicolor (6 warna)',
-      setContents: [
-        'Bowl besar: 20cm x 8cm',
-        'Bowl sedang: 15cm x 6cm', 
-        'Bowl kecil: 10cm x 4cm',
-        'Piring besar: 18cm',
-        'Piring kecil: 12cm',
-        'Sendok dan garpu set'
-      ],
-      features: [
-        'Tahan pecah dan anti slip',
-        'Microwave safe (tanpa logam)',
-        'Dishwasher safe',
-        'Tidak mudah tergores',
-        'Ramah lingkungan'
-      ],
-      warranty: '1 tahun garansi',
-      maintenance: 'Cuci dengan air hangat dan sabun lembut'
-    },
-    description: 'Set lengkap dengan berbagai ukuran, terbuat dari bahan berkualitas tinggi yang tahan pecah. Cocok untuk keluarga.'
-  },
-  {
-    id: 4,
-    name: 'Nama Barang 4',
-    price: 48140,
-    category: 'Kategori 2',
-    images: [
-      'https://via.placeholder.com/400x400/00B894/FFFFFF?text=Produk+4+Img+1',
-      'https://via.placeholder.com/400x400/00CEC9/FFFFFF?text=Produk+4+Img+2',
-      'https://via.placeholder.com/400x400/55A3FF/FFFFFF?text=Produk+4+Img+3'
-    ],
-    specifications: {
-      material: 'ABS + Stainless Steel',
-      dimensions: '25cm x 17cm x 32cm',
-      weight: '1.8kg',
-      colors: 'Silver, Hitam'
-    },
-    description: 'Produk dengan teknologi sensor otomatis yang responsif dan hemat energi. Desain modern dan minimalis.'
-  },
-  {
-    id: 5,
-    name: 'Nama Barang 5',
-    price: 41885,
-    category: 'Kategori 1',
-    images: [
-      'https://via.placeholder.com/400x400/E17055/FFFFFF?text=Produk+5+Img+1',
-      'https://via.placeholder.com/400x400/F39C12/FFFFFF?text=Produk+5+Img+2',
-      'https://via.placeholder.com/400x400/E74C3C/FFFFFF?text=Produk+5+Img+3',
-      'https://via.placeholder.com/400x400/9B59B6/FFFFFF?text=Produk+5+Img+4'
-    ],
-    specifications: {
-      material: 'Polypropylene (PP)',
-      dimensions: '60cm x 30cm x 85cm',
-      weight: '3.5kg',
-      colors: 'Putih, Coklat, Abu-abu',
-      components: [
-        'Panel samping modular',
-        'Shelf adjustable (4 tingkat)',
-        'Pintu dengan magnetic lock',
-        'Ventilasi udara atas-bawah',
-        'Base stabilizer'
-      ],
-      features: [
-        'Modular assembly system',
-        'Tool-free installation',
-        'Adjustable shelf height',
-        'Anti-dust design',
-        'Load capacity 50kg per shelf',
-        'Earthquake resistant base',
-        'Easy maintenance',
-        'Space efficient design'
-      ],
-      specifications_detail: [
-        'Shelf capacity: 4 adjustable levels',
-        'Load per shelf: 50kg max',
-        'Door type: Sliding magnetic',
-        'Ventilation: Top & bottom air flow',
-        'Assembly time: 30 minutes',
-        'Required space: 65cm x 35cm x 90cm'
-      ],
-      warranty: '5 tahun garansi struktur',
-      certification: 'JIS standards, Earthquake test passed',
-      maintenance: 'Bersihkan dengan kain lembab, hindari bahan kimia keras'
-    },
-    description: 'Sistem modular yang mudah dirakit dengan konstruksi kokoh dan ventilasi yang baik. Ideal untuk penyimpanan.'
-  },
-  {
-    id: 6,
-    name: 'Nama Barang 6',
-    price: 3838,
-    category: 'Kategori 2',
-    images: [
-      'https://via.placeholder.com/400x400/2ECC71/FFFFFF?text=Produk+6+Img+1',
-      'https://via.placeholder.com/400x400/27AE60/FFFFFF?text=Produk+6+Img+2'
-    ],
-    specifications: {
-      material: 'Silikon Food Grade',
-      dimensions: '15cm x 10cm x 5cm',
-      weight: '120g',
-      colors: 'Hijau, Biru, Orange'
-    },
-    description: 'Produk silikon fleksibel dan tahan panas, cocok untuk berbagai keperluan dapur. Anti lengket dan mudah dibersihkan.'
-  },
-  {
-    id: 7,
-    name: 'Nama Barang 7',
-    price: 88900,
-    category: 'Kategori 1',
-    images: [
-      'https://via.placeholder.com/400x400/3498DB/FFFFFF?text=Produk+7+Img+1',
-      'https://via.placeholder.com/400x400/2980B9/FFFFFF?text=Produk+7+Img+2',
-      'https://via.placeholder.com/400x400/1ABC9C/FFFFFF?text=Produk+7+Img+3',
-      'https://via.placeholder.com/400x400/16A085/FFFFFF?text=Produk+7+Img+4'
-    ],
-    specifications: {
-      material: 'Kaca Tempered + Plastik',
-      dimensions: '30cm x 20cm x 15cm',
-      weight: '2.1kg',
-      colors: 'Transparan, Biru Muda',
-      components: [
-        'Kaca tempered 8mm thickness',
-        'Frame plastik reinforced',
-        'Gasket karet anti bocor',
-        'Handle ergonomis',
-        'Safety corner protector'
-      ],
-      features: [
-        'Tahan suhu -20°C hingga 150°C',
-        'Shatter resistant glass',
-        'UV protection coating',
-        'Scratch resistant surface',
-        'Easy grip handle',
-        'Stackable when not in use',
-        'Chemical resistant',
-        'Crystal clear visibility',
-        'Leak proof seal'
-      ],
-      specifications_detail: [
-        'Glass thickness: 8mm tempered',
-        'Max temperature: 150°C',
-        'Min temperature: -20°C',
-        'Capacity: 2.8 Liter',
-        'Handle load: 15kg max',
-        'Drop test: passed from 1m height'
-      ],
-      warranty: '10 tahun garansi kaca, 3 tahun parts',
-      certification: 'ISO 9001, Heat resistant certified',
-      maintenance: 'Cuci dengan air hangat, hindari perubahan suhu ekstrem'
-    },
-    description: 'Kombinasi kaca tempered dan plastik berkualitas untuk daya tahan maksimal. Desain elegan dan fungsional.'
-  },
-  {
-    id: 8,
-    name: 'Nama Barang 8',
-    price: 8013,
-    category: 'Kategori 2',
-    images: [
-      'https://via.placeholder.com/400x400/F1C40F/333333?text=Produk+8+Img+1',
-      'https://via.placeholder.com/400x400/F39C12/FFFFFF?text=Produk+8+Img+2',
-      'https://via.placeholder.com/400x400/E67E22/FFFFFF?text=Produk+8+Img+3'
-    ],
-    specifications: {
-      material: 'Plastik PP Daur Ulang',
-      dimensions: '20cm x 15cm x 8cm',
-      weight: '250g',
-      colors: 'Kuning, Orange, Merah'
-    },
-    description: 'Produk ramah lingkungan dari plastik daur ulang. Ringan namun kuat, cocok untuk berbagai aktivitas outdoor.'
-  },
-  {
-    id: 9,
-    name: 'Nama Barang 9',
-    price: 79307,
-    category: 'Kategori 1',
-    images: [
-      'https://via.placeholder.com/400x400/9B59B6/FFFFFF?text=Produk+9+Img+1',
-      'https://via.placeholder.com/400x400/8E44AD/FFFFFF?text=Produk+9+Img+2',
-      'https://via.placeholder.com/400x400/E91E63/FFFFFF?text=Produk+9+Img+3',
-      'https://via.placeholder.com/400x400/AD1457/FFFFFF?text=Produk+9+Img+4'
-    ],
-    specifications: {
-      material: 'Akrilik Premium',
-      dimensions: '35cm x 25cm x 12cm',
-      weight: '800g',
-      colors: 'Ungu, Pink, Biru'
-    },
-    description: 'Material akrilik premium dengan kejernihan tinggi. Tahan goresan dan mudah perawatan untuk penggunaan jangka panjang.'
-  },
-  {
-    id: 10,
-    name: 'Nama Barang 10',
-    price: 95016,
-    category: 'Kategori 2',
-    images: [
-      'https://via.placeholder.com/400x400/34495E/FFFFFF?text=Produk+10+Img+1',
-      'https://via.placeholder.com/400x400/2C3E50/FFFFFF?text=Produk+10+Img+2',
-      'https://via.placeholder.com/400x400/95A5A6/333333?text=Produk+10+Img+3',
-      'https://via.placeholder.com/400x400/7F8C8D/FFFFFF?text=Produk+10+Img+4',
-      'https://via.placeholder.com/400x400/BDC3C7/333333?text=Produk+10+Img+5'
-    ],
-    specifications: {
-      material: 'Stainless Steel + Plastik',
-      dimensions: '40cm x 30cm x 25cm',
-      weight: '4.2kg',
-      colors: 'Silver, Hitam, Abu-abu'
-    },
-    description: 'Kombinasi stainless steel dan plastik berkualitas tinggi. Tahan karat, higienis, dan cocok untuk penggunaan profesional.'
+// API function untuk fetch product detail
+const fetchProductDetail = async (productId: string) => {
+  try {
+    loading.value = true
+    console.log('🔍 Fetching product detail for ID:', productId)
+    
+    const response = await axiosInstance.get(`/products/${productId}`)
+    console.log('✅ Product detail response:', response.data)
+    
+    const productData = response.data.data || response.data
+    
+    if (!productData) {
+      console.warn('⚠️ No product data received from API')
+      product.value = null
+      return
+    }
+    
+    // Sort assets by order untuk menampilkan gambar sesuai urutan
+    if (productData.assets && Array.isArray(productData.assets)) {
+      productData.assets.sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+      console.log('🖼️ Sorted assets:', productData.assets.length, 'images')
+      
+      // Log semua URL gambar untuk debugging
+      productData.assets.forEach((asset: any, index: number) => {
+        const imageUrl = getImageUrl(asset.url)
+        console.log(`📷 Asset ${index + 1}:`, {
+          originalUrl: asset.url,
+          finalUrl: imageUrl,
+          order: asset.order,
+          alt: asset.alt
+        })
+      })
+    } else {
+      // Jika tidak ada assets, buat array kosong
+      productData.assets = []
+      console.log('📷 No assets found for this product')
+    }
+    
+    product.value = productData
+    console.log('✅ Product loaded successfully:', {
+      id: product.value.id,
+      name: product.value.name,
+      price: product.value.price,
+      category: product.value.category,
+      categoryName: product.value.category?.category,
+      assetsCount: product.value.assets?.length || 0,
+      description: product.value.description ? 'Present' : 'Missing',
+      specification: product.value.specification ? 'Present' : 'Missing'
+    })
+    
+    // Auto-scroll ke thumbnail pertama setelah data dimuat
+    if (product.value.assets && product.value.assets.length > 1) {
+      setTimeout(() => {
+        scrollToActiveThumbnail(0)
+      }, 200)
+    }
+    
+    // Fetch similar products setelah product utama berhasil dimuat
+    if (product.value) {
+      fetchSimilarProducts(product.value.id, product.value.category_id, product.value.name)
+    }
+    
+  } catch (error: any) {
+    console.error('❌ Error fetching product detail:', {
+      productId,
+      status: error.response?.status,
+      message: error.message,
+      endpoint: `/products/${productId}`
+    })
+    
+    // Set product to null to show error state
+    product.value = null
+  } finally {
+    loading.value = false
   }
-]
-
-const goBack = () => {
-  router.back()
 }
 
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('id-ID').format(price)
+// API function untuk fetch similar products
+const fetchSimilarProducts = async (currentProductId: string, categoryId: string, productName: string) => {
+  try {
+    similarProductsLoading.value = true
+    console.log('🔍 Fetching similar products for category:', categoryId)
+    
+    // Fetch products dari kategori yang sama
+    const response = await axiosInstance.get('/products/catalog', {
+      params: {
+        category: categoryId,
+        limit: 10 // Ambil lebih banyak untuk filter
+      }
+    })
+    
+    let products = response.data.data || response.data || []
+    
+    // Filter out produk saat ini
+    products = products.filter((p: any) => p.id !== currentProductId)
+    
+    // Jika tidak cukup produk dari kategori yang sama, ambil produk random
+    if (products.length < 5) {
+      console.log('🎲 Not enough products in same category, fetching random products')
+      
+      try {
+        const randomResponse = await axiosInstance.get('/products/catalog', {
+          params: {
+            limit: 15 // Ambil lebih banyak untuk filter dan randomize
+          }
+        })
+        
+        let randomProducts = randomResponse.data.data || randomResponse.data || []
+        
+        // Filter out produk saat ini dan produk yang sudah ada
+        const existingIds = new Set(products.map((p: any) => p.id))
+        randomProducts = randomProducts.filter((p: any) => 
+          p.id !== currentProductId && !existingIds.has(p.id)
+        )
+        
+        // Shuffle array untuk randomness
+        for (let i = randomProducts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [randomProducts[i], randomProducts[j]] = [randomProducts[j], randomProducts[i]]
+        }
+        
+        // Gabungkan dengan produk kategori yang sama
+        products = [...products, ...randomProducts]
+        
+      } catch (randomError) {
+        console.warn('⚠️ Error fetching random products:', randomError)
+      }
+    }
+    
+    // Ambil hanya 5 produk pertama
+    similarProducts.value = products.slice(0, 5)
+    
+    console.log('✅ Similar products loaded:', {
+      count: similarProducts.value.length,
+      categoryProducts: products.filter((p: any) => p.category_id === categoryId).length,
+      randomProducts: products.filter((p: any) => p.category_id !== categoryId).length
+    })
+    
+  } catch (error: any) {
+    console.error('❌ Error fetching similar products:', error)
+    similarProducts.value = []
+  } finally {
+    similarProductsLoading.value = false
+  }
+}
+
+// Helper function untuk mendapatkan gambar produk serupa
+const getSimilarProductImageUrl = (product: any): string => {
+  // Cek apakah ada assets dan ambil yang order = 1 (main image)
+  if (product.assets && product.assets.length > 0) {
+    // Sort by order dan ambil yang pertama
+    const sortedAssets = [...product.assets].sort((a, b) => (a.order || 0) - (b.order || 0))
+    const mainAsset = sortedAssets[0]
+    
+    if (mainAsset && mainAsset.url && !shouldUseSimilarAltImage(product.id, mainAsset.url)) {
+      return getImageOrAlt(mainAsset.url)
+    }
+  }
+  
+  // Fallback ke alt image jika tidak ada assets atau gambar gagal
+  return altImageUrl.value
+}
+
+// Helper untuk cek apakah harus menggunakan alt image untuk produk serupa
+const shouldUseSimilarAltImage = (productId: string, imageUrl: string): boolean => {
+  const fullUrl = imageUrl.startsWith('http') ? imageUrl : getImageUrl(imageUrl)
+  const key = `${productId}-${fullUrl}`
+  return failedSimilarImages.value.has(key)
+}
+
+// Handler untuk image error pada produk serupa
+const handleSimilarImageError = (product: any) => {
+  if (product.assets && product.assets.length > 0) {
+    const mainAsset = product.assets[0]
+    if (mainAsset && mainAsset.url) {
+      const fullUrl = getImageUrl(mainAsset.url)
+      const key = `${product.id}-${fullUrl}`
+      failedSimilarImages.value.add(key)
+      console.log('📷 Similar product image failed, switching to alt:', product.name)
+    }
+  }
+}
+
+// Method untuk navigasi ke produk lain
+const navigateToProduct = (productId: string) => {
+  console.log('🔄 Navigating to product:', productId)
+  
+  // Reset state
+  currentImageIndex.value = 0
+  product.value = null
+  loading.value = true
+  similarProducts.value = []
+  failedImages.value.clear()
+  failedSimilarImages.value.clear()
+  
+  // Scroll to top immediately
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  
+  // Update URL
+  router.push({ path: '/detail-produk', query: { id: productId } })
+}
+
+// Data produk sesuai dengan katalog - REMOVED: Sekarang hanya menggunakan data dari database
+
+// Helper function untuk mendapatkan gambar dengan fallback
+const getCurrentImageUrl = (): string => {
+  if (!product.value || !product.value.assets || product.value.assets.length === 0) {
+    return altImageUrl.value
+  }
+  
+  const currentAsset = product.value.assets[currentImageIndex.value]
+  if (!currentAsset || !currentAsset.url) {
+    return altImageUrl.value
+  }
+  
+  // Cek apakah gambar ini sudah failed
+  if (shouldUseAltImage(currentAsset.url)) {
+    return altImageUrl.value
+  }
+  
+  return getImageOrAlt(currentAsset.url)
+}
+
+// Handler untuk image error
+const handleImageError = () => {
+  if (product.value && product.value.assets && product.value.assets.length > 0) {
+    const currentAsset = product.value.assets[currentImageIndex.value]
+    if (currentAsset && currentAsset.url) {
+      const imageUrl = getImageUrl(currentAsset.url)
+      markImageAsFailed(imageUrl)
+      console.log('Image failed, switching to alt image for asset:', currentAsset.url)
+    }
+  }
+}
+
+const goBack = () => {
+  router.push('/katalog')
 }
 
 const previousImage = () => {
-  if (product.value && product.value.images && currentImageIndex.value > 0) {
+  if (product.value && product.value.assets && currentImageIndex.value > 0) {
     transitionName.value = 'slide-right'
     currentImageIndex.value = currentImageIndex.value - 1
+    
+    // Auto-scroll thumbnail ke posisi yang terlihat
+    scrollToActiveThumbnail(currentImageIndex.value)
   }
 }
 
 const nextImage = () => {
-  if (product.value && product.value.images && currentImageIndex.value < product.value.images.length - 1) {
+  if (product.value && product.value.assets && currentImageIndex.value < product.value.assets.length - 1) {
     transitionName.value = 'slide-left'
     currentImageIndex.value = currentImageIndex.value + 1
+    
+    // Auto-scroll thumbnail ke posisi yang terlihat
+    scrollToActiveThumbnail(currentImageIndex.value)
   }
 }
 
 const goToImage = (index: number) => {
-  if (product.value && product.value.images && index >= 0 && index < product.value.images.length) {
+  if (product.value && product.value.assets && index >= 0 && index < product.value.assets.length) {
     transitionName.value = index > currentImageIndex.value ? 'slide-left' : 'slide-right'
     currentImageIndex.value = index
+    
+    // Auto-scroll thumbnail ke posisi yang terlihat
+    scrollToActiveThumbnail(index)
   }
+}
+
+// Function untuk auto-scroll thumbnail gallery agar thumbnail aktif selalu terlihat
+const scrollToActiveThumbnail = (activeIndex: number) => {
+  // Tunggu sedikit untuk memastikan DOM sudah terupdate
+  setTimeout(() => {
+    const thumbnailContainer = document.querySelector('.thumbnail-scroll-fixed') as HTMLElement
+    const activeThumbnail = document.querySelector(`.thumbnail-card-fixed:nth-child(${activeIndex + 1})`) as HTMLElement
+    
+    if (thumbnailContainer && activeThumbnail) {
+      // Hitung posisi relatif thumbnail dalam container
+      const thumbnailLeft = activeThumbnail.offsetLeft
+      const thumbnailWidth = activeThumbnail.offsetWidth
+      const containerScrollLeft = thumbnailContainer.scrollLeft
+      const containerWidth = thumbnailContainer.clientWidth
+      
+      // Tentukan apakah thumbnail perlu di-scroll
+      const isVisible = thumbnailLeft >= containerScrollLeft && 
+                       (thumbnailLeft + thumbnailWidth) <= (containerScrollLeft + containerWidth)
+      
+      if (!isVisible) {
+        // Scroll agar thumbnail berada di tengah container
+        const targetScrollLeft = thumbnailLeft - (containerWidth / 2) + (thumbnailWidth / 2)
+        
+        // Smooth scroll ke posisi target
+        thumbnailContainer.scrollTo({
+          left: Math.max(0, targetScrollLeft),
+          behavior: 'smooth'
+        })
+        
+        console.log('🔄 Auto-scrolling thumbnail gallery to show active thumbnail:', activeIndex + 1)
+      }
+    }
+  }, 100) // Delay 100ms untuk memastikan DOM update
 }
 
 // Touch gesture handlers
@@ -550,12 +713,14 @@ const handleTouchEnd = (e: TouchEvent) => {
   
   // Only trigger swipe if horizontal movement is greater than vertical
   if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-    if (deltaX > 0 && currentImageIndex.value > 0) {
-      // Swipe right - go to previous image (only if not at first image)
-      previousImage()
-    } else if (deltaX < 0 && currentImageIndex.value < product.value.images.length - 1) {
-      // Swipe left - go to next image (only if not at last image)
-      nextImage()
+    if (product.value && product.value.assets) {
+      if (deltaX > 0 && currentImageIndex.value > 0) {
+        // Swipe right - go to previous image (only if not at first image)
+        previousImage()
+      } else if (deltaX < 0 && currentImageIndex.value < product.value.assets.length - 1) {
+        // Swipe left - go to next image (only if not at last image)
+        nextImage()
+      }
     }
   }
   
@@ -583,12 +748,14 @@ const handleMouseUp = (e: MouseEvent) => {
   
   // Only trigger swipe if horizontal movement is greater than vertical
   if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
-    if (deltaX > 0 && currentImageIndex.value > 0) {
-      // Drag right - go to previous image (only if not at first image)
-      previousImage()
-    } else if (deltaX < 0 && currentImageIndex.value < product.value.images.length - 1) {
-      // Drag left - go to next image (only if not at last image)
-      nextImage()
+    if (product.value && product.value.assets) {
+      if (deltaX > 0 && currentImageIndex.value > 0) {
+        // Drag right - go to previous image (only if not at first image)
+        previousImage()
+      } else if (deltaX < 0 && currentImageIndex.value < product.value.assets.length - 1) {
+        // Drag left - go to next image (only if not at last image)
+        nextImage()
+      }
     }
   }
   
@@ -596,38 +763,57 @@ const handleMouseUp = (e: MouseEvent) => {
   isDragging.value = false
 }
 
+// Watch untuk perubahan route query
+watch(
+  () => route.query.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      console.log('🔄 Route changed, fetching new product:', newId)
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      
+      // Reset state
+      currentImageIndex.value = 0
+      product.value = null
+      loading.value = true
+      similarProducts.value = []
+      failedImages.value.clear()
+      failedSimilarImages.value.clear()
+      
+      // Fetch data baru
+      fetchProductDetail(newId as string)
+    }
+  }
+)
+
 onMounted(() => {
   console.log('Detail produk mounted')
   console.log('Route params:', route.params)
   
-  // Coba ambil ID dari query parameter dulu sebagai fallback
+  // Scroll to top when component mounts
+  window.scrollTo({ top: 0, behavior: 'auto' })
+  
+  // Get product ID from query parameter
   const queryId = route.query.id as string
   const paramId = (route.params as any).id as string
   
-  let productId: number
+  let productId: string
   
   if (paramId) {
-    productId = parseInt(paramId)
+    productId = paramId
     console.log('Using param ID:', productId)
   } else if (queryId) {
-    productId = parseInt(queryId)
+    productId = queryId
     console.log('Using query ID:', productId)
   } else {
-    productId = 1
+    productId = '1'
     console.log('Using default ID:', productId)
   }
   
-  if (productId && !isNaN(productId)) {
-    setTimeout(() => {
-      const foundProduct = dummyProducts.find(p => p.id === productId)
-      product.value = foundProduct || dummyProducts[0]
-      console.log('Loaded product:', product.value)
-    }, 300)
-  } else {
-    setTimeout(() => {
-      product.value = dummyProducts[0]
-      console.log('Loaded default product:', product.value)
-    }, 300)
+  // Fetch product data from API
+  if (productId) {
+    fetchProductDetail(productId)
   }
 })
 </script>
@@ -636,10 +822,32 @@ onMounted(() => {
 .black-background {
   background-color: #000000 !important;
   min-height: 100vh;
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 .v-main {
   background-color: #000000 !important;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+.v-container {
+  overflow-x: hidden; /* Prevent horizontal scroll */
+}
+
+/* Hide all scrollbars globally for this page */
+.v-app {
+  overflow-x: hidden !important;
+}
+
+/* Ensure no horizontal overflow on rows and columns */
+.v-row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.v-col {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
 
 .position-absolute {
@@ -806,22 +1014,45 @@ onMounted(() => {
   }
 }
 
-/* Custom scrollbar for dark theme */
+/* Custom scrollbar for dark theme - HIDDEN */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 0px; /* Remove vertical scrollbar */
+  height: 0px; /* Remove horizontal scrollbar */
+  background: transparent; /* Make scrollbar invisible */
 }
 
 ::-webkit-scrollbar-track {
-  background: #2c2c2c;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: transparent;
+}
+
+/* Firefox scrollbar hiding */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+
+/* IE/Edge scrollbar hiding */
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* Ensure smooth scrolling without visible scrollbars */
+html, body {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Gallery card optimizations */
+.gallery-card {
+  overflow: hidden !important;
+  max-width: 100%;
 }
 
 /* Specifications Card Styling */
@@ -854,5 +1085,354 @@ onMounted(() => {
 
 .specifications-content::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
+}
+
+.image-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.main-image-container {
+  width: 100%;
+  position: relative;
+  padding: 20px;
+}
+
+.product-image {
+  transition: transform 0.3s ease;
+}
+
+.gallery-card {
+  cursor: grab;
+  user-select: none;
+}
+
+.gallery-card:active {
+  cursor: grabbing;
+}
+
+.gallery-card .v-btn {
+  transition: opacity 0.3s ease, transform 0.2s ease, visibility 0.3s ease;
+}
+
+.gallery-card:hover .v-btn {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.gallery-card .v-btn:hover {
+  transform: scale(1.2);
+}
+
+/* Hide buttons with smooth transition */
+.left-arrow, .right-arrow {
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;
+}
+
+/* Remove navigation dots styles - no longer needed */
+.navigation-dots {
+  display: none;
+}
+
+.dot-button {
+  display: none;
+}
+
+.dot {
+  display: none;
+}
+
+/* 🛍️ THUMBNAIL GALLERY STYLES - Fixed Section at Bottom */
+.thumbnail-gallery-section {
+  background: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+  padding: 12px;
+  min-height: 80px;
+  max-height: 80px;
+  overflow: hidden;
+}
+
+.thumbnail-container-fixed {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.thumbnail-scroll-fixed {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0;
+  height: 100%;
+  align-items: center;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.thumbnail-scroll-fixed::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
+.thumbnail-card-fixed {
+  position: relative;
+  border-radius: 8px !important;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border: 2px solid #e0e0e0;
+  background-color: white;
+  flex-shrink: 0;
+  min-width: 60px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.thumbnail-card-fixed:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(25, 118, 210, 0.5);
+}
+
+.thumbnail-active-fixed {
+  border-color: #1976d2 !important;
+  box-shadow: 0 0 0 1px #1976d2, 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+  transform: translateY(-1px);
+  background-color: rgba(25, 118, 210, 0.05) !important;
+}
+
+.thumbnail-active-fixed:hover {
+  transform: translateY(-2px);
+}
+
+.thumbnail-image-fixed {
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+.thumbnail-card-fixed:hover .thumbnail-image-fixed {
+  transform: scale(1.05);
+}
+
+.thumbnail-overlay-fixed {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(25, 118, 210, 0.9);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  border: 1px solid white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile responsive thumbnails */
+@media (max-width: 960px) {
+  .thumbnail-gallery-section {
+    padding: 8px;
+    min-height: 70px;
+    max-height: 70px;
+  }
+  
+  .thumbnail-card-fixed {
+    height: 50px !important;
+    width: 50px !important;
+    min-width: 50px !important;
+  }
+  
+  .thumbnail-image-fixed {
+    height: 48px !important;
+    width: 48px !important;
+  }
+  
+  .thumbnail-overlay-fixed {
+    width: 18px;
+    height: 18px;
+    top: 2px;
+    right: 2px;
+  }
+  
+  .thumbnail-overlay-fixed .v-icon {
+    font-size: 12px !important;
+  }
+  
+  .thumbnail-scroll-fixed {
+    gap: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .thumbnail-gallery-section {
+    padding: 6px;
+    min-height: 60px;
+    max-height: 60px;
+  }
+  
+  .thumbnail-card-fixed {
+    height: 45px !important;
+    width: 45px !important;
+    min-width: 45px !important;
+  }
+  
+  .thumbnail-image-fixed {
+    height: 43px !important;
+    width: 43px !important;
+  }
+  
+  .thumbnail-overlay-fixed {
+    width: 16px;
+    height: 16px;
+    top: 2px;
+    right: 2px;
+  }
+  
+  .thumbnail-overlay-fixed .v-icon {
+    font-size: 10px !important;
+  }
+  
+  .thumbnail-scroll-fixed {
+    gap: 4px;
+  }
+  
+  .main-image-container {
+    padding: 15px;
+  }
+}
+
+/* Enhanced hover effects for thumbnails */
+.thumbnail-card-fixed::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(25, 118, 210, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.thumbnail-card-fixed:hover::before {
+  opacity: 1;
+}
+
+.thumbnail-active-fixed::before {
+  opacity: 0.2;
+}
+
+/* 🛍️ SIMILAR PRODUCTS STYLES */
+.product-card-similar {
+  background-color: #222 !important;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.product-card-similar:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.product-card-similar .v-card-title {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  padding: 8px !important;
+  min-height: 40px !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-similar .v-card-subtitle {
+  font-size: 10px !important;
+  padding: 4px 8px !important;
+}
+
+.product-card-similar .v-img {
+  border-radius: 8px 8px 0 0;
+}
+
+/* Responsive similar products */
+@media (max-width: 960px) {
+  .product-card-similar {
+    height: 180px !important;
+  }
+  
+  .product-card-similar .v-img {
+    height: 100px !important;
+  }
+  
+  .product-card-similar .v-card-title {
+    font-size: 10px !important;
+    min-height: 36px !important;
+    padding: 6px !important;
+  }
+  
+  .product-card-similar .v-card-subtitle {
+    font-size: 9px !important;
+    padding: 3px 6px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .product-card-similar {
+    height: 160px !important;
+  }
+  
+  .product-card-similar .v-img {
+    height: 90px !important;
+  }
+  
+  .product-card-similar .v-card-title {
+    font-size: 9px !important;
+    min-height: 32px !important;
+    padding: 4px !important;
+  }
+  
+  .product-card-similar .v-card-subtitle {
+    font-size: 8px !important;
+    padding: 2px 4px !important;
+  }
+}
+
+/* Single line layout adjustments */
+.product-card-similar .v-card-title,
+.product-card-similar .v-card-subtitle {
+  white-space: normal !important;
+  overflow: hidden;
+}
+
+/* Text formatting for descriptions with line breaks */
+.description-text,
+.specification-detail-text {
+  white-space: pre-line; /* Preserve line breaks and spaces */
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.description-text {
+  font-size: 14px;
+}
+
+.specification-detail-text {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Mobile responsive text */
+@media (max-width: 600px) {
+  .description-text,
+  .specification-detail-text {
+    font-size: 13px;
+    line-height: 1.5;
+  }
 }
 </style>

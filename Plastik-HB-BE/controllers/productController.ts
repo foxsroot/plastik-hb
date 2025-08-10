@@ -23,6 +23,26 @@ export const getFeaturedProducts = async (req: Request, res: Response) => {
 };
 
 /**
+ * @desc Fetch single product by ID with assets and category
+ * @route GET /products/:id
+ */
+export const getProductById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    
+    if (!id) {
+        throw { message: 'Product ID is required.', status: 400 };
+    }
+
+    const product = await ProductService.getProductById(id);
+    
+    if (!product) {
+        throw { message: 'Product not found.', status: 404 };
+    }
+
+    return { data: product, status: 200 };
+};
+
+/**
  * @desc Create new product with file upload
  * @route POST /products
  */
@@ -235,6 +255,80 @@ export const updateFeaturedProducts = async (req: Request, res: Response) => {
     return res.status(200).json({ message: 'Featured products updated', data: featured });
 };
 
+/**
+ * @desc Get active products for public catalog with filters
+ * @route GET /products/catalog
+ * @query ?categoryId=string&priceMin=number&priceMax=number&featured=boolean
+ */
+export const getCatalogProducts = async (req: Request, res: Response) => {
+    const { categoryId, priceMin, priceMax, featured } = req.query;
+
+    const filters: any = {};
+    
+    if (categoryId) filters.categoryId = categoryId as string;
+    if (priceMin) filters.priceMin = Number(priceMin);
+    if (priceMax) filters.priceMax = Number(priceMax);
+    if (featured !== undefined) filters.featured = featured === 'true';
+
+    const products = await ProductService.getActiveProducts(filters);
+    
+    return { 
+        data: products, 
+        status: 200,
+        message: 'Catalog products retrieved successfully'
+    };
+};
+
+/**
+ * @desc Get categories with active products
+ * @route GET /products/categories
+ */
+export const getActiveCategories = async (req: Request, res: Response) => {
+    try {
+        console.log('🔍 Fetching categories with active products...');
+        const categories = await ProductService.getActiveCategories();
+        console.log(`✅ Found ${categories.length} categories with active products`);
+        
+        return { 
+            data: categories, 
+            status: 200,
+            message: 'Active categories retrieved successfully'
+        };
+    } catch (error: any) {
+        console.error('❌ Error in getActiveCategories:', error);
+        throw {
+            message: 'Failed to fetch categories: ' + error.message,
+            status: 500
+        };
+    }
+};
+
+/**
+ * @desc Get all categories (fallback for public catalog)
+ * @route GET /products/all-categories
+ */
+export const getAllCategoriesForCatalog = async (req: Request, res: Response) => {
+    try {
+        console.log('🔍 Fetching all categories for catalog...');
+        const categories = await Category.findAll({
+            order: [['category', 'ASC']]
+        });
+        console.log(`✅ Found ${categories.length} total categories`);
+        
+        return { 
+            data: categories, 
+            status: 200,
+            message: 'All categories retrieved successfully'
+        };
+    } catch (error: any) {
+        console.error('❌ Error in getAllCategoriesForCatalog:', error);
+        throw {
+            message: 'Failed to fetch all categories: ' + error.message,
+            status: 500
+        };
+    }
+};
+
 export default { 
     getAllProducts, 
     getFeaturedProducts, 
@@ -245,6 +339,9 @@ export default {
     replaceMainImage,
     replaceAsset,
     reorderAssets,
-    updateFeaturedProducts
+    updateFeaturedProducts,
+    getCatalogProducts,
+    getActiveCategories,
+    getAllCategoriesForCatalog
 };
 

@@ -1,20 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAlert } from '@/composables/useAlert'
+import { fetchCategories, createCategory, updateCategory, deleteCategory as deleteCategoryApi } from '@/api/categoriesApi'
 
 interface Category {
   id: number
   name: string
-  description?: string
-  status: 'active' | 'inactive'
   productCount: number
   createdAt?: string
 }
 
 interface NewCategory {
   name: string
-  description?: string
-  status: 'active' | 'inactive'
 }
 
 const { success, error } = useAlert()
@@ -22,7 +19,6 @@ const { success, error } = useAlert()
 const categories = ref<Category[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
-const statusFilter = ref('all')
 const sortBy = ref('name')
 
 // Modal state
@@ -38,21 +34,8 @@ const alertMessage = ref('')
 
 // Form data for modal
 const newCategory = ref<NewCategory>({
-  name: '',
-  description: '',
-  status: 'active'
+  name: ''
 })
-
-const statusOptions = [
-  { title: 'Semua Status', value: 'all' },
-  { title: 'Aktif', value: 'active' },
-  { title: 'Tidak Aktif', value: 'inactive' }
-]
-
-const categoryStatusOptions = [
-  { title: 'Aktif', value: 'active' },
-  { title: 'Tidak Aktif', value: 'inactive' }
-]
 
 const sortOptions = [
   { title: 'Nama A-Z', value: 'name' },
@@ -85,11 +68,6 @@ const filteredCategories = computed(() => {
     )
   }
 
-  // Filter berdasarkan status
-  if (statusFilter.value !== 'all') {
-    filtered = filtered.filter(category => category.status === statusFilter.value)
-  }
-
   // Sort
   filtered.sort((a, b) => {
     switch (sortBy.value) {
@@ -110,80 +88,25 @@ const filteredCategories = computed(() => {
 })
 
 // Fungsi untuk fetch data dari API
-const fetchCategories = async () => {
-  loading.value = true
+async function fetchAllCategories() {
+  loading.value = true;
   try {
-    // Ganti dengan endpoint API yang sesuai
-    const response = await fetch('/api/categories')
-    const data = await response.json()
-    categories.value = data
-  } catch (error) {
-    console.error('Error fetching categories:', error)
-    // Fallback data untuk testing
-    categories.value = [
-      { 
-        id: 1, 
-        name: 'Plastik Kemasan', 
-        description: 'Kategori untuk produk plastik kemasan makanan dan minuman',
-        status: 'active',
-        productCount: 15,
-        createdAt: '2024-01-15'
-      },
-      { 
-        id: 2, 
-        name: 'Plastik Industri', 
-        description: 'Kategori untuk produk plastik keperluan industri',
-        status: 'active',
-        productCount: 8,
-        createdAt: '2024-01-10'
-      },
-      { 
-        id: 3, 
-        name: 'Plastik Rumah Tangga', 
-        description: 'Kategori untuk produk plastik keperluan rumah tangga',
-        status: 'inactive',
-        productCount: 0,
-        createdAt: '2024-01-05'
-      },
-      { 
-        id: 4, 
-        name: 'Plastik Medis', 
-        description: 'Kategori untuk produk plastik keperluan medis dan kesehatan',
-        status: 'active',
-        productCount: 12,
-        createdAt: '2024-01-20'
-      }
-    ]
+    const response = await fetchCategories();
+    let rawList = Array.isArray(response)
+      ? response
+      : (response as any).data || (response as any).categories || [];
+    // Map backend fields to frontend Category interface
+    categories.value = rawList.map((item: any) => ({
+      id: item.id,
+      name: item.category, // backend uses 'category' for name
+      createdAt: item.created_at,
+      productCount: item.productCount // or fetch actual count if available
+    }));
+  } catch (error: any) {
+    showAlert('error', 'Error', error?.message || 'Gagal memuat kategori dari server');
+    categories.value = [];
   } finally {
-    loading.value = false
-  }
-}
-
-// Fungsi untuk update status dengan dropdown
-const updateStatus = async (category: Category, newStatus: 'active' | 'inactive') => {
-  if (category.status === newStatus) return
-
-  const oldStatus = category.status
-  category.status = newStatus // Optimistic update
-  
-  try {
-    // Panggil API untuk update status
-    const response = await fetch(`/api/categories/${category.id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    })
-    
-    if (response.ok) {
-      showAlert('success', 'Berhasil', `Status kategori "${category.name}" berhasil diubah menjadi ${newStatus === 'active' ? 'Aktif' : 'Tidak Aktif'}`)
-    } else {
-      throw new Error('Gagal mengupdate status')
-    }
-  } catch (err) {
-    console.error('Error updating status:', err)
-    // Rollback on error
-    category.status = oldStatus
-    showAlert('error', 'Error', 'Gagal mengupdate status kategori')
+    loading.value = false;
   }
 }
 
@@ -191,9 +114,7 @@ const updateStatus = async (category: Category, newStatus: 'active' | 'inactive'
 const openAddModal = () => {
   editingCategory.value = null
   newCategory.value = {
-    name: '',
-    description: '',
-    status: 'active'
+    name: ''
   }
   showAddModal.value = true
 }
@@ -202,9 +123,7 @@ const openAddModal = () => {
 const openEditModal = (category: Category) => {
   editingCategory.value = { ...category }
   newCategory.value = {
-    name: category.name,
-    description: category.description || '',
-    status: category.status
+    name: category.name
   }
   showAddModal.value = true
 }
@@ -219,69 +138,30 @@ const handleSaveCategory = async () => {
   addLoading.value = true
   try {
     if (editingCategory.value) {
-      // Update existing category
-      const response = await fetch(`/api/categories/${editingCategory.value.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCategory.value)
-      })
-      
-      if (response.ok) {
-        const updatedCategory = await response.json()
-        const index = categories.value.findIndex(c => c.id === editingCategory.value!.id)
-        if (index !== -1) {
-          categories.value[index] = { ...updatedCategory, productCount: editingCategory.value.productCount }
-        }
-        showAlert('success', 'Berhasil', 'Kategori berhasil diperbarui!')
-      } else {
-        throw new Error('Gagal mengupdate kategori')
-      }
-    } else {
-      // Create new category
-      const response = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCategory.value)
-      })
-      
-      if (response.ok) {
-        const savedCategory = await response.json()
-        categories.value.unshift({ ...savedCategory, productCount: 0 })
-        showAlert('success', 'Berhasil', 'Kategori berhasil ditambahkan!')
-      } else {
-        throw new Error('Gagal menyimpan kategori')
-      }
-    }
-    
-    showAddModal.value = false
-  } catch (err) {
-    console.error('Error saving category:', err)
-    // Simulasi berhasil untuk testing
-    if (editingCategory.value) {
-      const index = categories.value.findIndex(c => c.id === editingCategory.value!.id)
+      const updated = await updateCategory(editingCategory.value.id, { name: newCategory.value.name });
+      const index = categories.value.findIndex(c => c.id === editingCategory.value!.id);
       if (index !== -1) {
         categories.value[index] = {
-          ...editingCategory.value,
-          name: newCategory.value.name,
-          description: newCategory.value.description,
-          status: newCategory.value.status
-        }
+          ...categories.value[index],
+          ...updated
+        };
       }
       showAlert('success', 'Berhasil', 'Kategori berhasil diperbarui!')
     } else {
-      const newId = Math.max(...categories.value.map(c => c.id)) + 1
-      const savedCategory: Category = {
-        id: newId,
-        name: newCategory.value.name,
-        description: newCategory.value.description,
-        status: newCategory.value.status,
+      const saved = await createCategory({ name: newCategory.value.name }) as Category;
+      categories.value.unshift({
+        ...saved,
         productCount: 0,
-        createdAt: new Date().toISOString().split('T')[0]
-      }
-      categories.value.unshift(savedCategory)
+        id: saved.id,
+        name: saved.name,
+        createdAt: saved.createdAt
+      });
       showAlert('success', 'Berhasil', 'Kategori berhasil ditambahkan!')
     }
     showAddModal.value = false
+  } catch (err: any) {
+    console.error('Error saving category:', err)
+    showAlert('error', 'Error', err?.message || 'Gagal menyimpan kategori')
   } finally {
     addLoading.value = false
     editingCategory.value = null
@@ -296,26 +176,17 @@ const deleteCategory = async (category: Category) => {
   }
 
   try {
-    const response = await fetch(`/api/categories/${category.id}`, {
-      method: 'DELETE'
-    })
-    
-    if (response.ok) {
-      categories.value = categories.value.filter(c => c.id !== category.id)
-      showAlert('success', 'Berhasil', `Kategori "${category.name}" berhasil dihapus`)
-    } else {
-      throw new Error('Gagal menghapus kategori')
-    }
-  } catch (err) {
-    console.error('Error deleting category:', err)
-    // Simulasi berhasil untuk testing
-    categories.value = categories.value.filter(c => c.id !== category.id)
+    await deleteCategoryApi(category.id);
+    categories.value = categories.value.filter(c => c.id !== category.id);
     showAlert('success', 'Berhasil', `Kategori "${category.name}" berhasil dihapus`)
+  } catch (err: any) {
+    console.error('Error deleting category:', err)
+    showAlert('error', 'Error', err?.message || `Gagal menghapus kategori "${category.name}"`)
   }
 }
 
 onMounted(() => {
-  fetchCategories()
+  fetchAllCategories();
 })
 </script>
 
@@ -373,18 +244,6 @@ onMounted(() => {
               />
             </v-col>
             
-            <!-- Status Filter -->
-            <v-col cols="6" md="3">
-              <v-select
-                v-model="statusFilter"
-                :items="statusOptions"
-                label="Status Kategori"
-                variant="outlined"
-                density="compact"
-                hide-details
-              />
-            </v-col>
-            
             <!-- Sort -->
             <v-col cols="6" md="3">
               <v-select
@@ -430,52 +289,35 @@ onMounted(() => {
                       <v-icon size="30">mdi-tag</v-icon>
                     </v-avatar>
                   </v-col>
-                  
                   <!-- Category Info -->
                   <v-col cols="4" md="5" class="pl-4">
                     <h3 class="text-h6 font-weight-medium mb-1">{{ category.name }}</h3>
-                    <p class="text-body-2 text-grey-darken-1 mb-1">{{ category.description || 'Tidak ada deskripsi' }}</p>
                     <p class="text-caption text-grey-darken-2">{{ category.productCount }} produk</p>
                   </v-col>
-                  
-                  <!-- Status Display -->
-                  <v-col cols="3" md="3" class="text-center">
-                    <v-chip
-                      :color="category.status === 'active' ? 'success' : 'error'"
-                      variant="flat"
-                      size="default"
-                      :prepend-icon="category.status === 'active' ? 'mdi-check' : 'mdi-close'"
-                    >
-                      {{ category.status === 'active' ? 'Aktif' : 'Tidak Aktif' }}
-                    </v-chip>
-                  </v-col>
-                  
+                  <!-- Spacer to push actions to the right -->
+                  <v-col class="flex-grow-1" />
                   <!-- Action Buttons -->
-                  <v-col cols="3" md="3" class="text-right">
-                    <div class="d-flex justify-end align-center ga-3">
-                      <!-- Edit Button -->
-                      <v-btn
-                        prepend-icon="mdi-pencil"
-                        variant="outlined"
-                        size="small"
-                        color="primary"
-                        @click="openEditModal(category)"
-                      >
-                        Edit
-                      </v-btn>
-                      
-                      <!-- Delete Button -->
-                      <v-btn
-                        prepend-icon="mdi-delete"
-                        variant="outlined"
-                        size="small"
-                        color="error"
-                        :disabled="category.productCount > 0"
-                        @click="deleteCategory(category)"
-                      >
-                        Hapus
-                      </v-btn>
-                    </div>
+                  <v-col cols="auto" class="d-flex justify-end align-center" style="min-width: 180px;">
+                    <v-btn
+                      prepend-icon="mdi-pencil"
+                      variant="outlined"
+                      size="small"
+                      color="primary"
+                      @click="openEditModal(category)"
+                    >
+                      Edit
+                    </v-btn>
+                    <v-btn
+                      prepend-icon="mdi-delete"
+                      variant="outlined"
+                      size="small"
+                      color="error"
+                      :disabled="category.productCount > 0"
+                      @click="category.productCount === 0 && deleteCategory(category)"
+                      class="ml-2"
+                    >
+                      Hapus
+                    </v-btn>
                   </v-col>
                 </v-row>
                 <v-divider v-if="index < filteredCategories.length - 1" />
@@ -507,27 +349,6 @@ onMounted(() => {
                   label="Nama Kategori"
                   variant="outlined"
                   required
-                />
-              </v-col>
-              
-              <!-- Deskripsi -->
-              <v-col cols="12">
-                <v-textarea
-                  v-model="newCategory.description"
-                  label="Deskripsi Kategori"
-                  variant="outlined"
-                  rows="3"
-                  placeholder="Masukkan deskripsi kategori..."
-                />
-              </v-col>
-              
-              <!-- Status -->
-              <v-col cols="12">
-                <v-select
-                  v-model="newCategory.status"
-                  :items="categoryStatusOptions"
-                  label="Status"
-                  variant="outlined"
                 />
               </v-col>
             </v-row>

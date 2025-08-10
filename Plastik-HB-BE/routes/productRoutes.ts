@@ -1,14 +1,39 @@
 import { Router } from 'express';
-import { getAllProducts, getFeaturedProducts, createProduct, updateProduct, deleteProduct, deleteProductAsset, replaceMainImage, replaceAsset, reorderAssets, updateFeaturedProducts } from '../controllers/productController';
+import { 
+    getAllProducts, 
+    getFeaturedProducts, 
+    getProductById,
+    createProduct, 
+    updateProduct, 
+    deleteProduct, 
+    deleteProductAsset, 
+    replaceMainImage, 
+    replaceAsset, 
+    reorderAssets, 
+    updateFeaturedProducts,
+    getCatalogProducts,
+    getActiveCategories,
+    getAllCategoriesForCatalog
+} from '../controllers/productController';
 import { controllerWrapper } from '../utils/controllerWrapper';
 import { uploadProductImages } from '../utils/uploadImageMiddleware';
 
-
 const productRouter = Router();
 
-productRouter.get('/', controllerWrapper(getAllProducts));
+// Public catalog routes (no auth required)
+productRouter.get('/catalog', controllerWrapper(getCatalogProducts));
+productRouter.get('/categories', controllerWrapper(getActiveCategories));
+productRouter.get('/all-categories', controllerWrapper(getAllCategoriesForCatalog));
 productRouter.get('/featured', controllerWrapper(getFeaturedProducts));
 productRouter.post('/', uploadProductImages ,controllerWrapper(createProduct));
+
+// Admin routes
+productRouter.get('/', controllerWrapper(getAllProducts));
+productRouter.put('/featured', controllerWrapper(updateFeaturedProducts));
+
+// Public product detail route (no auth required) - Must be AFTER specific routes
+productRouter.get('/:id', controllerWrapper(getProductById));
+productRouter.post('/', uploadProductImages, controllerWrapper(createProduct));
 productRouter.put('/:id', uploadProductImages, controllerWrapper(updateProduct));
 productRouter.delete('/:id', controllerWrapper(deleteProduct));
 
@@ -17,6 +42,5 @@ productRouter.delete('/:id/assets/:assetId', controllerWrapper(deleteProductAsse
 productRouter.put('/:id/assets/:assetId', uploadProductImages, controllerWrapper(replaceAsset));
 productRouter.patch('/:id/assets/reorder', controllerWrapper(reorderAssets));
 productRouter.put('/:id/main-image', uploadProductImages, controllerWrapper(replaceMainImage));
-productRouter.put('/featured', controllerWrapper(updateFeaturedProducts));
 
 export default productRouter;
