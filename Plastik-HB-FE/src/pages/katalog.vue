@@ -531,22 +531,19 @@
             >
               <v-img
                 :src="getMainImageUrl(product)"
+                :alt="product.name"
                 height="150"
                 cover
                 class="rounded mb-2"
-                style="background: #222"
-                :alt="product.name"
-                @error="() => handleImageError(product)"
               >
-                <!-- Loading placeholder -->
-                <template v-slot:placeholder>
-                  <div class="d-flex align-center justify-center fill-height">
-                    <v-progress-circular
-                      color="grey-lighten-4"
-                      indeterminate
-                      size="24"
-                    ></v-progress-circular>
-                  </div>
+                <template #error>
+                  <v-img
+                    :src="altImageUrl"
+                    :alt="product.name"
+                    height="150"
+                    cover
+                    class="rounded mb-2"
+                  />
                 </template>
               </v-img>
               <v-card-title
@@ -694,79 +691,25 @@
 import { ref, onMounted, computed, watch } from "vue";
 import axiosInstance from "@/utils/axiosInstance";
 import Loading from "@/components/Loading.vue";
+import { useImageHandler } from '@/composables/useImageHandler';
 import {
-  getImageUrl,
   formatPrice,
   calculateDiscountedPrice,
 } from "@/utils/formatters";
 
-// Alt image fallback - sama seperti di katalog-produk
-const ALT_IMAGE_FILENAME = "Alt-Image-Produk.png";
+// 🆕 Initialize image handler composable
+const {
+  altImageUrl,
+  getMainImageUrl,
+  getAvailableAssetImages,
+  getImportedImageUrls
+} = useImageHandler();
 
-// Computed untuk mendapatkan alt image URL
-const altImageUrl = computed(() => {
-  const url = getImageUrl(ALT_IMAGE_FILENAME);
-  console.log("Alt image URL computed:", url);
-  return url;
+// 🆕 Debug: Log available images on component mount
+onMounted(() => {
+  console.log('Available asset images:', getAvailableAssetImages());
+  console.log('Imported image URLs:', getImportedImageUrls());
 });
-
-// Reactive state untuk tracking failed images
-const failedImages = ref(new Set<string>());
-
-// Helper untuk get image URL atau fallback ke alt - sama seperti katalog-produk
-const getImageOrAlt = (imageFilename: string | null | undefined): string => {
-  if (
-    !imageFilename ||
-    imageFilename === "" ||
-    imageFilename === "/placeholder.jpg"
-  ) {
-    console.log("Using alt image for:", imageFilename);
-    return altImageUrl.value;
-  }
-
-  // Jika data URL (base64 dari file upload), return as is
-  if (imageFilename.startsWith("data:")) {
-    console.log("Using data URL:", imageFilename.substring(0, 50) + "...");
-    return imageFilename;
-  }
-
-  // Jika sudah URL lengkap, return as is
-  if (imageFilename.startsWith("http")) {
-    return imageFilename;
-  }
-
-  // Convert ke URL lengkap
-  const fullUrl = getImageUrl(imageFilename);
-  console.log("Generated URL:", fullUrl, "from:", imageFilename);
-  return fullUrl;
-};
-
-// Helper untuk cek apakah image sudah failed
-const shouldUseAltImage = (
-  imageFilename: string | null | undefined
-): boolean => {
-  if (
-    !imageFilename ||
-    imageFilename === "" ||
-    imageFilename === "/placeholder.jpg"
-  )
-    return true;
-
-  // Jika data URL (base64 dari file upload), jangan gunakan alt image
-  if (imageFilename.startsWith("data:")) return false;
-
-  // Generate proper URL untuk cek di failedImages
-  const fullUrl = imageFilename.startsWith("http")
-    ? imageFilename
-    : getImageUrl(imageFilename);
-  return failedImages.value.has(fullUrl);
-};
-
-// Mark image as failed
-const markImageAsFailed = (imageUrl: string) => {
-  console.log("Marking image as failed:", imageUrl);
-  failedImages.value.add(imageUrl);
-};
 
 // Helper functions for price input formatting
 const formatPriceInput = (value: number): string => {
@@ -978,41 +921,6 @@ const fetchCategories = async () => {
     } catch (fallbackError) {
       console.error("❌ All fallback attempts failed:", fallbackError);
       categories.value = [];
-    }
-  }
-};
-
-// Helper functions
-const getMainImageUrl = (product: any): string => {
-  // Cek apakah ada assets dan ambil yang order = 1 (main image)
-  if (product.assets && product.assets.length > 0) {
-    const mainAsset = product.assets.find((asset: any) => asset.order === 1);
-    if (mainAsset && mainAsset.url) {
-      const imageUrl = getImageOrAlt(mainAsset.url);
-
-      // Cek apakah image sudah pernah failed
-      if (shouldUseAltImage(mainAsset.url)) {
-        return altImageUrl.value;
-      }
-
-      return imageUrl;
-    }
-  }
-
-  // Fallback ke alt image jika tidak ada assets
-  return altImageUrl.value;
-};
-
-// Handler untuk image error - simplified version
-const handleImageError = (product: any) => {
-  console.log("Image failed to load for product:", product.name);
-
-  // Mark as failed and trigger reactivity
-  if (product.assets && product.assets.length > 0) {
-    const mainAsset = product.assets.find((asset: any) => asset.order === 1);
-    if (mainAsset) {
-      const imageUrl = getImageUrl(mainAsset.url);
-      markImageAsFailed(imageUrl);
     }
   }
 };

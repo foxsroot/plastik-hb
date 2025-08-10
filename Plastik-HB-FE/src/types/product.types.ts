@@ -37,7 +37,7 @@ export interface CreateProductData {
   category_name?: string;
   discount?: number;
   discounted_price?: number;
-  status?: 'Aktif' | 'Draft';
+  status?: 'active' | 'draft';
 }
 
 export interface NewProduct {
