@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
 import { getPage } from "../api/pageApi";
 import { fetchFeaturedProducts } from "../api/productApi";
+import { useAnalytics } from "../composables/useAnalytics";
 
 interface PageData {
+  id: string;
   title: string;
   slug: string;
   description: string;
@@ -22,21 +24,21 @@ interface PageData {
 
 // Banner Types and Data
 interface Banner {
-  order: number
-  image: string
-  title: string
-  subtitle: string
-  buttonText?: string
-  buttonLink?: string
+  order: number;
+  image: string;
+  title: string;
+  subtitle: string;
+  buttonText?: string;
+  buttonLink?: string;
 }
 
 // Achievement Types and Data
 interface Achievement {
-  order: number
-  title: string
-  percentage: number
-  description: string
-  image?: string
+  order: number;
+  title: string;
+  percentage: number;
+  description: string;
+  image?: string;
 }
 
 const pageData = ref<PageData | null>(null);
@@ -53,15 +55,15 @@ async function fetchPageData() {
   }
 }
 
-const currentSlide = ref(0)
-let autoScrollInterval: number | null = null
+const currentSlide = ref(0);
+let autoScrollInterval: number | null = null;
 
 // Featured Products Types and Data
 interface Asset {
   id: string;
   url: string;
   alt: string;
-  type: 'IMAGE' | 'VIDEO';
+  type: "IMAGE" | "VIDEO";
   created_at: string;
   updated_at: string;
   product_id: string;
@@ -93,7 +95,7 @@ const featuredProducts = ref<FeaturedProduct[]>([]);
 
 async function fetchFeatured() {
   try {
-    const response = await fetchFeaturedProducts() as FeaturedProduct[];
+    const response = (await fetchFeaturedProducts()) as FeaturedProduct[];
     featuredProducts.value = response;
   } catch (error: any) {
     errorMessage.value = error;
@@ -102,25 +104,28 @@ async function fetchFeatured() {
 
 // Banner Functions
 const goToSlide = (index: number) => {
-  currentSlide.value = index
-}
+  currentSlide.value = index;
+};
 
 const startAutoScroll = () => {
   autoScrollInterval = setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % 3 // Assuming 3 banners, adjust as needed
-  }, 5000)
-}
+    currentSlide.value = (currentSlide.value + 1) % 3; // Assuming 3 banners, adjust as needed
+  }, 5000);
+};
 
 const stopAutoScroll = () => {
   if (autoScrollInterval) {
-    clearInterval(autoScrollInterval)
-    autoScrollInterval = null
+    clearInterval(autoScrollInterval);
+    autoScrollInterval = null;
   }
-}
+};
 
 // Achievement Computed Properties
 const achievements = computed(() => {
-  return pageData.value?.sections.find(s => s.type === "ACHIEVEMENTS")?.data.achievements || [];
+  return (
+    pageData.value?.sections.find((s) => s.type === "ACHIEVEMENTS")?.data
+      .achievements || []
+  );
 });
 
 const leftSideAchievements = computed(() => {
@@ -134,40 +139,50 @@ const rightSideAchievements = computed(() => {
   const total = achievements.value.length;
   const leftCount = Math.ceil(total / 2);
   return achievements.value.slice(leftCount);
-})
+});
 
 // Product Functions
-const scrollContainer = ref<HTMLElement | null>(null)
+const scrollContainer = ref<HTMLElement | null>(null);
 
 const updateScrollPosition = () => {
   // Keep this for potential future use
-}
+};
 
 const viewProductDetail = (product: FeaturedProduct) => {
-  console.log('View product:', product.name)
+  console.log("View product:", product.name);
   // router.push(`/produk/${product.id}`)
-}
+};
 
 const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0
-  }).format(price)
-}
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(price);
+};
 
 // Lifecycle
 onMounted(async () => {
   await fetchPageData();
+
+  trackPageView(
+    pageData.value?.id || "unknown",
+    pageData.value?.slug || "unknown"
+  );
+
   await fetchFeatured();
-  startAutoScroll()
-  await nextTick()
-  updateScrollPosition()
-})
+  startAutoScroll();
+  await nextTick();
+  updateScrollPosition();
+});
 
 onUnmounted(() => {
-  stopAutoScroll()
-})
+  stopAutoScroll();
+});
+
+function trackPageView(arg0: any, arg1: string) {
+  throw new Error("Function not implemented.");
+}
 </script>
 
 <template>
@@ -228,7 +243,7 @@ onUnmounted(() => {
                 v-for="(banner, index) in pageData?.sections[0].data.banners"
                 :key="index"
                 class="banner-dot"
-                :class="{ 'active': currentSlide === index }"
+                :class="{ active: currentSlide === index }"
                 @click="goToSlide(index)"
               />
             </div>
@@ -236,15 +251,13 @@ onUnmounted(() => {
         </v-col>
       </v-row>
     </v-container>
-    
+
     <!-- Achievement Section -->
     <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
       <v-row>
         <v-col cols="12">
           <div class="text-center mb-8">
-            <h2 class="text-h5 font-weight-bold mb-6">
-              Achievement
-            </h2>
+            <h2 class="text-h5 font-weight-bold mb-6">Achievement</h2>
           </div>
         </v-col>
       </v-row>
@@ -252,15 +265,21 @@ onUnmounted(() => {
       <v-row class="achievement-content mb-12">
         <!-- Left Side - Large Image or Achievement Items -->
         <v-col cols="12" md="6" class="left-section">
-          <div v-if="leftSideAchievements.length === 0" class="large-image-placeholder">
-            <v-card class="fill-height d-flex align-center justify-center bg-grey-darken-3 rounded-lg elevation-1" outlined>
+          <div
+            v-if="leftSideAchievements.length === 0"
+            class="large-image-placeholder"
+          >
+            <v-card
+              class="fill-height d-flex align-center justify-center bg-grey-darken-3 rounded-lg elevation-1"
+              outlined
+            >
               <div class="text-center pa-8">
                 <v-icon size="80" color="amber">mdi-image-outline</v-icon>
                 <p class="text-white mt-4">Large Image Placeholder</p>
               </div>
             </v-card>
           </div>
-          
+
           <!-- Left Achievement Items -->
           <div v-else class="achievement-grid">
             <v-card
@@ -278,15 +297,19 @@ onUnmounted(() => {
                   />
                   <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
                 </v-avatar>
-                
+
                 <!-- Achievement Content -->
                 <div class="flex-grow-1">
                   <div class="d-flex align-center mb-2">
-                    <h3 class="achievement-percentage text-h4 font-weight-bold text-amber">
+                    <h3
+                      class="achievement-percentage text-h4 font-weight-bold text-amber"
+                    >
                       {{ achievement.percentage }}%
                     </h3>
                   </div>
-                  <p class="achievement-description text-body-1 mb-0 text-white">
+                  <p
+                    class="achievement-description text-body-1 mb-0 text-white"
+                  >
                     {{ achievement.description }}
                   </p>
                 </div>
@@ -313,15 +336,19 @@ onUnmounted(() => {
                   />
                   <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
                 </v-avatar>
-                
+
                 <!-- Achievement Content -->
                 <div class="flex-grow-1">
                   <div class="d-flex align-center mb-2">
-                    <h3 class="achievement-percentage text-h4 font-weight-bold text-amber">
+                    <h3
+                      class="achievement-percentage text-h4 font-weight-bold text-amber"
+                    >
                       {{ achievement.percentage }}%
                     </h3>
                   </div>
-                  <p class="achievement-description text-body-1 mb-0 text-white">
+                  <p
+                    class="achievement-description text-body-1 mb-0 text-white"
+                  >
                     {{ achievement.description }}
                   </p>
                 </div>
@@ -331,15 +358,13 @@ onUnmounted(() => {
         </v-col>
       </v-row>
     </v-container>
-    
+
     <!-- Featured Products Section -->
     <v-container fluid class="pa-6 bg-grey-darken-4 text-white">
       <v-row>
         <v-col cols="12">
           <div class="text-center mb-8">
-            <h2 class="text-h5 font-weight-bold mb-6">
-              Produk Andalan
-            </h2>
+            <h2 class="text-h5 font-weight-bold mb-6">Produk Andalan</h2>
             <p class="text-subtitle-1 mb-3">
               Koleksi produk plastik berkualitas tinggi pilihan terbaik kami
             </p>
@@ -351,7 +376,7 @@ onUnmounted(() => {
         <v-col cols="12">
           <div class="products-carousel-container">
             <!-- Products Scroll Container -->
-            <div 
+            <div
               ref="scrollContainer"
               class="products-scroll-container"
               @scroll="updateScrollPosition"
@@ -366,37 +391,53 @@ onUnmounted(() => {
                   <!-- Product Image -->
                   <div class="product-image-container">
                     <v-img
-                      :src="product.assets[0]?.url || '/src/assets/placeholder.png'"
+                      :src="
+                        product.assets[0]?.url || '/src/assets/placeholder.png'
+                      "
                       :alt="product.name"
                       height="200"
                       cover
                       class="product-image"
                     >
                       <template v-slot:placeholder>
-                        <div class="d-flex align-center justify-center fill-height">
-                          <v-icon size="60" color="amber">mdi-package-variant</v-icon>
+                        <div
+                          class="d-flex align-center justify-center fill-height"
+                        >
+                          <v-icon size="60" color="amber"
+                            >mdi-package-variant</v-icon
+                          >
                         </div>
                       </template>
                     </v-img>
-                    
                   </div>
 
                   <!-- Product Content -->
                   <v-card-text class="pa-4">
-                    <h3 class="product-name text-subtitle-1 font-weight-bold mb-2 text-white">
+                    <h3
+                      class="product-name text-subtitle-1 font-weight-bold mb-2 text-white"
+                    >
                       {{ product.name }}
                     </h3>
-                    <p class="product-description text-body-2 text-grey-lighten-1 mb-3">
+                    <p
+                      class="product-description text-body-2 text-grey-lighten-1 mb-3"
+                    >
                       {{ product.description }}
                     </p>
-                    
+
                     <!-- Product Price -->
-                    <div class="product-price-container d-flex align-center justify-space-between">
+                    <div
+                      class="product-price-container d-flex align-center justify-space-between"
+                    >
                       <div>
-                        <span class="product-price text-h6 font-weight-bold text-amber">
+                        <span
+                          class="product-price text-h6 font-weight-bold text-amber"
+                        >
                           {{ formatPrice(product.price) }}
                         </span>
-                        <span v-if="product.discount" class="original-price text-body-2 text-grey ml-2">
+                        <span
+                          v-if="product.discount"
+                          class="original-price text-body-2 text-grey ml-2"
+                        >
                           {{ formatPrice(product.discount) }}
                         </span>
                       </div>
@@ -530,7 +571,8 @@ onUnmounted(() => {
   gap: 1rem;
 }
 
-.left-section, .right-section {
+.left-section,
+.right-section {
   display: flex;
   flex-direction: column;
 }
@@ -621,16 +663,16 @@ onUnmounted(() => {
   .banner-title {
     font-size: 2rem;
   }
-  
+
   .banner-subtitle {
     font-size: 1rem;
   }
-  
+
   .banner-dots {
     bottom: 10px;
     gap: 6px;
   }
-  
+
   .banner-dot {
     width: 10px;
     height: 10px;
@@ -639,12 +681,12 @@ onUnmounted(() => {
   .achievement-content {
     flex-direction: column;
   }
-  
+
   .large-image-placeholder {
     height: 250px;
     margin-bottom: 2rem;
   }
-  
+
   .achievement-card {
     margin-bottom: 1rem;
   }
@@ -653,7 +695,7 @@ onUnmounted(() => {
     width: 220px;
     min-width: 220px;
   }
-  
+
   .products-grid {
     padding: 20px 10px;
     gap: 15px;
@@ -665,7 +707,7 @@ onUnmounted(() => {
     width: 200px;
     min-width: 200px;
   }
-  
+
   .products-grid {
     gap: 10px;
   }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { getPage } from "../api/pageApi";
+import { useAnalytics } from "../composables/useAnalytics";
 
 interface PageData {
+  id: string;
   title: string;
   slug: string;
   description: string;
@@ -26,6 +28,8 @@ interface PageData {
   }>;
 }
 
+const { trackPageView } = useAnalytics();
+
 const pageData = ref<PageData | null>(null);
 const errorMessage = ref("");
 
@@ -39,8 +43,12 @@ async function fetchPageData() {
   }
 }
 
-onMounted(() => {
-  fetchPageData();
+onMounted(async () => {
+  await fetchPageData();
+  trackPageView(
+    pageData.value?.id || "unknown",
+    pageData.value?.slug || "unknown"
+  );
 });
 </script>
 
