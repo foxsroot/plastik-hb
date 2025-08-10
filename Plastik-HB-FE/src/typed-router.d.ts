@@ -28,7 +28,6 @@ declare module 'vue-router/auto-routes' {
     '/admin/tentang-kami': RouteRecordInfo<'/admin/tentang-kami', '/admin/tentang-kami', Record<never, never>, Record<never, never>>,
     '/detail-produk': RouteRecordInfo<'/detail-produk', '/detail-produk', Record<never, never>, Record<never, never>>,
     '/katalog': RouteRecordInfo<'/katalog', '/katalog', Record<never, never>, Record<never, never>>,
-    '/KatalogProduk': RouteRecordInfo<'/KatalogProduk', '/KatalogProduk', Record<never, never>, Record<never, never>>,
     '/tentang-kami': RouteRecordInfo<'/tentang-kami', '/tentang-kami', Record<never, never>, Record<never, never>>,
   }
 }
