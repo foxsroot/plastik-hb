@@ -885,7 +885,7 @@ onMounted(async () => {
                             </span>
                             <span v-if="product.discount && product.discount > 0"
                               class="text-h6 font-weight-bold text-primary">
-                              {{ formatPrice(product.discount) }}
+                              {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
                             </span>
                             <span v-else class="text-h6 font-weight-bold text-primary">
                               {{ formatPrice(product.price) }}

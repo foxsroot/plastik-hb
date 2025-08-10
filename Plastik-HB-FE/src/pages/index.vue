@@ -17,7 +17,6 @@ interface PageData {
     data: {
       banners?: Banner[];
       achievements?: Achievement[];
-      featuredProducts?: FeaturedProduct[];
     };
   }>;
 }
@@ -97,6 +96,7 @@ async function fetchFeatured() {
   try {
     const response = (await fetchFeaturedProducts()) as FeaturedProduct[];
     featuredProducts.value = response;
+    console.log("Featured Products:", featuredProducts.value);
   } catch (error: any) {
     errorMessage.value = error;
   }
@@ -109,7 +109,7 @@ const goToSlide = (index: number) => {
 
 const startAutoScroll = () => {
   autoScrollInterval = setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % 3; // Assuming 3 banners, adjust as needed
+    currentSlide.value = (currentSlide.value + 1) % (pageData.value?.sections[0].data.banners?.length || 1);
   }, 5000);
 };
 
@@ -164,13 +164,13 @@ const formatPrice = (price: number) => {
 // Lifecycle
 onMounted(async () => {
   await fetchPageData();
+  await fetchFeatured();
 
   trackPageView(
     pageData.value?.id || "unknown",
     pageData.value?.slug || "unknown"
   );
 
-  await fetchFeatured();
   startAutoScroll();
   await nextTick();
   updateScrollPosition();
@@ -430,15 +430,23 @@ function trackPageView(arg0: any, arg1: string) {
                     >
                       <div>
                         <span
-                          class="product-price text-h6 font-weight-bold text-amber"
+                          v-if="product.discount && product.discount > 0"
+                          class="text-h6 font-weight-bold text-amber"
+                        >
+                          {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
+                        </span>
+                        <span
+                          v-if="product.discount && product.discount > 0"
+                          class="text-h6 font-weight-bold text-grey-darken-1 ml-2"
+                          style="text-decoration: line-through;"
                         >
                           {{ formatPrice(product.price) }}
                         </span>
                         <span
-                          v-if="product.discount"
-                          class="original-price text-body-2 text-grey ml-2"
+                          v-else
+                          class="text-h6 font-weight-bold text-amber"
                         >
-                          {{ formatPrice(product.discount) }}
+                          {{ formatPrice(product.price) }}
                         </span>
                       </div>
                     </div>
