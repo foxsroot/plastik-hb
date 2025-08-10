@@ -27,3 +27,4 @@ coverage
 *.tsbuildinfo
 
 .env
+../Plastik-HB-FE/src/assets/productImage/

@@ -1,4 +1,5 @@
-import { Table, Model, Column, DataType } from 'sequelize-typescript';
+import { Table, Model, Column, DataType, ForeignKey, BelongsTo } from 'sequelize-typescript';
+import { Product } from './Product';
 
 @Table({
     tableName: "assets",
@@ -34,4 +35,20 @@ export class Asset extends Model {
         allowNull: false,
     })
     declare type: 'IMAGE' | 'VIDEO';
+
+    @Column({
+        type: DataType.INTEGER,
+        allowNull: false,
+    })
+    declare order: number;
+
+    @ForeignKey(() => Product)
+    @Column({
+        type: DataType.UUID,
+        allowNull: false,
+    })
+    declare product_id: string;
+
+    @BelongsTo(() => Product)
+    product?: Product;
 }
