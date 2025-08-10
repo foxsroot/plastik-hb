@@ -62,4 +62,10 @@ export class Analytic extends Model {
         allowNull: false
     })
     declare location: string;
+
+    @Column({
+        type: DataType.DATE,
+        field: "created_at"
+    })
+    declare createdAt: Date;
 }

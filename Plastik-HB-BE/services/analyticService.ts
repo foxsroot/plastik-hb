@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { Analytic } from '../models/Analytic';
+import axios from 'axios';
 
 // Utility to format date as YYYY-MM-DD
 const formatDate = (date: Date): string =>
@@ -19,7 +20,7 @@ export const getTrafficAnalytics = async () => {
                 [Op.lte]: today,
             },
         },
-        raw: true,
+        // raw: false,
     });
 
     // --- Logic ---
@@ -27,6 +28,28 @@ export const getTrafficAnalytics = async () => {
     const uniqueVisitors = new Set(analytics.map(a => a.ipAddress)).size;
     const pageViews = analytics.filter(a => a.type === 'PAGE').length;
     const productClicks = analytics.filter(a => a.type === 'PRODUCT').length;
+
+    // Aggregate clicks per product
+    const clicksPerProduct: Record<string, { clicks: number; lastClicked: string | null }> = {};
+
+    analytics
+        .filter(a => a.type === 'PRODUCT' && a.targetId)
+        .forEach(a => {
+            const productId = a.targetId;
+            const createdAt = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+            if (!clicksPerProduct[productId]) {
+                clicksPerProduct[productId] = { clicks: 1, lastClicked: createdAt.toISOString() };
+            } else {
+                clicksPerProduct[productId].clicks += 1;
+                // Update lastClicked if this createdAt is newer
+                if (
+                    !clicksPerProduct[productId].lastClicked ||
+                    createdAt > new Date(clicksPerProduct[productId].lastClicked)
+                ) {
+                    clicksPerProduct[productId].lastClicked = createdAt.toISOString();
+                }
+            }
+        });
 
     // Aggregate timeline stats
     const timeline: Record<string, { pengunjung: number; pageViews: number; productClicks: number }> = {};
@@ -37,10 +60,10 @@ export const getTrafficAnalytics = async () => {
         const dateStr = formatDate(date);
 
         const dailyAnalytics = analytics.filter(a => {
-            if (!a.created_at) {
+            if (!a.createdAt) {
                 return false;
             }
-            const d = new Date(a.created_at);
+            const d = new Date(a.createdAt);
             return !isNaN(d.getTime()) && formatDate(d) === dateStr;
         });
 
@@ -56,6 +79,33 @@ export const getTrafficAnalytics = async () => {
         pengunjung: uniqueVisitors,
         pageViews,
         productClicks,
+        clicksPerProduct,
         timeline,
     };
+};
+
+async function getCityFromIp(ip: string): Promise<string> {
+    try {
+        const res = await axios.get(`https://ipapi.co/json/${ip}/`);
+        return res.data?.city ?? "Unknown";
+    } catch (error) {
+        return "Unknown";
+    }
+}
+
+export const createAnalytics = async (payload: {
+    type: "PAGE" | "PRODUCT";
+    targetId: string;
+    url: string;
+    ipAddress: string;
+}) => {
+    const city = await getCityFromIp(payload.ipAddress);
+
+    return await Analytic.create({
+        type: payload.type,
+        targetId: payload.targetId,
+        url: payload.url,
+        ipAddress: payload.ipAddress,
+        location: city,
+    });
 };
