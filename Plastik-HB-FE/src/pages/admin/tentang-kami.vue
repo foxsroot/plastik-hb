@@ -1,194 +1,233 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-// Import the real about page component
+import { ref, computed, onMounted } from "vue";
+import { getPage, updateAboutPage } from "../../api/pageApi";
+import { uploadImage } from "../../api/uploadApi";
 import AboutPage from "../tentang-kami.vue";
 
-interface AboutUsData {
-  aboutImage: string;
-  headline: string;
-  subheadline: string;
-  description: string;
-  values: string[];
-  mission: string;
-  vision: string;
-  history: string[];
+// --- Types ---
+interface Section {
+  id: string;
+  type: string;
+  order: number;
+  data: any;
+  visible: boolean;
 }
 
-// Alert state
+interface Page {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  published: boolean;
+  sections: Section[];
+}
+
+// --- State ---
+const loading = ref(false);
+const saveLoading = ref(false);
 const alertVisible = ref(false);
 const alertType = ref<"success" | "error">("success");
 const alertTitle = ref("");
 const alertMessage = ref("");
-
-// Form state
-const loading = ref(false);
-const saveLoading = ref(false);
-
-// Preview state
 const previewKey = ref(0);
 const previewTimestamp = ref(Date.now());
-
-// About Us data
-const aboutData = ref<AboutUsData>({
-  aboutImage: "",
-  headline: "",
-  subheadline: "",
-  description: "",
-  values: ["", "", "", ""],
-  mission: "",
-  vision: "",
-  history: ["", "", "", ""],
-});
-
-// File input ref
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
-// Preview functions
-const refreshPreview = () => {
-  previewKey.value += 1;
-  previewTimestamp.value = Date.now();
-};
+const pageId = ref<string>("");
+const pageTitle = ref<string>("");
+const pageDescription = ref<string>("");
+const pagePublished = ref<boolean>(true);
+const sections = ref<Section[]>([]);
 
-const openAboutPage = () => {
-  window.open("/tentang-kami", "_blank");
-};
+// --- Section Helpers ---
+function getSection(type: string): Section | undefined {
+  return sections.value.find((s) => s.type === type);
+}
 
-// Alert functions
-const showAlert = (
-  type: "success" | "error",
-  title: string,
-  message: string
-) => {
+// --- Computed for Editor Fields ---
+const infoSection = computed(() => getSection("INFO"));
+const valuesSection = computed(() => getSection("VALUES"));
+const goalsSection = computed(() => getSection("GOALS"));
+const historySection = computed(() => getSection("HISTORY"));
+const addressSection = computed(() => getSection("ADDRESS"));
+
+// --- INFO Section ---
+const infoImageUrl = computed({
+  get: () => infoSection.value?.data.imageUrl ?? "",
+  set: (val: string) => {
+    if (infoSection.value) infoSection.value.data.imageUrl = val;
+  },
+});
+const infoTitle = computed({
+  get: () => infoSection.value?.data.title ?? "",
+  set: (val: string) => {
+    if (infoSection.value) infoSection.value.data.title = val;
+  },
+});
+const infoDescription = computed({
+  get: () => infoSection.value?.data.description ?? "",
+  set: (val: string) => {
+    if (infoSection.value) infoSection.value.data.description = val;
+  },
+});
+
+// --- VALUES Section ---
+const valueItems = computed(() => {
+  const arr = valuesSection.value?.data.values ?? [];
+  // Always 4 items
+  if (arr.length < 4) {
+    for (let i = arr.length; i < 4; i++) arr.push("");
+  }
+  return arr.map((_, idx) =>
+    computed({
+      get: () => arr[idx] ?? "",
+      set: (val: string) => {
+        arr[idx] = val;
+      },
+    })
+  );
+});
+
+// --- GOALS Section ---
+const mission = computed({
+  get: () => goalsSection.value?.data.mission ?? "",
+  set: (val: string) => {
+    if (goalsSection.value) goalsSection.value.data.mission = val;
+  },
+});
+const vision = computed({
+  get: () => goalsSection.value?.data.vision ?? "",
+  set: (val: string) => {
+    if (goalsSection.value) goalsSection.value.data.vision = val;
+  },
+});
+
+// --- HISTORY Section ---
+const historyItems = computed(() => {
+  const arr = historySection.value?.data.history ?? [];
+  return arr.map((_, idx) =>
+    computed({
+      get: () => arr[idx] ?? "",
+      set: (val: string) => {
+        arr[idx] = val;
+      },
+    })
+  );
+});
+function addHistory() {
+  if (historySection.value) historySection.value.data.history.push("");
+}
+function removeHistory(idx: number) {
+  if (historySection.value && historySection.value.data.history.length > 1) {
+    historySection.value.data.history.splice(idx, 1);
+  }
+}
+
+// --- Alert ---
+function showAlert(type: "success" | "error", title: string, message: string) {
   alertType.value = type;
   alertTitle.value = title;
   alertMessage.value = message;
   alertVisible.value = true;
+  setTimeout(() => (alertVisible.value = false), 5000);
+}
 
-  setTimeout(() => {
-    alertVisible.value = false;
-  }, 5000);
+// --- Preview ---
+const refreshPreview = () => {
+  previewKey.value += 1;
+  previewTimestamp.value = Date.now();
+};
+const openAboutPage = () => {
+  window.open("/tentang-kami", "_blank");
 };
 
-// Image upload handler
-const handleImageUpload = (event: Event) => {
+// --- Image Upload ---
+const handleImageUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
-
   if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      aboutData.value.aboutImage = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const imageUrl = await uploadImage(file);
+      infoImageUrl.value = getImageUrl(imageUrl);
+    } catch (error) {
+      showAlert("error", "Upload Gagal", "Gagal upload gambar");
+    }
   }
 };
-
 const openFileInput = () => {
   fileInputRef.value?.click();
 };
 
-// Add/Remove value functions
-const addValue = () => {
-  aboutData.value.values.push("");
-};
-
-const removeValue = (index: number) => {
-  if (aboutData.value.values.length > 1) {
-    aboutData.value.values.splice(index, 1);
-  }
-};
-
-// Add/Remove history functions
-const addHistory = () => {
-  aboutData.value.history.push("");
-};
-
-const removeHistory = (index: number) => {
-  if (aboutData.value.history.length > 1) {
-    aboutData.value.history.splice(index, 1);
-  }
-};
-
-// Fetch about us data
+// --- Fetch Data ---
 const fetchAboutData = async () => {
   loading.value = true;
   try {
-    const response = await fetch("/api/about-us");
-    if (response.ok) {
-      const data = await response.json();
-      aboutData.value = data;
-    } else {
-      throw new Error("Gagal memuat data tentang kami");
+    const page = await getPage("tentang-kami");
+    pageId.value = page.id;
+    pageTitle.value = page.title;
+    pageDescription.value = page.description;
+    pagePublished.value = page.published;
+    sections.value = page.sections;
+    // Ensure values section always has 4 items
+    const valuesSec = getSection("VALUES");
+    if (valuesSec && Array.isArray(valuesSec.data.values)) {
+      while (valuesSec.data.values.length < 4) valuesSec.data.values.push("");
+      if (valuesSec.data.values.length > 4)
+        valuesSec.data.values = valuesSec.data.values.slice(0, 4);
+    }
+    // Ensure image path is always a valid URL
+    const infoSec = getSection("INFO");
+    if (infoSec && infoSec.data.imageUrl) {
+      infoSec.data.imageUrl = getImageUrl(infoSec.data.imageUrl);
     }
   } catch (error) {
-    console.error("Error fetching about data:", error);
-    // Fallback data untuk testing
-    aboutData.value = {
-      aboutImage:
-        "https://media.istockphoto.com/id/1958541858/photo/office-building-dusk.jpg?s=612x612&w=0&k=20&c=foJIkTuT63ak-Fg76ts-gc3gyz_3PwqrIZf_T2GHiTE=",
-      headline: "Crafting Excellence Together",
-      subheadline:
-        "We believe in collaboration to achieve outstanding results.",
-      description:
-        "At Plastik HB, we are committed to delivering exceptional service with innovative and sustainable solutions. Our skilled professionals work closely with our clients to transform ideas into lasting results.",
-      values: [
-        "Innovation & Excellence",
-        "Sustainable Growth",
-        "Customer-Centric Service",
-        "Building Stronger Communities",
-      ],
-      mission:
-        "To deliver high-quality solutions that exceed client expectations by combining innovation, technical skill, and transparency. We are dedicated to sustainability, trust, and building stronger communities.",
-      vision:
-        "To become a leading force in the industry by continuously evolving and embracing modern challenges, while staying rooted in the principles that built our foundation.",
-      history: [
-        "Started from humble beginnings in Bandung.",
-        "Expanded across Java with strategic milestones.",
-        "Built a legacy of trust in quality materials and service.",
-        "Shaping the future while rooted in the past.",
-      ],
-    };
+    showAlert("error", "Gagal Memuat", "Gagal memuat data tentang kami");
   } finally {
     loading.value = false;
   }
 };
 
-// Save about us data
+// --- Save Data ---
 const saveAboutData = async () => {
   saveLoading.value = true;
   try {
-    const response = await fetch("/api/about-us", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(aboutData.value),
-    });
-
-    if (response.ok) {
-      showAlert("success", "Berhasil", "Data tentang kami berhasil disimpan!");
-      // Refresh preview after successful save
-      setTimeout(() => {
-        refreshPreview();
-      }, 1000);
-    } else {
-      throw new Error("Gagal menyimpan data tentang kami");
+    // Ensure values section always has 4 items before saving
+    const valuesSec = getSection("VALUES");
+    if (valuesSec && Array.isArray(valuesSec.data.values)) {
+      while (valuesSec.data.values.length < 4) valuesSec.data.values.push("");
+      if (valuesSec.data.values.length > 4)
+        valuesSec.data.values = valuesSec.data.values.slice(0, 4);
     }
-  } catch (error) {
-    console.error("Error saving about data:", error);
-    // Simulasi berhasil untuk testing
+    await updateAboutPage(pageId.value, {
+      id: pageId.value,
+      title: pageTitle.value,
+      description: pageDescription.value,
+      published: pagePublished.value,
+      sections: sections.value,
+    });
     showAlert("success", "Berhasil", "Data tentang kami berhasil disimpan!");
     setTimeout(() => {
       refreshPreview();
     }, 1000);
+  } catch (error) {
+    showAlert("error", "Gagal Simpan", "Gagal menyimpan data tentang kami");
   } finally {
     saveLoading.value = false;
   }
 };
 
-onMounted(() => {
-  fetchAboutData();
-});
+function getImageUrl(imagePath?: string): string {
+  if (!imagePath) return "";
+  // If already absolute (starts with http), use as is
+  if (imagePath.startsWith("http")) return imagePath;
+  // If starts with /uploads, prepend backend host
+  if (imagePath.startsWith("/uploads"))
+    return `http://localhost:5000${imagePath}`;
+  // If only filename, prepend /uploads and backend host
+  return `http://localhost:5000/uploads/${imagePath}`;
+}
+
+onMounted(fetchAboutData);
 </script>
 
 <route>
@@ -250,7 +289,6 @@ onMounted(() => {
               <!-- Hero Section -->
               <div class="mb-6">
                 <h3 class="text-h6 mb-4">Hero Section</h3>
-
                 <!-- Image Upload -->
                 <div class="mb-4">
                   <v-card
@@ -259,7 +297,7 @@ onMounted(() => {
                     class="d-flex align-center justify-center mb-2 image-upload-card"
                     @click="openFileInput"
                   >
-                    <div v-if="!aboutData.aboutImage" class="text-center">
+                    <div v-if="!infoImageUrl" class="text-center">
                       <v-icon size="48" color="grey-lighten-1" class="mb-2"
                         >mdi-camera</v-icon
                       >
@@ -267,13 +305,12 @@ onMounted(() => {
                     </div>
                     <v-img
                       v-else
-                      :src="aboutData.aboutImage"
+                      :src="infoImageUrl"
                       cover
                       height="100%"
                       class="rounded"
                     />
                   </v-card>
-
                   <v-btn
                     variant="outlined"
                     prepend-icon="mdi-pencil"
@@ -282,7 +319,6 @@ onMounted(() => {
                   >
                     Edit Gambar
                   </v-btn>
-
                   <input
                     ref="fileInputRef"
                     type="file"
@@ -291,24 +327,15 @@ onMounted(() => {
                     @change="handleImageUpload"
                   />
                 </div>
-
                 <v-text-field
-                  v-model="aboutData.headline"
-                  label="Headline"
+                  v-model="infoTitle"
+                  label="Title"
                   variant="outlined"
                   class="mb-3"
                 />
-
-                <v-text-field
-                  v-model="aboutData.subheadline"
-                  label="Sub-headline"
-                  variant="outlined"
-                  class="mb-3"
-                />
-
                 <v-textarea
-                  v-model="aboutData.description"
-                  label="Deskripsi"
+                  v-model="infoDescription"
+                  label="Description"
                   variant="outlined"
                   rows="4"
                   class="mb-3"
@@ -317,58 +344,36 @@ onMounted(() => {
 
               <!-- Values Section -->
               <div class="mb-6">
-                <div class="d-flex align-center mb-4">
-                  <h3 class="text-h6 mr-4">Our Values</h3>
-                  <v-btn
-                    @click="addValue"
-                    icon="mdi-plus"
-                    variant="outlined"
-                    size="small"
-                    color="primary"
-                    class="icon-btn-square"
-                  />
-                </div>
-
+                <h3 class="text-h6 mb-4">Our Values</h3>
                 <div
-                  v-for="(value, index) in aboutData.values"
+                  v-for="(item, index) in valueItems"
                   :key="index"
                   class="mb-2"
                 >
                   <v-text-field
-                    v-model="aboutData.values[index]"
+                    v-model="valueItems[index].value"
                     :label="`Value ${index + 1}`"
                     variant="outlined"
                     density="compact"
-                  >
-                    <template #append-inner>
-                      <v-btn
-                        @click="removeValue(index)"
-                        icon="mdi-delete"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        :disabled="aboutData.values.length <= 1"
-                        class="delete-btn-inside"
-                      />
-                    </template>
-                  </v-text-field>
+                    :maxlength="100"
+                    :counter="100"
+                    required
+                  />
                 </div>
               </div>
 
               <!-- Mission & Vision -->
               <div class="mb-6">
                 <h3 class="text-h6 mb-4">Mission & Vision</h3>
-
                 <v-textarea
-                  v-model="aboutData.mission"
+                  v-model="mission"
                   label="Mission"
                   variant="outlined"
                   rows="3"
                   class="mb-3"
                 />
-
                 <v-textarea
-                  v-model="aboutData.vision"
+                  v-model="vision"
                   label="Vision"
                   variant="outlined"
                   rows="3"
@@ -389,14 +394,13 @@ onMounted(() => {
                     class="icon-btn-square"
                   />
                 </div>
-
                 <div
-                  v-for="(item, index) in aboutData.history"
+                  v-for="(item, index) in historyItems"
                   :key="index"
                   class="mb-2"
                 >
                   <v-text-field
-                    v-model="aboutData.history[index]"
+                    v-model="historyItems[index].value"
                     :label="`History ${index + 1}`"
                     variant="outlined"
                     density="compact"
@@ -408,7 +412,7 @@ onMounted(() => {
                         variant="text"
                         size="small"
                         color="error"
-                        :disabled="aboutData.history.length <= 1"
+                        :disabled="historyItems.length <= 1"
                         class="delete-btn-inside"
                       />
                     </template>
@@ -417,17 +421,8 @@ onMounted(() => {
               </div>
 
               <!-- Save Button -->
-              <!-- Map URL + Save Button in One Line -->
               <v-row align="center" class="mb-4">
-                <v-col cols="12" md="8">
-                  <v-text-field
-                    v-model="aboutData.mapUrl"
-                    label="Link Google Maps"
-                    variant="outlined"
-                  />
-                </v-col>
-
-                <v-col cols="12" md="4" class="d-flex align-center">
+                <v-col cols="12" md="12" class="d-flex align-center">
                   <v-btn
                     type="submit"
                     color="primary"
@@ -437,7 +432,7 @@ onMounted(() => {
                     size="large"
                     class="mt-0"
                   >
-                    Simpan Perubahan
+                    Simpan
                   </v-btn>
                 </v-col>
               </v-row>
@@ -475,7 +470,6 @@ onMounted(() => {
               />
             </div>
           </v-card-title>
-
           <v-card-text class="pa-0">
             <div class="preview-container">
               <div :key="previewKey" class="preview-wrapper">

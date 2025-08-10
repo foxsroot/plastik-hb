@@ -109,7 +109,9 @@ const goToSlide = (index: number) => {
 
 const startAutoScroll = () => {
   autoScrollInterval = setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % (pageData.value?.sections[0].data.banners?.length || 1);
+    currentSlide.value =
+      (currentSlide.value + 1) %
+      (pageData.value?.sections[0].data.banners?.length || 1);
   }, 5000);
 };
 
@@ -164,6 +166,12 @@ const formatPrice = (price: number) => {
 // Lifecycle
 onMounted(async () => {
   await fetchPageData();
+
+  trackPageView(
+    pageData.value?.id || "unknown",
+    pageData.value?.slug || "unknown"
+  );
+
   await fetchFeatured();
 
   trackPageView(
@@ -433,12 +441,17 @@ function trackPageView(arg0: any, arg1: string) {
                           v-if="product.discount && product.discount > 0"
                           class="text-h6 font-weight-bold text-amber"
                         >
-                          {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
+                          {{
+                            formatPrice(
+                              product.price -
+                                (product.price * product.discount) / 100
+                            )
+                          }}
                         </span>
                         <span
                           v-if="product.discount && product.discount > 0"
                           class="text-h6 font-weight-bold text-grey-darken-1 ml-2"
-                          style="text-decoration: line-through;"
+                          style="text-decoration: line-through"
                         >
                           {{ formatPrice(product.price) }}
                         </span>
