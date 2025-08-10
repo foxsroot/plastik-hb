@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useAlert } from '@/composables/useAlert';
+import { useImageHandler } from '@/composables/useImageHandler';
 import axiosInstance from '@/utils/axiosInstance';
 
 import type { 
@@ -27,73 +28,28 @@ import {
   VALIDATION_RULES 
 } from '@/utils/constants';
 
-// Alt image fallback - hanya nama file saja
-const ALT_IMAGE_FILENAME = 'Alt-Image-Produk.png';
-
-// Computed untuk mendapatkan alt image URL
-const altImageUrl = computed(() => {
-  const url = getImageUrl(ALT_IMAGE_FILENAME);
-  console.log('Alt image URL computed:', url);
-  return url;
-});
-
-// Debug function untuk logging
-const debugImageUrl = (context: string, imageValue: any) => {
-  console.log(`[DEBUG ${context}]`, {
-    imageValue,
-    type: typeof imageValue,
-    isEmpty: !imageValue,
-    altImageUrl: altImageUrl.value,
-    getImageUrlTest: getImageUrl('test.png')
-  });
-};
-
-// Reactive state untuk tracking failed images
-const failedImages = ref(new Set<string>());
-
-// Simple helper untuk get image URL atau fallback ke alt
-const getImageOrAlt = (imageFilename: string | null | undefined): string => {
-  if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') {
-    console.log('Using alt image for:', imageFilename);
-    return altImageUrl.value;
-  }
-  
-  // Jika data URL (base64 dari file upload), return as is
-  if (imageFilename.startsWith('data:')) {
-    console.log('Using data URL:', imageFilename.substring(0, 50) + '...');
-    return imageFilename;
-  }
-  
-  // Jika sudah URL lengkap, return as is
-  if (imageFilename.startsWith('http')) {
-    return imageFilename;
-  }
-  
-  // Convert ke URL lengkap
-  const fullUrl = getImageUrl(imageFilename);
-  console.log('Generated URL:', fullUrl, 'from:', imageFilename);
-  return fullUrl;
-};
-
-// Helper untuk cek apakah image sudah failed
-const shouldUseAltImage = (imageFilename: string | null | undefined): boolean => {
-  if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') return true;
-  
-  // Jika data URL (base64 dari file upload), jangan gunakan alt image
-  if (imageFilename.startsWith('data:')) return false;
-  
-  // Generate proper URL untuk cek di failedImages
-  const fullUrl = imageFilename.startsWith('http') ? imageFilename : getImageUrl(imageFilename);
-  return failedImages.value.has(fullUrl);
-};
-
-// Mark image as failed
-const markImageAsFailed = (imageUrl: string) => {
-  console.log('Marking image as failed:', imageUrl);
-  failedImages.value.add(imageUrl);
-};
+// 🆕 Initialize image handler composable
+const {
+  altImageUrl,
+  getImageOrAlt,
+  shouldUseAltImage,
+  markImageAsFailed,
+  handleImageError,
+  getMainImageUrl,
+  clearFailedImages,
+  getAvailableAssetImages,
+  getImportedImageUrls
+} = useImageHandler();
 
 const { success, error } = useAlert();
+
+// 🆕 Debug: Log available images on component mount
+onMounted(() => {
+  console.log('Available asset images:', getAvailableAssetImages());
+  console.log('Imported image URLs:', getImportedImageUrls());
+  loadCategories();  // Load categories from database
+  fetchProducts();   // Load products
+});
 
 // ===== PRODUCT HELPERS (INTERNAL) =====
 
@@ -136,9 +92,9 @@ const transformApiProductToFrontend = (apiProduct: any) => {
     id: apiProduct.id,
     name: apiProduct.name,
     price: apiProduct.price,
-    status: apiProduct.status === 'Aktif' ? 'active' : 'draft',
-    image: mainImage ? getImageUrl(mainImage.url) : '',
-    images: additionalImages.map((asset: any) => getImageUrl(asset.url)) || [],
+    status: apiProduct.status === 'active' ? 'active' : 'draft',
+    image: mainImage ? getImageOrAlt(mainImage.url) : '',
+    images: additionalImages.map((asset: any) => getImageOrAlt(asset.url)) || [],
     description: apiProduct.description,
     category: apiProduct.category?.category,
     category_id: apiProduct.category_id,
@@ -915,8 +871,8 @@ const loadProductData = () => {
       name: editingProduct.value.name,
       price: editingProduct.value.price,
       status: editingProduct.value.status, // This should already be in 'active'/'draft' format from fetchProducts
-      image: mainImage ? getImageUrl(mainImage.url) : '',
-      images: additionalAssets.map(asset => getImageUrl(asset.url)), // Ordered 2,3,4...
+      image: mainImage ? getImageOrAlt(mainImage.url) : '',
+      images: additionalAssets.map(asset => getImageOrAlt(asset.url)), // Ordered 2,3,4...
       description: editingProduct.value.description || '',
       category_id: editingProduct.value.category_id || '', // Use category_id instead of category
       category_name: '',
@@ -1027,7 +983,7 @@ const saveProduct = async () => {
         specification: newProduct.value.specifications, // backend uses 'specification' (singular)
         discount: newProduct.value.discount || 0,
         featured: false,
-        status: newProduct.value.status === 'active' ? 'Aktif' : 'Draft' // Convert to database format
+        status: newProduct.value.status === 'active' ? 'active' : 'draft' // Convert to database format
       }
 
       
@@ -1087,7 +1043,7 @@ const saveProduct = async () => {
           
           products.value[index] = {
             ...response,
-            status: response.status === 'Aktif' ? 'active' : 'draft', // Convert back to frontend format
+            status: response.status === 'active' ? 'active' : 'draft', // Convert back to frontend format
             category: response.category?.category, // Category name for display
             category_id: response.category_id, // Category ID for editing
             specifications: response.specification,
@@ -1136,7 +1092,7 @@ const saveProduct = async () => {
         specification: newProduct.value.specifications, // backend uses 'specification' (singular)
         discount: newProduct.value.discount,
         featured: false,
-        status: newProduct.value.status === 'active' ? 'Aktif' : 'Draft'
+        status: newProduct.value.status === 'active' ? 'active' : 'draft'
       }
 
       // Set category ID (sekarang menggunakan ID dari database)
@@ -1161,7 +1117,7 @@ const saveProduct = async () => {
         id: savedProduct.id,
         name: savedProduct.name,
         price: savedProduct.price,
-        status: savedProduct.status === 'Aktif' ? 'active' : 'draft',
+        status: savedProduct.status === 'active' ? 'active' : 'draft',
         image: getImageUrl(savedProduct.assets?.[0]?.url),
         images: savedProduct.assets?.slice(1).map((asset: any) => getImageUrl(asset.url)) || [],
         description: savedProduct.description,
@@ -1256,11 +1212,6 @@ watch(() => showAddModal.value, (newVal) => {
   if (newVal) {
     loadProductData()
   }
-})
-
-onMounted(() => {
-  loadCategories()  // Load categories from database
-  fetchProducts()   // Load products
 })
 </script>
 
@@ -1373,11 +1324,10 @@ onMounted(() => {
                   <v-col cols="2" md="1">
                     <v-avatar size="60" variant="outlined">
                       <v-img 
-                        :src="shouldUseAltImage(product.image) ? altImageUrl : getImageOrAlt(product.image)"
+                        :src="getMainImageUrl(product)"
                         :alt="product.name"
                         cover
                         eager
-                        @error="markImageAsFailed(getImageOrAlt(product.image))"
                       >
                         <template v-slot:error>
                           <v-img 
@@ -1422,7 +1372,7 @@ onMounted(() => {
                       size="default"
                       :prepend-icon="product.status === 'active' ? 'mdi-check' : 'mdi-clock'"
                     >
-                      {{ product.status === 'active' ? 'Aktif' : 'Draft' }}
+                      {{ product.status === 'active' ? 'active' : 'Draft' }}
                     </v-chip>
                   </v-col>
                   
@@ -1503,12 +1453,11 @@ onMounted(() => {
                     </div>
                     <v-img 
                       v-else
-                      :src="shouldUseAltImage(newProduct.image) ? altImageUrl : getImageOrAlt(newProduct.image)"
+                      :src="newProduct.image"
                       cover
                       height="100%"
                       class="rounded"
                       eager
-                      @error="markImageAsFailed(getImageOrAlt(newProduct.image))"
                     >
                       <template v-slot:error>
                         <v-img 
@@ -1581,12 +1530,11 @@ onMounted(() => {
                               @mouseleave="$event.currentTarget.classList.remove('image-hover')"
                             >
                               <v-img
-                                :src="shouldUseAltImage(imageUrl) ? altImageUrl : getImageOrAlt(imageUrl)"
+                                :src="imageUrl"
                                 cover
                                 height="100%"
                                 class="rounded image-preview"
                                 eager
-                                @error="markImageAsFailed(getImageOrAlt(imageUrl))"
                               >
                                 <template v-slot:error>
                                   <v-img 
@@ -2038,7 +1986,7 @@ onMounted(() => {
                         size="x-small"
                         class="mt-1"
                       >
-                        Aktif
+                        active
                       </v-chip>
                     </div>
                   </v-col>

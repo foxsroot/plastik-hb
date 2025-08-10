@@ -104,8 +104,17 @@
                     width="350"
                     contain
                     class="product-image"
-                    @error="handleImageError"
-                  />
+                  >
+                    <template v-slot:error>
+                      <v-img
+                        :src="altImageUrl"
+                        height="350"
+                        width="350"
+                        contain
+                        class="product-image"
+                      />
+                    </template>
+                  </v-img>
                   <v-img
                     v-else
                     key="no-image"
@@ -156,17 +165,22 @@
                       style="cursor: pointer; overflow: hidden"
                     >
                       <v-img
-                        :src="
-                          shouldUseAltImage(asset.url)
-                            ? altImageUrl
-                            : getImageOrAlt(asset.url)
-                        "
+                        :src="getImageOrAlt(asset.url)"
                         height="58"
                         width="58"
                         cover
                         class="thumbnail-image-fixed"
-                        @error="() => markImageAsFailed(getImageUrl(asset.url))"
-                      />
+                      >
+                        <template v-slot:error>
+                          <v-img
+                            :src="altImageUrl"
+                            height="58"
+                            width="58"
+                            cover
+                            class="thumbnail-image-fixed"
+                          />
+                        </template>
+                      </v-img>
                       <!-- Active indicator -->
                       <div
                         v-if="currentImageIndex === index"
@@ -287,7 +301,11 @@
               <v-col
                 v-for="similarProduct in similarProducts"
                 :key="similarProduct.id"
-                :cols="Math.floor(12 / Math.min(similarProducts.length, 5))"
+                cols="6"
+                sm="4"
+                md="3"
+                lg="2"
+                xl="2"
                 class="pa-1"
               >
                 <v-card
@@ -302,8 +320,15 @@
                     height="120"
                     cover
                     class="align-end"
-                    @error="() => handleSimilarImageError(similarProduct)"
                   >
+                    <template v-slot:error>
+                      <v-img
+                        :src="altImageUrl"
+                        height="120"
+                        cover
+                        class="align-end"
+                      />
+                    </template>
                     <template v-slot:placeholder>
                       <div
                         class="d-flex align-center justify-center fill-height"
@@ -384,8 +409,8 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import axiosInstance from "@/utils/axiosInstance";
+import { useImageHandler } from '@/composables/useImageHandler';
 import {
-  getImageUrl,
   formatPrice,
   calculateDiscountedPrice,
 } from "@/utils/formatters";
@@ -395,71 +420,26 @@ const router = useRouter();
 const route = useRoute();
 const { trackProductClick } = useAnalytics();
 
-// Alt image fallback - sama seperti di katalog
-const ALT_IMAGE_FILENAME = "Alt-Image-Produk.png";
+// 🆕 Initialize image handler composable
+const {
+  altImageUrl,
+  getImageOrAlt,
+  shouldUseAltImage,
+  markImageAsFailed,
+  handleImageError: handleImageErrorComposable,
+  getMainImageUrl,
+  getAllImagesUrls,
+  clearFailedImages,
+  failedImages,
+  getAvailableAssetImages,
+  getImportedImageUrls
+} = useImageHandler();
 
-// Computed untuk mendapatkan alt image URL
-const altImageUrl = computed(() => {
-  const url = getImageUrl(ALT_IMAGE_FILENAME);
-  console.log("Alt image URL computed:", url);
-  return url;
+// 🆕 Debug: Log available images on component mount
+onMounted(() => {
+  console.log('Available asset images:', getAvailableAssetImages());
+  console.log('Imported image URLs:', getImportedImageUrls());
 });
-
-// Reactive state untuk tracking failed images
-const failedImages = ref(new Set<string>());
-
-// Helper untuk get image URL atau fallback ke alt - sama seperti katalog
-const getImageOrAlt = (imageFilename: string | null | undefined): string => {
-  if (
-    !imageFilename ||
-    imageFilename === "" ||
-    imageFilename === "/placeholder.jpg"
-  ) {
-    return altImageUrl.value;
-  }
-
-  // Jika data URL (base64 dari file upload), return as is
-  if (imageFilename.startsWith("data:")) {
-    return imageFilename;
-  }
-
-  // Jika sudah URL lengkap, return as is
-  if (imageFilename.startsWith("http")) {
-    return imageFilename;
-  }
-
-  // Convert ke URL lengkap
-  const fullUrl = getImageUrl(imageFilename);
-  console.log("Generated URL:", fullUrl, "from:", imageFilename);
-  return fullUrl;
-};
-
-// Helper untuk cek apakah image sudah failed
-const shouldUseAltImage = (
-  imageFilename: string | null | undefined
-): boolean => {
-  if (
-    !imageFilename ||
-    imageFilename === "" ||
-    imageFilename === "/placeholder.jpg"
-  )
-    return true;
-
-  // Jika data URL (base64 dari file upload), jangan gunakan alt image
-  if (imageFilename.startsWith("data:")) return false;
-
-  // Generate proper URL untuk cek di failedImages
-  const fullUrl = imageFilename.startsWith("http")
-    ? imageFilename
-    : getImageUrl(imageFilename);
-  return failedImages.value.has(fullUrl);
-};
-
-// Mark image as failed
-const markImageAsFailed = (imageUrl: string) => {
-  console.log("Marking image as failed:", imageUrl);
-  failedImages.value.add(imageUrl);
-};
 
 const currentImageIndex = ref(0);
 const product = ref<any>(null);
@@ -469,7 +449,6 @@ const loading = ref(true);
 // Similar products state
 const similarProducts = ref<any[]>([]);
 const similarProductsLoading = ref(false);
-const failedSimilarImages = ref(new Set<string>());
 
 // Touch/Swipe gesture variables
 const touchStartX = ref(0);
@@ -503,7 +482,7 @@ const fetchProductDetail = async (productId: string) => {
 
       // Log semua URL gambar untuk debugging
       productData.assets.forEach((asset: any, index: number) => {
-        const imageUrl = getImageUrl(asset.url);
+        const imageUrl = getImageOrAlt(asset.url);
         console.log(`📷 Asset ${index + 1}:`, {
           originalUrl: asset.url,
           finalUrl: imageUrl,
@@ -641,53 +620,7 @@ const fetchSimilarProducts = async (
 
 // Helper function untuk mendapatkan gambar produk serupa
 const getSimilarProductImageUrl = (product: any): string => {
-  // Cek apakah ada assets dan ambil yang order = 1 (main image)
-  if (product.assets && product.assets.length > 0) {
-    // Sort by order dan ambil yang pertama
-    const sortedAssets = [...product.assets].sort(
-      (a, b) => (a.order || 0) - (b.order || 0)
-    );
-    const mainAsset = sortedAssets[0];
-
-    if (
-      mainAsset &&
-      mainAsset.url &&
-      !shouldUseSimilarAltImage(product.id, mainAsset.url)
-    ) {
-      return getImageOrAlt(mainAsset.url);
-    }
-  }
-
-  // Fallback ke alt image jika tidak ada assets atau gambar gagal
-  return altImageUrl.value;
-};
-
-// Helper untuk cek apakah harus menggunakan alt image untuk produk serupa
-const shouldUseSimilarAltImage = (
-  productId: string,
-  imageUrl: string
-): boolean => {
-  const fullUrl = imageUrl.startsWith("http")
-    ? imageUrl
-    : getImageUrl(imageUrl);
-  const key = `${productId}-${fullUrl}`;
-  return failedSimilarImages.value.has(key);
-};
-
-// Handler untuk image error pada produk serupa
-const handleSimilarImageError = (product: any) => {
-  if (product.assets && product.assets.length > 0) {
-    const mainAsset = product.assets[0];
-    if (mainAsset && mainAsset.url) {
-      const fullUrl = getImageUrl(mainAsset.url);
-      const key = `${product.id}-${fullUrl}`;
-      failedSimilarImages.value.add(key);
-      console.log(
-        "📷 Similar product image failed, switching to alt:",
-        product.name
-      );
-    }
-  }
+  return getMainImageUrl(product);
 };
 
 // Method untuk navigasi ke produk lain
@@ -700,8 +633,7 @@ const navigateToProduct = (productId: string) => {
   product.value = null;
   loading.value = true;
   similarProducts.value = [];
-  failedImages.value.clear();
-  failedSimilarImages.value.clear();
+  clearFailedImages();
 
   // Scroll to top immediately
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -733,25 +665,6 @@ const getCurrentImageUrl = (): string => {
   }
 
   return getImageOrAlt(currentAsset.url);
-};
-
-// Handler untuk image error
-const handleImageError = () => {
-  if (
-    product.value &&
-    product.value.assets &&
-    product.value.assets.length > 0
-  ) {
-    const currentAsset = product.value.assets[currentImageIndex.value];
-    if (currentAsset && currentAsset.url) {
-      const imageUrl = getImageUrl(currentAsset.url);
-      markImageAsFailed(imageUrl);
-      console.log(
-        "Image failed, switching to alt image for asset:",
-        currentAsset.url
-      );
-    }
-  }
 };
 
 const goBack = () => {
@@ -935,7 +848,6 @@ watch(
       loading.value = true;
       similarProducts.value = [];
       failedImages.value.clear();
-      failedSimilarImages.value.clear();
 
       // Fetch data baru
       fetchProductDetail(newId as string);
@@ -1258,10 +1170,15 @@ body {
   width: 100%;
   position: relative;
   padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .product-image {
   transition: transform 0.3s ease;
+  margin: 0 auto;
+  display: block;
 }
 
 .gallery-card {
@@ -1597,5 +1514,15 @@ body {
     font-size: 13px;
     line-height: 1.5;
   }
+}
+
+/* Ensure main product image is perfectly centered */
+.main-image-container .v-img {
+  margin: 0 auto;
+  display: block;
+}
+
+.main-image-container .v-img__img {
+  object-position: center center;
 }
 </style>

@@ -19,8 +19,10 @@ export const calculateDiscountedPrice = (originalPrice: number, discountPercent:
 export function getImageUrl(imagePath: string): string {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
-  // For relative paths, prepend backend host
-  return `http://localhost:5000${imagePath}`;
+  if (imagePath.startsWith("data:")) return imagePath; // Base64 images
+  
+  // Hardcode backend URL
+  return `http://localhost:5000${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
 }
 
 // 🔸 Helper functions untuk format input harga
