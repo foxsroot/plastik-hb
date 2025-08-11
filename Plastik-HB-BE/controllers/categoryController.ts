@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { CategoryService } from '../services/categoryService';
+import { CategoryService, isCategoryExist } from '../services/categoryService';
 
 /**
  * @desc Get all categories
@@ -33,7 +33,7 @@ export const createCategory = async (req: Request, res: Response) => {
     }
 
     const categoryName = category.trim();
-    
+
     if (categoryName.length < 2) {
         throw { message: 'Category name must be at least 2 characters long', status: 400 };
     }
@@ -43,9 +43,9 @@ export const createCategory = async (req: Request, res: Response) => {
     }
 
     const newCategory = await CategoryService.createCategory(categoryName);
-    
-    return { 
-        data: newCategory, 
+
+    return {
+        data: newCategory,
         status: 201,
         message: 'Category created successfully'
     };
@@ -63,10 +63,14 @@ export const updateCategory = async (req: Request, res: Response) => {
         throw { message: 'Category name is required', status: 400 };
     }
 
+    if (!(await isCategoryExist(id))) {
+        throw { message: 'Category not found', status: 404 };
+    }
+
     const updatedCategory = await CategoryService.updateCategory(id, category);
-    
-    return { 
-        data: updatedCategory, 
+
+    return {
+        data: updatedCategory,
         status: 200,
         message: 'Category updated successfully'
     };
@@ -78,10 +82,15 @@ export const updateCategory = async (req: Request, res: Response) => {
  */
 export const deleteCategory = async (req: Request, res: Response) => {
     const { id } = req.params;
+
+    if (!(await isCategoryExist(id))) {
+        throw { message: 'Category not found', status: 404 };
+    }
+
     await CategoryService.deleteCategory(id);
-    
-    return { 
-        data: null, 
+
+    return {
+        data: null,
         status: 200,
         message: 'Category deleted successfully'
     };
@@ -93,10 +102,15 @@ export const deleteCategory = async (req: Request, res: Response) => {
  */
 export const getProductsByCategory = async (req: Request, res: Response) => {
     const { id } = req.params;
+
+    if (!(await isCategoryExist(id))) {
+        throw { message: 'Category not found', status: 404 };
+    }
+
     const products = await CategoryService.getProductsByCategory(id);
-    
-    return { 
-        data: products, 
+
+    return {
+        data: products,
         status: 200
     };
 };

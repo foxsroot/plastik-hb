@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getTrafficAnalytics, createAnalytics } from '../services/analyticService';
+import { getTrafficAnalytics, createAnalytics, isExist } from '../services/analyticService';
 
 export const getAnalytics = async (req: Request, res: Response) => {
     const data = await getTrafficAnalytics();
@@ -10,6 +10,10 @@ export const addAnalytics = async (req: Request, res: Response) => {
     const { type, targetId, url } = req.body;
     if (!type || !targetId || !url) {
         throw { message: 'Type, targetId, and url are required.', status: 400 };
+    }
+
+    if (!isExist(targetId)) {
+        throw { message: 'Target ID does not exist.', status: 404 };
     }
 
     const ipAddress =
