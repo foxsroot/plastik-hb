@@ -35,7 +35,7 @@ export const useImageHandler = () => {
     // Coba juga tanpa extension dan dengan extension
     const nameWithoutExt = filename.replace(/\.(png|jpg|jpeg|svg)$/i, '');
     const extensions = ['.png', '.jpg', '.jpeg', '.svg'];
-    
+
     for (const ext of extensions) {
       for (const path of possiblePaths) {
         const fullPath = path.replace(filename, `${nameWithoutExt}${ext}`);
@@ -54,12 +54,12 @@ export const useImageHandler = () => {
     if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') {
       return altImageUrl.value;
     }
-    
+
     // Jika base64, return as is
     if (imageFilename.startsWith('data:')) {
       return imageFilename;
     }
-    
+
     // Jika sudah URL lengkap (http/https), return as is
     if (imageFilename.startsWith('http')) {
       return imageFilename;
@@ -77,7 +77,7 @@ export const useImageHandler = () => {
     }
 
     // 2. Coba sebagai backend URL
-    const backendUrl = getImageUrl(`/uploads/${imageFilename}`);
+    const backendUrl = getImageUrl(`${imageFilename}`);
     return backendUrl;
   };
 
@@ -86,11 +86,11 @@ export const useImageHandler = () => {
     if (!imageFilename || imageFilename === '' || imageFilename === '/placeholder.jpg') {
       return true;
     }
-    
+
     if (imageFilename.startsWith('data:')) {
       return false;
     }
-    
+
     return failedImages.value.has(imageFilename);
   };
 
@@ -103,13 +103,13 @@ export const useImageHandler = () => {
   const handleImageError = (event: Event, fallbackAction?: () => void) => {
     const img = event.target as HTMLImageElement;
     const originalUrl = img.src;
-    
+
     // Mark as failed
     markImageAsFailed(originalUrl);
-    
+
     // Langsung ganti ke alt image
     img.src = altImageUrl.value;
-    
+
     // Execute fallback action if provided
     if (fallbackAction) {
       fallbackAction();
@@ -135,12 +135,12 @@ export const useImageHandler = () => {
         return getImageOrAlt(mainAsset.url);
       }
     }
-    
+
     // Fallback ke image field jika ada
     if (product.image) {
       return getImageOrAlt(product.image);
     }
-    
+
     // Fallback final ke alt image
     return altImageUrl.value;
   };
@@ -150,7 +150,7 @@ export const useImageHandler = () => {
     if (!product.assets || product.assets.length <= 1) {
       return [];
     }
-    
+
     // Filter dan sort assets dengan order > 1
     return product.assets
       .filter((asset: any) => asset.order > 1)
@@ -162,7 +162,7 @@ export const useImageHandler = () => {
   const getAllImagesUrls = (product: any): string[] => {
     const mainImage = getMainImageUrl(product);
     const additionalImages = getAdditionalImagesUrls(product);
-    
+
     return [mainImage, ...additionalImages];
   };
 
@@ -185,7 +185,7 @@ export const useImageHandler = () => {
     // Reactive state
     failedImages,
     altImageUrl,
-    
+
     // Core functions
     getImageOrAlt,
     shouldUseAltImage,
@@ -193,17 +193,17 @@ export const useImageHandler = () => {
     handleImageError,
     retryFailedImage,
     clearFailedImages,
-    
+
     // Asset functions
     getAssetImage,
     getAvailableAssetImages,
     getImportedImageUrls,
-    
+
     // Product-specific functions
     getMainImageUrl,
     getAdditionalImagesUrls,
     getAllImagesUrls,
-    
+
     // Constants
     ALT_IMAGE_FILENAME
   };
