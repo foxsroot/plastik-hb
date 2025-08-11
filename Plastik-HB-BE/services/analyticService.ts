@@ -86,7 +86,7 @@ export const getTrafficAnalytics = async () => {
 
 async function getCityFromIp(ip: string): Promise<string> {
     try {
-        const res = await axios.get(`https://ipapi.co/json/${ip}/`);
+        const res = await axios.get(`http://ip-api.com/json/${ip}/`);
         return res.data?.city ?? "Unknown";
     } catch (error) {
         return "Unknown";
