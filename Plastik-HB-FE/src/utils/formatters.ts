@@ -17,10 +17,11 @@ export const calculateDiscountedPrice = (originalPrice: number, discountPercent:
 };
 
 export function getImageUrl(imagePath: string): string {
+  console.log("getImageUrl called with:", imagePath);
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
   if (imagePath.startsWith("data:")) return imagePath; // Base64 images
-  
+
   // Hardcode backend URL
   return `http://localhost:5000${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
 }
