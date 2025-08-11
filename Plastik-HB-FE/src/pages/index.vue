@@ -171,16 +171,10 @@ onMounted(async () => {
 
   trackPageView(
     pageData.value?.id || "unknown",
-    pageData.value?.slug || "unknown"
+    pageData.value?.slug || "unknown",
   );
 
   await fetchFeatured();
-
-  trackPageView(
-    pageData.value?.id || "unknown",
-    pageData.value?.slug || "unknown"
-  );
-
   startAutoScroll();
   await nextTick();
   updateScrollPosition();
@@ -442,7 +436,7 @@ onUnmounted(() => {
                           {{
                             formatPrice(
                               product.price -
-                                (product.price * product.discount) / 100
+                                (product.price * product.discount) / 100,
                             )
                           }}
                         </span>
