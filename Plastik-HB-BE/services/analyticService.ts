@@ -109,3 +109,15 @@ export const createAnalytics = async (payload: {
         location: city,
     });
 };
+
+export const isExist = async (targetId: string): Promise<boolean> => {
+    let analytic;
+
+    try {
+        analytic = await Analytic.findOne({ where: { targetId } });
+    } catch (error) {
+        return false;
+    }
+
+    return !!analytic;
+};

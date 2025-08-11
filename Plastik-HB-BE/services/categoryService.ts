@@ -156,14 +156,14 @@ export class CategoryService {
         });
 
         const featuredProductCount = await Product.count({
-            where: { 
+            where: {
                 category_id: id,
-                featured: true 
+                featured: true
             }
         });
 
         const activeProductCount = await Product.count({
-            where: { 
+            where: {
                 category_id: id,
                 status: 'Aktif'
             }
@@ -176,4 +176,17 @@ export class CategoryService {
             activeProductCount
         };
     }
+}
+
+/**
+* Check category existence
+*/
+export const isCategoryExist = async (id: string): Promise<boolean> => {
+    let category;
+    try {
+        category = await Category.findByPk(id);
+    } catch (error) {
+        return false;
+    }
+    return !!category;
 }

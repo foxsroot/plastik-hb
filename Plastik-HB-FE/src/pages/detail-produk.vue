@@ -409,11 +409,8 @@
 import { ref, onMounted, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import axiosInstance from "@/utils/axiosInstance";
-import { useImageHandler } from '@/composables/useImageHandler';
-import {
-  formatPrice,
-  calculateDiscountedPrice,
-} from "@/utils/formatters";
+import { useImageHandler } from "@/composables/useImageHandler";
+import { formatPrice, calculateDiscountedPrice } from "@/utils/formatters";
 import { useAnalytics } from "../composables/useAnalytics";
 
 const router = useRouter();
@@ -432,13 +429,13 @@ const {
   clearFailedImages,
   failedImages,
   getAvailableAssetImages,
-  getImportedImageUrls
+  getImportedImageUrls,
 } = useImageHandler();
 
 // 🆕 Debug: Log available images on component mount
 onMounted(() => {
-  console.log('Available asset images:', getAvailableAssetImages());
-  console.log('Imported image URLs:', getImportedImageUrls());
+  console.log("Available asset images:", getAvailableAssetImages());
+  console.log("Imported image URLs:", getImportedImageUrls());
 });
 
 const currentImageIndex = ref(0);
@@ -858,6 +855,7 @@ watch(
 onMounted(() => {
   console.log("Detail produk mounted");
   console.log("Route params:", route.params);
+  console.log("Product detail:", product.value);
 
   // Scroll to top when component mounts
   window.scrollTo({ top: 0, behavior: "auto" });
@@ -883,6 +881,8 @@ onMounted(() => {
   if (productId) {
     fetchProductDetail(productId);
   }
+
+  trackProductClick(productId);
 });
 </script>
 
