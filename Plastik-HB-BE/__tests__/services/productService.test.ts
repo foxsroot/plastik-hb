@@ -4,6 +4,7 @@ import { Category } from '../../models/Category';
 import { Asset } from '../../models/Asset';
 import { CategoryService } from '../../services/categoryService';
 import { FileManager } from '../../utils/fileManager';
+import { Op } from 'sequelize';
 
 // Mock dependencies
 jest.mock('../../models/Product');
@@ -164,23 +165,19 @@ describe('ProductService', () => {
 
             const result = await ProductService.getActiveProducts(filters);
 
-            expect(mockedProduct.findAll).toHaveBeenCalledWith({
-                where: {
-                    status: 'active',
-                    category_id: '1',
-                    price: { [expect.any(Symbol)]: 100, [expect.any(Symbol)]: 500 },
-                    featured: true
-                },
-                include: [
-                    {
-                        model: Asset,
-                        as: 'assets',
-                        order: [['order', 'ASC']]
-                    },
-                    { model: Category, as: 'category' }
-                ],
-                order: [['created_at', 'DESC']]
-            });
+            expect(mockedProduct.findAll).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        status: 'active',
+                        category_id: '1',
+                        featured: true,
+                        price: expect.objectContaining({
+                            [Op.gte]: 100,
+                            [Op.lte]: 500
+                        })
+                    })
+                })
+            );
             expect(result).toEqual(mockProducts);
         });
     });

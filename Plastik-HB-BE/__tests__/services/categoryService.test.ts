@@ -11,6 +11,11 @@ jest.mock('../../models/Asset');
 const mockedCategory = Category as jest.Mocked<typeof Category>;
 const mockedProduct = Product as jest.Mocked<typeof Product>;
 
+(Product as any).sequelize = {
+  fn: jest.fn((...args) => args.join(',')),
+  col: jest.fn((col) => col),
+};
+
 describe('CategoryService', () => {
     beforeEach(() => {
         jest.clearAllMocks();

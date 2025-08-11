@@ -32,8 +32,12 @@ export const updateContactSection = async (data: object): Promise<Section> => {
         await section.save();
 
         return section;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating contact section:', error);
+        // Pass through known error, otherwise throw generic
+        if (error.message === 'Contact section not found') {
+            throw error;
+        }
         throw new Error('Failed to update contact information');
     }
 };
