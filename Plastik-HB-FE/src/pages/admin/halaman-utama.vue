@@ -4,6 +4,10 @@ import index from '../index.vue'
 import { getPage, updateHomepage } from '../../api/pageApi'
 import { fetchFeaturedProducts, fetchProducts } from '../../api/productApi'
 import { updateFeaturedProducts } from '../../api/updateFeaturedProducts'
+import { uploadImage } from '../../api/uploadApi'
+
+// Image Backend URL
+const imageBackendUrl ='http://localhost:5000';
 
 // Banner Interface
 interface Banner {
@@ -511,15 +515,17 @@ const saveBannerEdit = () => {
     closeBannerEditor();
   }
 };
-const handleBannerEditorImageUpload = (event: Event) => {
+// Banner Editor image upload
+const handleBannerEditorImageUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file && editingBanner.value) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      editingBanner.value!.image = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const imageUrl = await uploadImage(file);
+      editingBanner.value.image = imageBackendUrl +imageUrl;
+    } catch (err) {
+      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar banner');
+    }
   }
 };
 const openBannerEditorFileInput = () => {
@@ -608,15 +614,17 @@ const saveAchievementEdit = () => {
     closeAchievementEditor();
   }
 };
-const handleAchievementEditorImageUpload = (event: Event) => {
+// Achievement Editor image upload
+const handleAchievementEditorImageUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (file && editingAchievement.value) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      editingAchievement.value!.image = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const imageUrl = await uploadImage(file);
+      editingAchievement.value.image = imageBackendUrl + imageUrl;
+    } catch (err) {
+      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar achievement');
+    }
   }
 };
 const openAchievementEditorFileInput = () => {
@@ -641,30 +649,32 @@ const toggleProductSelection = (productId: string) => {
 };
 
 // Banner Editor: Drag & Drop Image Upload
-const handleBannerEditorImageDrop = (event: DragEvent) => {
+const handleBannerEditorImageDrop = async (event: DragEvent) => {
   event.preventDefault();
-  if (!editingBanner) return;
+  if (!editingBanner.value) return;
   const file = event.dataTransfer?.files?.[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (editingBanner.value) editingBanner.value.image = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const imageUrl = await uploadImage(file);
+      editingBanner.value.image = imageBackendUrl + imageUrl;
+    } catch (err) {
+      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar banner');
+    }
   }
 };
 
 // Achievement Editor: Drag & Drop Image Upload
-const handleAchievementEditorImageDrop = (event: DragEvent) => {
+const handleAchievementEditorImageDrop = async (event: DragEvent) => {
   event.preventDefault();
-  if (!editingAchievement) return;
+  if (!editingAchievement.value) return;
   const file = event.dataTransfer?.files?.[0];
   if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (editingAchievement.value) editingAchievement.value.image = e.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const imageUrl = await uploadImage(file);
+      editingAchievement.value.image = imageBackendUrl + imageUrl;
+    } catch (err) {
+      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar achievement');
+    }
   }
 };
 
@@ -876,7 +886,8 @@ onMounted(async () => {
                     >
                       <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
                       <v-avatar size="40" class="mr-3">
-                        <v-img :src="achievement.image || '/placeholder.jpg'" cover />
+                        <v-img v-if="achievement.image" :src="achievement.image" cover />
+                        <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
                       </v-avatar>
                       <div class="flex-grow-1">
                         <div class="font-weight-bold text-white text-truncate">{{ achievement.title || 'Achievement ' + (index + 1) }}</div>
@@ -1027,24 +1038,39 @@ onMounted(async () => {
     <!-- Achievement Editor Modal -->
     <v-dialog v-model="achievementEditorDialog" max-width="500px">
       <v-card>
-        <v-card-title class="bg-primary text-white">Edit Achievement</v-card-title>
-        <v-card-text class="pa-6">
-          <div class="mb-4">
-            <v-card height="100" variant="outlined" class="d-flex align-center justify-center image-upload-card"
-              @click="openAchievementEditorFileInput"
-              @dragover.prevent
-              @drop="handleAchievementEditorImageDrop"
-              >
-              <div v-if="!editingAchievement?.image" class="text-center">
-                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-trophy</v-icon>
-                <p class="text-caption text-grey-darken-1">Icon<br /></p>
-              </div>
-              <div v-else class="achievement-image-wrapper">
-                <v-img :src="editingAchievement?.image" cover height="100%" class="rounded" />
-                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearAchievementEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
-              </div>
-            </v-card>
-            <input ref="achievementEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleAchievementEditorImageUpload" />
+        <v-card-title>Edit Achievement</v-card-title>
+        <v-card-text>
+          <!-- Image preview -->
+          <div
+            class="image-upload-card"
+            @drop="handleAchievementEditorImageDrop"
+            @dragover.prevent
+            @click="openAchievementEditorFileInput"
+            style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; position: relative;"
+          >
+            <v-img
+              v-if="editingAchievement?.image"
+              :src="editingAchievement.image"
+              height="100"
+              width="100%"
+              cover
+            />
+            <v-icon v-else size="48" color="amber">mdi-trophy</v-icon>
+            <v-btn
+              v-if="editingAchievement?.image"
+              icon="mdi-close"
+              color="error"
+              size="small"
+              style="position: absolute; top: 8px; right: 8px;"
+              @click.stop="clearAchievementEditorImage"
+            />
+            <input
+              ref="achievementEditorFileInputRef"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleAchievementEditorImageUpload"
+            />
           </div>
           <v-text-field v-if="editingAchievement" v-model="editingAchievement.title" label="Title" variant="outlined" density="compact" class="mb-2" />
           <v-text-field v-if="editingAchievement" v-model.number="editingAchievement.percentage" label="Percentage" type="number" min="0" max="100" variant="outlined" density="compact" class="mb-2" />
