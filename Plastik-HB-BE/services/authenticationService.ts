@@ -13,12 +13,16 @@ export const login = async (email: string, password: string): Promise<string> =>
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
-        throw new Error('Invalid email or password.');
+        const error = new Error('Invalid email or password.');
+        (error as any).statusCode = 401;
+        throw error;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-        throw new Error('Invalid email or password.');
+        const error = new Error('Invalid email or password.');
+        (error as any).statusCode = 401;
+        throw error;
     }
 
     // Create a new session
