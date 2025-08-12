@@ -106,7 +106,7 @@ describe('Analytics Service', () => {
 
             const result = await createAnalytics(mockPayload);
 
-            expect(mockedAxios.get).toHaveBeenCalledWith('https://ipapi.co/json/192.168.1.1/');
+            expect(mockedAxios.get).toHaveBeenCalledWith('http://ip-api.com/json/192.168.1.1/');
             expect(mockedAnalytic.create).toHaveBeenCalledWith({
                 ...mockPayload,
                 location: 'Jakarta'

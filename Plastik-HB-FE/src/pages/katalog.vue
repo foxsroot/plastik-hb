@@ -494,6 +494,9 @@
                 class="dark-search-input"
                 prepend-inner-icon="mdi-magnify"
                 clearable
+                :error="searchQuery.length > 50"
+                :counter="50"
+                @input="onSearchInput"
               >
                 <template v-slot:append-inner>
                   <v-fade-transition>
@@ -558,7 +561,7 @@
                 <span v-if="product.discount > 0">
                   {{
                     formatPrice(
-                      calculateDiscountedPrice(product.price, product.discount)
+                      calculateDiscountedPrice(product.price, product.discount),
                     )
                   }}
                   <span class="text-red text-decoration-line-through ml-2">
@@ -691,24 +694,21 @@
 import { ref, onMounted, computed, watch } from "vue";
 import axiosInstance from "@/utils/axiosInstance";
 import Loading from "@/components/Loading.vue";
-import { useImageHandler } from '@/composables/useImageHandler';
-import {
-  formatPrice,
-  calculateDiscountedPrice,
-} from "@/utils/formatters";
+import { useImageHandler } from "@/composables/useImageHandler";
+import { formatPrice, calculateDiscountedPrice } from "@/utils/formatters";
 
 // 🆕 Initialize image handler composable
 const {
   altImageUrl,
   getMainImageUrl,
   getAvailableAssetImages,
-  getImportedImageUrls
+  getImportedImageUrls,
 } = useImageHandler();
 
 // 🆕 Debug: Log available images on component mount
 onMounted(() => {
-  console.log('Available asset images:', getAvailableAssetImages());
-  console.log('Imported image URLs:', getImportedImageUrls());
+  console.log("Available asset images:", getAvailableAssetImages());
+  console.log("Imported image URLs:", getImportedImageUrls());
 });
 
 // Helper functions for price input formatting
@@ -846,7 +846,7 @@ const fetchCatalogProducts = async () => {
     if (selectedCategories.value.length > 1) {
       // Multiple categories - use client-side filtering for OR condition
       fetchedProducts = fetchedProducts.filter((product: any) =>
-        selectedCategories.value.includes(product.category_id)
+        selectedCategories.value.includes(product.category_id),
       );
     }
 
@@ -859,7 +859,7 @@ const fetchCatalogProducts = async () => {
         categories: selectedCategories.value.length,
         note: "Price filtering dilakukan di client-side menggunakan harga setelah discount",
         // Featured filter removed
-      }
+      },
     );
   } catch (error) {
     console.error("Error fetching catalog products:", error);
@@ -896,7 +896,7 @@ const fetchCategories = async () => {
 
     console.log(
       `📋 Loaded ${fetchedCategories.length} categories:`,
-      fetchedCategories.map((cat: any) => `${cat.category} (${cat.id})`)
+      fetchedCategories.map((cat: any) => `${cat.category} (${cat.id})`),
     );
 
     if (fetchedCategories.length === 0) {
@@ -911,12 +911,12 @@ const fetchCategories = async () => {
     try {
       console.log("🔄 Last resort: Trying all categories endpoint...");
       const fallbackResponse = await axiosInstance.get(
-        "/products/all-categories"
+        "/products/all-categories",
       );
       categories.value =
         fallbackResponse.data.data || fallbackResponse.data || [];
       console.log(
-        `✅ Fallback success: ${categories.value.length} categories loaded`
+        `✅ Fallback success: ${categories.value.length} categories loaded`,
       );
     } catch (fallbackError) {
       console.error("❌ All fallback attempts failed:", fallbackError);
@@ -940,7 +940,7 @@ const getCategoryName = (categoryId: string): string => {
 
 const removeCategoryFilter = (categoryId: string) => {
   selectedCategories.value = selectedCategories.value.filter(
-    (id) => id !== categoryId
+    (id) => id !== categoryId,
   );
   applyFilters();
 };
@@ -1104,7 +1104,7 @@ const filteredProducts = computed(() => {
   // Apply category filter
   if (selectedCategories.value.length > 0) {
     filtered = filtered.filter((product) =>
-      selectedCategories.value.includes(product.category_id)
+      selectedCategories.value.includes(product.category_id),
     );
   }
 
@@ -1215,7 +1215,7 @@ const formatPriceShort = (price: number): string => {
 const getCategoryProductCount = (categoryId: string): number => {
   // Count products in this category from current filtered results
   return allProducts.value.filter(
-    (product) => product.category_id === categoryId
+    (product) => product.category_id === categoryId,
   ).length;
 };
 
@@ -1251,6 +1251,19 @@ const resetPagination = () => {
 
 const filterTimeout = ref<number | null>(null);
 
+const searchError = ref(false);
+
+const onSearchInput = (e: Event) => {
+  const input = (e.target as HTMLInputElement).value;
+  if (input.length > 50) {
+    searchQuery.value = input.slice(0, 50); // Limit to 50 chars
+    searchError.value = true;
+  } else {
+    searchQuery.value = input;
+    searchError.value = false;
+  }
+};
+
 // Watch untuk reset pagination saat filter berubah
 watch([selectedCategories, priceMin, priceMax, searchQuery, sortBy], () => {
   resetPagination();
@@ -1274,7 +1287,9 @@ onMounted(async () => {
   min-height: 100vh;
 }
 .transition-card {
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 }
 .transition-card:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
@@ -1371,6 +1386,11 @@ onMounted(async () => {
 .dark-search-input.v-field--focused .v-field__prepend-inner .v-icon,
 .dark-search-input.v-field--focused .v-field__append-inner .v-icon {
   color: #fff !important;
+}
+
+.dark-search-input.v-input--error .v-input__control {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 2px #dc3545 !important;
 }
 
 /* Search card styling */
