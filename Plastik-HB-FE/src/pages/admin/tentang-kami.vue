@@ -3,6 +3,11 @@ import { ref, computed, onMounted } from "vue";
 import { getPage, updateAboutPage } from "../../api/pageApi";
 import { uploadImage } from "../../api/uploadApi";
 import AboutPage from "../tentang-kami.vue";
+import AppAlert from "../../components/AppAlert.vue";
+import ImageUploadCard from "../../components/ImageUploadCard.vue";
+import ValuesInputList from "../../../src/components/ValuesInputList.vue";
+import HistoryListEditor from "../../../src/components/HistoryListEditor.vue";
+import LivePreviewCard from "../../components/LivePreviewCard.vue";
 
 // --- Types ---
 interface Section {
@@ -72,20 +77,11 @@ const infoDescription = computed({
 });
 
 // --- VALUES Section ---
-const valueItems = computed(() => {
-  const arr = valuesSection.value?.data.values ?? [];
-  // Always 4 items
-  if (arr.length < 4) {
-    for (let i = arr.length; i < 4; i++) arr.push("");
-  }
-  return arr.map((_, idx) =>
-    computed({
-      get: () => arr[idx] ?? "",
-      set: (val: string) => {
-        arr[idx] = val;
-      },
-    })
-  );
+const valuesArray = computed({
+  get: () => valuesSection.value?.data.values ?? ["", "", "", ""],
+  set: (val: string[]) => {
+    if (valuesSection.value) valuesSection.value.data.values = val;
+  },
 });
 
 // --- GOALS Section ---
@@ -103,25 +99,12 @@ const vision = computed({
 });
 
 // --- HISTORY Section ---
-const historyItems = computed(() => {
-  const arr = historySection.value?.data.history ?? [];
-  return arr.map((_, idx) =>
-    computed({
-      get: () => arr[idx] ?? "",
-      set: (val: string) => {
-        arr[idx] = val;
-      },
-    })
-  );
+const historyArray = computed({
+  get: () => historySection.value?.data.history ?? [""],
+  set: (val: string[]) => {
+    if (historySection.value) historySection.value.data.history = val;
+  },
 });
-function addHistory() {
-  if (historySection.value) historySection.value.data.history.push("");
-}
-function removeHistory(idx: number) {
-  if (historySection.value && historySection.value.data.history.length > 1) {
-    historySection.value.data.history.splice(idx, 1);
-  }
-}
 
 // --- Alert ---
 function showAlert(type: "success" | "error", title: string, message: string) {
@@ -154,15 +137,12 @@ const handleImageUpload = async (event: Event) => {
     }
   }
 };
-const openFileInput = () => {
-  fileInputRef.value?.click();
-};
 
 // --- Fetch Data ---
 const fetchAboutData = async () => {
   loading.value = true;
   try {
-    const page = await getPage("tentang-kami");
+    const page = await getPage("tentang-kami") as Page;
     pageId.value = page.id;
     pageTitle.value = page.title;
     pageDescription.value = page.description;
@@ -242,20 +222,12 @@ onMounted(fetchAboutData);
 <template>
   <v-container class="pa-6">
     <!-- Alert -->
-    <v-alert
+    <AppAlert
       v-model="alertVisible"
       :type="alertType"
       :title="alertTitle"
       :text="alertMessage"
-      closable
       class="mb-4"
-      style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 400px;
-      "
     />
 
     <!-- Header -->
@@ -290,43 +262,13 @@ onMounted(fetchAboutData);
               <div class="mb-6">
                 <h3 class="text-h6 mb-4">Hero Section</h3>
                 <!-- Image Upload -->
-                <div class="mb-4">
-                  <v-card
-                    height="200"
-                    variant="outlined"
-                    class="d-flex align-center justify-center mb-2 image-upload-card"
-                    @click="openFileInput"
-                  >
-                    <div v-if="!infoImageUrl" class="text-center">
-                      <v-icon size="48" color="grey-lighten-1" class="mb-2"
-                        >mdi-camera</v-icon
-                      >
-                      <p class="text-grey-darken-1">Gambar Hero</p>
-                    </div>
-                    <v-img
-                      v-else
-                      :src="infoImageUrl"
-                      cover
-                      height="100%"
-                      class="rounded"
-                    />
-                  </v-card>
-                  <v-btn
-                    variant="outlined"
-                    prepend-icon="mdi-pencil"
-                    @click="openFileInput"
-                    size="small"
-                  >
-                    Edit Gambar
-                  </v-btn>
-                  <input
-                    ref="fileInputRef"
-                    type="file"
-                    accept="image/*"
-                    style="display: none"
-                    @change="handleImageUpload"
-                  />
-                </div>
+                <ImageUploadCard
+                  :image="infoImageUrl ? infoImageUrl : ''"
+                  v-model="infoImageUrl"
+                  @upload="handleImageUpload"
+                  label="Gambar Hero"
+                  class="mb-4"
+                />
                 <v-text-field
                   v-model="infoTitle"
                   label="Title"
@@ -345,21 +287,11 @@ onMounted(fetchAboutData);
               <!-- Values Section -->
               <div class="mb-6">
                 <h3 class="text-h6 mb-4">Our Values</h3>
-                <div
-                  v-for="(item, index) in valueItems"
-                  :key="index"
-                  class="mb-2"
-                >
-                  <v-text-field
-                    v-model="valueItems[index].value"
-                    :label="`Value ${index + 1}`"
-                    variant="outlined"
-                    density="compact"
-                    :maxlength="100"
-                    :counter="100"
-                    required
-                  />
-                </div>
+                <ValuesInputList
+                  v-model="valuesArray"
+                  label="Values"
+                  class="mb-4"
+                />
               </div>
 
               <!-- Mission & Vision -->
@@ -383,41 +315,11 @@ onMounted(fetchAboutData);
 
               <!-- History Section -->
               <div class="mb-6">
-                <div class="d-flex align-center mb-4">
-                  <h3 class="text-h6 mr-4">History</h3>
-                  <v-btn
-                    @click="addHistory"
-                    icon="mdi-plus"
-                    variant="outlined"
-                    size="small"
-                    color="primary"
-                    class="icon-btn-square"
-                  />
-                </div>
-                <div
-                  v-for="(item, index) in historyItems"
-                  :key="index"
-                  class="mb-2"
-                >
-                  <v-text-field
-                    v-model="historyItems[index].value"
-                    :label="`History ${index + 1}`"
-                    variant="outlined"
-                    density="compact"
-                  >
-                    <template #append-inner>
-                      <v-btn
-                        @click="removeHistory(index)"
-                        icon="mdi-delete"
-                        variant="text"
-                        size="small"
-                        color="error"
-                        :disabled="historyItems.length <= 1"
-                        class="delete-btn-inside"
-                      />
-                    </template>
-                  </v-text-field>
-                </div>
+                <HistoryListEditor
+                  v-model="historyArray"
+                  label="History"
+                  class="mb-4"
+                />
               </div>
 
               <!-- Save Button -->
@@ -443,41 +345,13 @@ onMounted(fetchAboutData);
 
       <!-- Right Side - Preview -->
       <v-col cols="12" lg="6">
-        <v-card variant="outlined">
-          <v-card-title
-            class="bg-grey text-white d-flex justify-space-between align-center"
-          >
-            <div class="d-flex align-center">
-              <v-icon class="mr-2">mdi-eye</v-icon>
-              Live Preview
-            </div>
-            <div class="d-flex gap-2">
-              <v-btn
-                @click="refreshPreview"
-                icon="mdi-refresh"
-                variant="text"
-                size="small"
-                color="white"
-                title="Refresh preview"
-              />
-              <v-btn
-                @click="openAboutPage"
-                icon="mdi-open-in-new"
-                variant="text"
-                size="small"
-                color="white"
-                title="Open about page in new tab"
-              />
-            </div>
-          </v-card-title>
-          <v-card-text class="pa-0">
-            <div class="preview-container">
-              <div :key="previewKey" class="preview-wrapper">
-                <AboutPage />
-              </div>
-            </div>
-          </v-card-text>
-        </v-card>
+        <LivePreviewCard
+          :previewKey="previewKey"
+          @refresh="refreshPreview"
+          @open="openAboutPage"
+        >
+          <AboutPage />
+        </LivePreviewCard>
       </v-col>
     </v-row>
   </v-container>

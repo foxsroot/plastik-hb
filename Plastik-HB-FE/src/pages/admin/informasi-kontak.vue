@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from "vue";
 import { fetchContactInfo, updateContactInfo } from "../../api/contactApi";
+import AppAlert from '../../components/AppAlert.vue';
+import ContactInfoPreview from '../../components/ContactInfoPreview.vue';
+import GoogleMapsEmbed from '../../components/GoogleMapsEmbed.vue';
 
 interface ContactInfo {
   mapUrl: string;
@@ -117,22 +120,14 @@ onMounted(fetchData);
 <template>
   <v-container class="pa-6">
     <!-- Alert -->
-    <v-alert
+    <AppAlert
       v-model="alertVisible"
       :type="alertType"
       :title="alertTitle"
       :text="alertMessage"
-      closable
       class="mb-4"
-      style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 400px;
-      "
+      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"
     />
-
     <!-- Header -->
     <v-row class="mb-6">
       <v-col cols="12">
@@ -142,13 +137,11 @@ onMounted(fetchData);
         </p>
       </v-col>
     </v-row>
-
     <!-- Loading State -->
     <div v-if="loading" class="text-center pa-8">
       <v-progress-circular indeterminate color="primary" />
       <p class="mt-4">Memuat informasi kontak...</p>
     </div>
-
     <!-- Contact Form -->
     <v-card v-else variant="outlined" class="pa-6">
       <v-form @submit.prevent="saveContactInfo">
@@ -164,7 +157,6 @@ onMounted(fetchData);
               required
             />
           </v-col>
-
           <!-- Address -->
           <v-col cols="12" md="6">
             <v-text-field
@@ -176,7 +168,6 @@ onMounted(fetchData);
               required
             />
           </v-col>
-
           <!-- Link Google Maps -->
           <v-col cols="12" md="12">
             <v-text-field
@@ -190,112 +181,21 @@ onMounted(fetchData);
               required
             />
           </v-col>
-
           <!-- Maps Preview Section -->
           <v-col cols="12">
             <v-row>
               <!-- Map Embed -->
               <v-col cols="12" md="6">
-                <v-card variant="outlined" height="300">
-                  <v-card-title class="text-center">
-                    <v-icon class="mr-2">mdi-map</v-icon>
-                    Maps Preview
-                  </v-card-title>
-                  <v-card-text class="pa-0">
-                    <div v-if="contactInfo.mapUrl" class="map-container">
-                      <iframe
-                        :src="contactInfo.mapUrl"
-                        width="100%"
-                        height="240"
-                        style="border: 0"
-                        allowfullscreen
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"
-                      />
-                    </div>
-                    <div
-                      v-else
-                      class="d-flex align-center justify-center"
-                      style="height: 240px"
-                    >
-                      <div class="text-center text-grey-darken-1">
-                        <v-icon size="48" class="mb-2">mdi-map-outline</v-icon>
-                        <p>Masukkan link Google Maps untuk preview</p>
-                        <small class="text-caption">
-                          Contoh: https://maps.google.com/?q=-6.9175,107.6191
-                        </small>
-                      </div>
-                    </div>
-                  </v-card-text>
-                </v-card>
+                <GoogleMapsEmbed :mapUrl="contactInfo.mapUrl" />
               </v-col>
-
               <!-- Contact Info Preview -->
               <v-col cols="12" md="6">
-                <v-card variant="outlined" height="300" class="pa-4">
-                  <v-card-title class="text-center pa-0 mb-4">
-                    <v-icon class="mr-2">mdi-information</v-icon>
-                    Informasi Kontak
-                  </v-card-title>
-
-                  <v-list density="compact" class="pa-0">
-                    <v-list-item>
-                      <template v-slot:prepend>
-                        <v-icon color="green">mdi-whatsapp</v-icon>
-                      </template>
-                      <v-list-item-title>WhatsApp</v-list-item-title>
-                      <v-list-item-subtitle>{{
-                        contactInfo.phoneNumber || "Belum diisi"
-                      }}</v-list-item-subtitle>
-                      <template v-slot:append>
-                        <v-btn
-                          v-if="contactInfo.phoneNumber"
-                          :href="`https://wa.me/${formatWhatsAppNumber()}`"
-                          target="_blank"
-                          icon="mdi-open-in-new"
-                          variant="text"
-                          size="small"
-                        />
-                      </template>
-                    </v-list-item>
-
-                    <v-divider class="my-2" />
-
-                    <v-list-item>
-                      <template v-slot:prepend>
-                        <v-icon color="red">mdi-map-marker</v-icon>
-                      </template>
-                      <v-list-item-title>Alamat</v-list-item-title>
-                      <v-list-item-subtitle>{{
-                        contactInfo.address || "Belum diisi"
-                      }}</v-list-item-subtitle>
-                    </v-list-item>
-
-                    <v-divider class="my-2" />
-
-                    <v-list-item>
-                      <template v-slot:prepend>
-                        <v-icon color="blue">mdi-google-maps</v-icon>
-                      </template>
-                      <v-list-item-title>Google Maps</v-list-item-title>
-                      <v-list-item-subtitle class="text-truncate">
-                        {{ contactInfo.mapUrl || "Belum diisi" }}
-                      </v-list-item-subtitle>
-                      <template v-slot:append>
-                        <v-btn
-                          v-if="contactInfo.mapUrl"
-                          :href="contactInfo.mapUrl"
-                          target="_blank"
-                          icon="mdi-open-in-new"
-                          variant="text"
-                          size="small"
-                        />
-                      </template>
-                    </v-list-item>
-                  </v-list>
-                </v-card>
+                <ContactInfoPreview
+                  :phoneNumber="contactInfo.phoneNumber"
+                  :address="contactInfo.address"
+                  :mapUrl="contactInfo.mapUrl"
+                />
               </v-col>
-
               <v-row>
                 <v-col cols="12">
                   <v-btn
@@ -303,11 +203,7 @@ onMounted(fetchData);
                     color="primary"
                     variant="elevated"
                     :loading="saveLoading"
-                    :disabled="
-                      !contactInfo.phoneNumber ||
-                      !contactInfo.address ||
-                      !contactInfo.mapUrl
-                    "
+                    :disabled="!contactInfo.phoneNumber || !contactInfo.address || !contactInfo.mapUrl"
                     block
                     class="text-uppercase mt-4"
                     md="12"
