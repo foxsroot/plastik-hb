@@ -8,19 +8,13 @@
     @drop="onDrop"
   >
     <div v-if="!image" class="text-center">
-      <v-icon :size="iconSize" :color="iconColor" class="mb-1">{{ placeholderIcon }}</v-icon>
+      <v-icon :size="iconSize" :color="iconColor" class="mb-1">{{
+        placeholderIcon
+      }}</v-icon>
       <p class="text-caption text-grey-darken-1">{{ placeholderText }}</p>
     </div>
     <div v-else class="banner-image-wrapper">
       <v-img :src="image" cover height="100%" class="rounded" />
-      <v-btn
-        icon="mdi-close-circle"
-        size="small"
-        color="error"
-        class="clear-image-btn"
-        @click.stop="onClear"
-        style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;"
-      />
     </div>
     <input
       ref="fileInputRef"
@@ -33,33 +27,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, defineEmits } from 'vue';
+import { ref, defineProps, defineEmits } from "vue";
 
 const props = defineProps({
   image: String,
-  placeholderIcon: { type: String, default: 'mdi-camera' },
-  placeholderText: { type: String, default: 'Upload Image' },
+  placeholderIcon: { type: String, default: "mdi-camera" },
+  placeholderText: { type: String, default: "Upload Image" },
   height: { type: [String, Number], default: 150 },
   iconSize: { type: [String, Number], default: 32 },
-  iconColor: { type: String, default: 'grey-lighten-1' },
-  accept: { type: String, default: 'image/*' },
+  iconColor: { type: String, default: "grey-lighten-1" },
+  accept: { type: String, default: "image/*" },
 });
-const emits = defineEmits(['upload', 'clear', 'drop']);
+const emits = defineEmits(["upload", "clear", "drop"]);
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 function onClick() {
   fileInputRef.value?.click();
 }
 function onUpload(event: Event) {
-  emits('upload', event);
-}
-function onClear() {
-  emits('clear');
+  emits("upload", event);
 }
 function onDrop(event: DragEvent) {
   event.preventDefault();
   event.stopPropagation();
-  emits('drop', event);
+  emits("drop", event);
 }
 </script>
 
