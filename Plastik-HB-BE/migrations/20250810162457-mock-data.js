@@ -263,6 +263,24 @@ module.exports = {
         created_at: new Date(),
         updated_at: new Date(),
       },
+      {
+        id: "e2b7c1a2-1f3e-4b8a-9c2d-7e8f1a2b3c4d",
+        page_id: "9b15e2a3-4e8d-4b6e-80a5-d7d8da9759c4", // Homepage
+        type: "TRUSTEDBY",
+        order: 3,
+        data: JSON.stringify({
+          partners: [
+            { order: 1, title: "Company A", image: "/trusted/company-a.png" },
+            { order: 2, title: "Company B", image: "/trusted/company-b.png" },
+            { order: 3, title: "Company C", image: "/trusted/company-c.png" },
+            { order: 4, title: "Company D", image: "/trusted/company-d.png" },
+            { order: 5, title: "Company E", image: "/trusted/company-e.png" },
+          ],
+        }),
+        visible: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
 
       // Katalog Sections
       {
