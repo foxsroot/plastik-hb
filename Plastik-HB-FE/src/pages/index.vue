@@ -5,6 +5,7 @@ import { fetchFeaturedProducts } from "../api/productApi";
 import { useAnalytics } from "../composables/useAnalytics";
 import Achievements from "@/components/Achievements.vue";
 import Trustedby from "@/components/Trustedby.vue";
+import { getImageUrl } from "../utils/formatters";
 
 interface PageData {
   id: string;
@@ -328,7 +329,7 @@ onUnmounted(() => {
                   v-for="product in featuredProducts"
                   :key="product.id"
                   :product="product"
-                  :imageUrl="product.assets[0]?.url"
+                  :imageUrl="getImageUrl(product.assets[0]?.url)"
                 />
               </div>
             </div>

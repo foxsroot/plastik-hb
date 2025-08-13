@@ -1,5 +1,10 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="emits('update:modelValue', $event)" max-width="800px" scrollable>
+  <v-dialog
+    :model-value="modelValue"
+    @update:model-value="emits('update:modelValue', $event)"
+    max-width="800px"
+    scrollable
+  >
     <v-card>
       <v-card-title class="bg-primary text-white">
         <v-icon class="mr-2">mdi-package-variant</v-icon>
@@ -21,34 +26,67 @@
               <p class="mt-2">Memuat katalog produk...</p>
             </v-col>
           </v-row>
-          <v-row v-else-if="filteredProducts.length === 0" class="justify-center">
+          <v-row
+            v-else-if="filteredProducts.length === 0"
+            class="justify-center"
+          >
             <v-col cols="12" class="text-center">
-              <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
-              <p class="text-grey-darken-1 mt-2">Tidak ada produk yang tersedia untuk dipilih</p>
+              <v-icon size="64" color="grey-lighten-1"
+                >mdi-package-variant-closed</v-icon
+              >
+              <p class="text-grey-darken-1 mt-2">
+                Tidak ada produk yang tersedia untuk dipilih
+              </p>
             </v-col>
           </v-row>
           <v-row v-else>
-            <v-col v-for="product in filteredProducts" :key="product.id" cols="12" md="6">
+            <v-col
+              v-for="product in filteredProducts"
+              :key="product.id"
+              cols="12"
+              md="6"
+            >
               <v-card
                 variant="outlined"
                 class="mb-2 product-select-card"
-                :class="{'v-card--selected': isSelected(product.id), 'cursor-pointer': true}"
+                :class="{
+                  'v-card--selected': isSelected(product.id),
+                  'cursor-pointer': true,
+                }"
                 @click="toggleSelection(product.id)"
               >
                 <v-row no-gutters align="center">
                   <v-col cols="4" class="d-flex align-center">
-                    <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" height="100" cover />
+                    <v-img
+                      :src="
+                        getImageUrl(product.assets[0]?.url) ||
+                        '/placeholder.jpg'
+                      "
+                      height="100"
+                      cover
+                    />
                   </v-col>
                   <v-col cols="8" class="position-relative">
-                    <v-card-title class="text-subtitle-2">{{ product.name }}</v-card-title>
-                    <v-card-text class="text-caption text-grey-darken-1">{{ product.description }}</v-card-text>
+                    <v-card-title class="text-subtitle-2">{{
+                      product.name
+                    }}</v-card-title>
+                    <v-card-text class="text-caption text-grey-darken-1">{{
+                      product.description
+                    }}</v-card-text>
                     <v-icon
                       v-if="isSelected(product.id)"
                       color="primary"
                       size="28"
                       class="position-absolute"
-                      style="top: 8px; right: 8px; z-index: 2; background: white; border-radius: 50%;"
-                    >mdi-check-circle</v-icon>
+                      style="
+                        top: 8px;
+                        right: 8px;
+                        z-index: 2;
+                        background: white;
+                        border-radius: 50%;
+                      "
+                      >mdi-check-circle</v-icon
+                    >
                   </v-col>
                 </v-row>
               </v-card>
@@ -58,7 +96,12 @@
       </v-card-text>
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn :disabled="localSelectedIds.length === 0" color="primary" variant="elevated" @click="addSelected">
+        <v-btn
+          :disabled="localSelectedIds.length === 0"
+          color="primary"
+          variant="elevated"
+          @click="addSelected"
+        >
           Tambahkan
         </v-btn>
         <v-btn @click="$emit('close')" variant="outlined">Batal</v-btn>
@@ -68,7 +111,11 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, computed, watch } from 'vue';
+import { defineProps, defineEmits, ref, computed, watch } from "vue";
+import { getImageUrl } from "../utils/formatters";
+import { useImageHandler } from "../composables/useImageHandler";
+
+const { getMainImageUrl } = useImageHandler();
 
 interface Product {
   id: string;
@@ -109,8 +156,14 @@ const props = defineProps<{
   selectedIds: (number | string)[];
 }>();
 
-const emits = defineEmits(['update:modelValue', 'add', 'close', 'search', 'update:selectedIds']);
-const search = ref('');
+const emits = defineEmits([
+  "update:modelValue",
+  "add",
+  "close",
+  "search",
+  "update:selectedIds",
+]);
+const search = ref("");
 const localSelectedIds = ref<(string | number)[]>([]);
 
 // Sync local selection with parent when dialog opens
@@ -118,20 +171,24 @@ watch(
   () => props.modelValue,
   (val) => {
     if (val) {
-      localSelectedIds.value = Array.isArray(props.selectedIds) ? [...props.selectedIds] : [];
+      localSelectedIds.value = Array.isArray(props.selectedIds)
+        ? [...props.selectedIds]
+        : [];
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const filteredProducts = computed<Product[]>(() => {
   if (!search.value) return props.products;
-  return props.products.filter((product) =>
-    product.name.toLowerCase().includes(search.value.toLowerCase()) ||
-    (product.description && product.description.toLowerCase().includes(search.value.toLowerCase()))
+  return props.products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(search.value.toLowerCase()) ||
+      (product.description &&
+        product.description.toLowerCase().includes(search.value.toLowerCase())),
   );
 });
-watch(search, val => emits('search', val));
+watch(search, (val) => emits("search", val));
 
 function isSelected(id: string | number) {
   return localSelectedIds.value.includes(id);
@@ -144,11 +201,11 @@ function toggleSelection(id: string | number) {
   } else {
     localSelectedIds.value.splice(idx, 1);
   }
-  emits('update:selectedIds', [...localSelectedIds.value]);
+  emits("update:selectedIds", [...localSelectedIds.value]);
 }
 
 function addSelected() {
-  emits('add');
+  emits("add");
 }
 </script>
 
