@@ -63,6 +63,12 @@ interface Product {
   category: CategoryObj;
 }
 
+interface TrustedByPartner {
+  order: number;
+  title: string;
+  image: string;
+}
+
 // Page Data Interface
 interface PageData {
   title: string;
@@ -76,6 +82,7 @@ interface PageData {
     data: {
       banners?: Banner[];
       achievements?: Achievement[];
+      partners?: TrustedByPartner[];
     };
   }>;
 }
@@ -117,8 +124,9 @@ const selectedProductIdsDialog = ref<string[]>([]);
 const selectedProductId = ref<string | null>(null);
 
 // File input refs
-const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
-const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
+const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([])
+const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([])
+const trustedByFileInputRefs = ref<(HTMLInputElement | null)[]>([])
 
 // Computed properties
 const selectedProductIds = computed(() =>
@@ -336,6 +344,77 @@ const openAchievementFileInput = (index: number) => {
   achievementFileInputRefs.value[index]?.click();
 };
 
+// --- Trusted By State as Ref ---
+const trustedByPartners = ref<{ order: number; title: string; image: string }[]>([]);
+
+// Sync trustedByPartners with pageData on fetch
+watch(
+  () => pageData.value,
+  (val) => {
+    const arr = val?.sections.find(s => s.type === "TRUSTEDBY")?.data.partners;
+    trustedByPartners.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
+  },
+  { immediate: true }
+);
+
+// Automatically sync trustedByPartners to pageData.sections when they change
+watch(trustedByPartners, (newPartners) => {
+  if (pageData.value) {
+    const section = pageData.value.sections.find(s => s.type === "TRUSTEDBY");
+    if (section) section.data.partners = JSON.parse(JSON.stringify(newPartners));
+  }
+}, { deep: true });
+
+// Trusted By Editor functions
+const addTrustedByPartner = () => {
+  trustedByPartners.value.push({
+    order: trustedByPartners.value.length + 1,
+    title: '',
+    image: ''
+  });
+};
+const removeTrustedByPartner = (index: number) => {
+  if (trustedByPartners.value.length > 1) trustedByPartners.value.splice(index, 1);
+};
+const handleTrustedByImageUpload = (event: Event, index: number) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      trustedByPartners.value[index].image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+const openTrustedByFileInput = (index: number) => {
+  trustedByFileInputRefs.value[index]?.click();
+};
+const clearTrustedByImage = (index: number) => {
+  trustedByPartners.value[index].image = '';
+};
+// Drag and drop for Trusted By
+const dragTrustedByIndex = ref<number | null>(null);
+const dragOverTrustedByIndex = ref<number | null>(null);
+const onTrustedByDragStart = (index: number) => {
+  dragTrustedByIndex.value = index;
+};
+const onTrustedByDragOver = (index: number) => {
+  dragOverTrustedByIndex.value = index;
+};
+const onTrustedByDrop = (index: number) => {
+  if (dragTrustedByIndex.value !== null && dragTrustedByIndex.value !== index) {
+    const moved = trustedByPartners.value.splice(dragTrustedByIndex.value, 1)[0];
+    trustedByPartners.value.splice(index, 0, moved);
+  }
+  dragTrustedByIndex.value = null;
+  dragOverTrustedByIndex.value = null;
+};
+const onTrustedByDragEnd = () => {
+  dragTrustedByIndex.value = null;
+  dragOverTrustedByIndex.value = null;
+};
+
 // Fetch catalog products
 const fetchCatalogProducts = async () => {
   catalogLoading.value = true;
@@ -410,16 +489,16 @@ const saveHomepageData = async () => {
       published: pageData.value.published,
       sections: pageData.value.sections,
     });
-
+    
     showAlert(
       "success",
       "Berhasil",
       "Data halaman utama & produk andalan berhasil disimpan!",
     );
 
-    // Auto reload after successful save
+    // Refresh only the live preview after successful save
     setTimeout(() => {
-      window.location.reload();
+      refreshPreview();
     }, 1000);
   } catch (error: any) {
     console.error("Error saving homepage data:", error);
@@ -726,6 +805,70 @@ const handleAchievementEditorImageDrop = async (event: DragEvent) => {
       showAlert("error", "Upload Gagal", "Gagal mengupload gambar achievement");
     }
   }
+};
+
+// --- Trusted By Editor Modal State ---
+const trustedByMenuOpenIndex = ref<number | null>(null);
+const trustedByEditorDialog = ref(false);
+const editingTrustedByIndex = ref<number | null>(null);
+const editingTrustedBy = ref<TrustedByPartner | null>(null);
+const trustedByEditorFileInputRef = ref<HTMLInputElement | null>(null);
+
+// --- Achievement Card Menu Functions ---
+const openTrustedByMenu = (index: number) => {
+  trustedByMenuOpenIndex.value = index;
+};
+const closeTrustedByMenu = () => {
+  trustedByMenuOpenIndex.value = null;
+};
+
+const openTrustedByEditor = (index: number) => {
+  editingTrustedByIndex.value = index;
+  editingTrustedBy.value = { ...trustedByPartners.value[index] };
+  trustedByEditorDialog.value = true;
+  closeTrustedByMenu();
+};
+const closeTrustedByEditor = () => {
+  trustedByEditorDialog.value = false;
+  editingTrustedByIndex.value = null;
+  editingTrustedBy.value = null;
+};
+const saveTrustedByEdit = () => {
+  if (editingTrustedByIndex.value !== null && editingTrustedBy.value) {
+    trustedByPartners.value[editingTrustedByIndex.value] = { ...editingTrustedBy.value };
+    closeTrustedByEditor();
+  }
+};
+const openTrustedByEditorFileInput = () => {
+  trustedByEditorFileInputRef.value?.click();
+};
+const handleTrustedByEditorImageDrop = async (event: DragEvent) => {
+  event.preventDefault();
+  if (!editingTrustedBy.value) return;
+  const file = event.dataTransfer?.files?.[0];
+  if (file) {
+    try {
+      const imageUrl = await uploadImage(file);
+      editingTrustedBy.value.image = imageBackendUrl + imageUrl;
+    } catch (err) {
+      showAlert('error', 'Upload Gagal', 'Gagal mengupload logo partner');
+    }
+  }
+};
+const handleTrustedByEditorImageUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file && editingTrustedBy.value) {
+    try {
+      const imageUrl = await uploadImage(file);
+      editingTrustedBy.value.image = imageBackendUrl + imageUrl;
+    } catch (err) {
+      showAlert('error', 'Upload Gagal', 'Gagal mengupload logo partner');
+    }
+  }
+};
+const clearTrustedByEditorImage = () => {
+  if (editingTrustedBy.value) editingTrustedBy.value.image = '';
 };
 
 onMounted(async () => {
@@ -1150,6 +1293,51 @@ onMounted(async () => {
                 </div>
               </div>
 
+              <!-- Trusted By Editor Section -->
+              <div class="mb-6">
+                <div class="d-flex align-center mb-4">
+                  <h3 class="text-h6 mr-4">Trusted By</h3>
+                  <v-btn @click="addTrustedByPartner" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
+                </div>
+                <div class="achievement-list">
+                  <div v-for="(partner, index) in trustedByPartners" :key="partner.order ?? index" class="mb-3">
+                    <v-card
+                      variant="outlined"
+                      class="d-flex align-center pa-2 mb-2 achievement-card"
+                      draggable="true"
+                      @dragstart="onTrustedByDragStart(index)"
+                      @dragover.prevent="onTrustedByDragOver(index)"
+                      @drop.prevent="onTrustedByDrop(index)"
+                      @dragend="onTrustedByDragEnd"
+                      :class="{ 'achievement-card--dragover': dragOverTrustedByIndex === index }"
+                      style="transition: background 0.2s, border 0.2s;"
+                    >
+                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-avatar size="40" class="mr-3">
+                        <v-img v-if="partner.image" :src="partner.image" cover />
+                        <v-icon v-else size="40" color="amber">mdi-handshake</v-icon>
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <div class="font-weight-bold text-white text-truncate">{{ partner.title || 'Partner ' + (index + 1) }}</div>
+                      </div>
+                      <v-menu :model-value="trustedByMenuOpenIndex === index" @update:model-value="val => trustedByMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                        <template #activator="{ props }">
+                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openTrustedByMenu(index)" class="menu-btn" />
+                        </template>
+                        <v-list>
+                          <v-list-item @click="openTrustedByEditor(index)">
+                            <v-list-item-title>Edit</v-list-item-title>
+                          </v-list-item>
+                          <v-list-item @click="removeTrustedByPartner(index)">
+                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
+                    </v-card>
+                  </div>
+                </div>
+              </div>
+
               <!-- Featured Products Section (NEW) -->
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
@@ -1480,6 +1668,38 @@ onMounted(async () => {
           <v-spacer />
           <v-btn text @click="closeAchievementEditor">Batal</v-btn>
           <v-btn color="primary" @click="saveAchievementEdit">Simpan</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Trusted By Editor Modal -->
+    <v-dialog v-model="trustedByEditorDialog" max-width="500px">
+      <v-card>
+        <v-card-title class="bg-primary text-white">Edit Trusted By</v-card-title>
+        <v-card-text class="pa-6">
+          <div class="mb-4">
+            <v-card height="150" variant="outlined" class="d-flex align-center justify-center image-upload-card"
+              @click="openTrustedByEditorFileInput"
+              @dragover.prevent
+              @drop="handleTrustedByEditorImageDrop"
+            >
+              <div v-if="!editingTrustedBy?.image" class="text-center">
+                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
+                <p class="text-caption text-grey-darken-1">Logo Perusahaan<br /></p>
+              </div>
+              <div v-else class="banner-image-wrapper">
+                <v-img :src="editingTrustedBy?.image" cover height="100%" class="rounded" />
+                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearTrustedByEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
+              </div>
+            </v-card>
+            <input ref="trustedByEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleTrustedByEditorImageUpload" />
+          </div>
+          <v-text-field v-if="editingTrustedBy" v-model="editingTrustedBy.title" label="Title" variant="outlined" density="compact" class="mb-2" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="closeTrustedByEditor">Batal</v-btn>
+          <v-btn color="primary" @click="saveTrustedByEdit">Simpan</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
