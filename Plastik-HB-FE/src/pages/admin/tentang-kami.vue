@@ -142,7 +142,7 @@ const handleImageUpload = async (event: Event) => {
 const fetchAboutData = async () => {
   loading.value = true;
   try {
-    const page = await getPage("tentang-kami") as Page;
+    const page = (await getPage("tentang-kami")) as Page;
     pageId.value = page.id;
     pageTitle.value = page.title;
     pageDescription.value = page.description;
@@ -202,9 +202,9 @@ function getImageUrl(imagePath?: string): string {
   if (imagePath.startsWith("http")) return imagePath;
   // If starts with /uploads, prepend backend host
   if (imagePath.startsWith("/uploads"))
-    return `http://localhost:5000${imagePath}`;
+    return `${import.meta.env.VITE_API_URL}${imagePath}`;
   // If only filename, prepend /uploads and backend host
-  return `http://localhost:5000/uploads/${imagePath}`;
+  return `${import.meta.env.VITE_API_URL}/uploads${imagePath}`;
 }
 
 onMounted(fetchAboutData);

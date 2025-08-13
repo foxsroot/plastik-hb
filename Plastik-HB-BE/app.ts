@@ -24,10 +24,11 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
+const frontendUrl = process.env.VITE_FRONTEND_URL;
 
 // Enable CORS with credentials
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: frontendUrl,
     credentials: true,
 }));
 
