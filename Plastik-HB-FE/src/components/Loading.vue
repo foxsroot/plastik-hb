@@ -2,7 +2,7 @@
   <v-app :theme="theme">
     <v-main class="d-flex align-center justify-center loading-page">
       <div class="logo-container">
-        <h1 class="logo-text">Plastik HB</h1>
+        <img src="/logo.png" alt="Logo" />
       </div>
     </v-main>
   </v-app>
@@ -10,7 +10,7 @@
 
 <script setup lang="ts">
 // You can dynamically change dark/light theme if needed
-const theme = 'dark';
+const theme = "dark";
 </script>
 
 <style scoped>
@@ -31,7 +31,7 @@ const theme = 'dark';
 .logo-text {
   font-size: 3rem;
   font-weight: 600;
-  font-family: 'Inter', 'Roboto', sans-serif;
+  font-family: "Inter", "Roboto", sans-serif;
   letter-spacing: 1px;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
