@@ -90,6 +90,11 @@ Plastik-HB is a modern web application for managing product catalogs, banners, h
   cd Plastik-HB-BE
   npm run prod
   ```
+  **Backend (Production):**
+  ```sh
+  cd Plastik-HB-FE
+  npm run prod
+  ```
 
 ### Running Tests
 
