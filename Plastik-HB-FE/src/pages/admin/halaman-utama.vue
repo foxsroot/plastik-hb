@@ -9,11 +9,11 @@ import AppAlert from "../../components/AppAlert.vue";
 import CardListEditor from "../../components/CardListEditor.vue";
 import FeaturedProductCard from "../../components/FeaturedProductCard.vue";
 import ImageUploadCard from "../../components/ImageUploadCard.vue";
-import LivePreviewCard from '../../components/LivePreviewCard.vue';
-import ProductSelectionDialog from '../../components/ProductSelectionDialog.vue';
+import LivePreviewCard from "../../components/LivePreviewCard.vue";
+import ProductSelectionDialog from "../../components/ProductSelectionDialog.vue";
 
 // Image Backend URL
-const imageBackendUrl = "http://localhost:5000";
+const imageBackendUrl = import.meta.env.VITE_API_URL;
 
 // Banner Interface
 interface Banner {
@@ -130,9 +130,9 @@ const selectedProductIdsDialog = ref<string[]>([]);
 const selectedProductId = ref<string | null>(null);
 
 // File input refs
-const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([])
-const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([])
-const trustedByFileInputRefs = ref<(HTMLInputElement | null)[]>([])
+const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
+const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
+const trustedByFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
 
 // Computed properties
 const selectedProductIds = computed(() =>
@@ -320,36 +320,47 @@ const removeAchievement = (index: number) => {
 };
 
 // --- Trusted By State as Ref ---
-const trustedByPartners = ref<{ order: number; title: string; image: string }[]>([]);
+const trustedByPartners = ref<
+  { order: number; title: string; image: string }[]
+>([]);
 
 // Sync trustedByPartners with pageData on fetch
 watch(
   () => pageData.value,
   (val) => {
-    const arr = val?.sections.find(s => s.type === "TRUSTEDBY")?.data.partners;
+    const arr = val?.sections.find((s) => s.type === "TRUSTEDBY")?.data
+      .partners;
     trustedByPartners.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Automatically sync trustedByPartners to pageData.sections when they change
-watch(trustedByPartners, (newPartners) => {
-  if (pageData.value) {
-    const section = pageData.value.sections.find(s => s.type === "TRUSTEDBY");
-    if (section) section.data.partners = JSON.parse(JSON.stringify(newPartners));
-  }
-}, { deep: true });
+watch(
+  trustedByPartners,
+  (newPartners) => {
+    if (pageData.value) {
+      const section = pageData.value.sections.find(
+        (s) => s.type === "TRUSTEDBY",
+      );
+      if (section)
+        section.data.partners = JSON.parse(JSON.stringify(newPartners));
+    }
+  },
+  { deep: true },
+);
 
 // Trusted By Editor functions
 const addTrustedByPartner = () => {
   trustedByPartners.value.push({
     order: trustedByPartners.value.length + 1,
-    title: '',
-    image: ''
+    title: "",
+    image: "",
   });
 };
 const removeTrustedByPartner = (index: number) => {
-  if (trustedByPartners.value.length > 1) trustedByPartners.value.splice(index, 1);
+  if (trustedByPartners.value.length > 1)
+    trustedByPartners.value.splice(index, 1);
 };
 const handleTrustedByImageUpload = (event: Event, index: number) => {
   const target = event.target as HTMLInputElement;
@@ -374,7 +385,10 @@ const onTrustedByDragOver = (index: number) => {
 };
 const onTrustedByDrop = (index: number) => {
   if (dragTrustedByIndex.value !== null && dragTrustedByIndex.value !== index) {
-    const moved = trustedByPartners.value.splice(dragTrustedByIndex.value, 1)[0];
+    const moved = trustedByPartners.value.splice(
+      dragTrustedByIndex.value,
+      1,
+    )[0];
     trustedByPartners.value.splice(index, 0, moved);
   }
   dragTrustedByIndex.value = null;
@@ -562,11 +576,16 @@ const saveBannerEdit = () => {
 };
 
 // For ImageUploadCard compatibility (accepts both Event and DragEvent)
-const handleBannerEditorImageUploadCard = async (payload: Event | DragEvent) => {
+const handleBannerEditorImageUploadCard = async (
+  payload: Event | DragEvent,
+) => {
   let file: File | undefined;
-  if ('dataTransfer' in payload && payload.dataTransfer?.files?.length) {
+  if ("dataTransfer" in payload && payload.dataTransfer?.files?.length) {
     file = payload.dataTransfer.files[0];
-  } else if ('target' in payload && (payload.target as HTMLInputElement)?.files?.length) {
+  } else if (
+    "target" in payload &&
+    (payload.target as HTMLInputElement)?.files?.length
+  ) {
     file = (payload.target as HTMLInputElement).files?.[0];
   }
   if (file && editingBanner.value) {
@@ -663,11 +682,16 @@ const saveAchievementEdit = () => {
   }
 };
 // For ImageUploadCard compatibility (accepts both Event and DragEvent)
-const handleAchievementEditorImageUploadCard = async (payload: Event | DragEvent) => {
+const handleAchievementEditorImageUploadCard = async (
+  payload: Event | DragEvent,
+) => {
   let file: File | undefined;
-  if ('dataTransfer' in payload && payload.dataTransfer?.files?.length) {
+  if ("dataTransfer" in payload && payload.dataTransfer?.files?.length) {
     file = payload.dataTransfer.files[0];
-  } else if ('target' in payload && (payload.target as HTMLInputElement)?.files?.length) {
+  } else if (
+    "target" in payload &&
+    (payload.target as HTMLInputElement)?.files?.length
+  ) {
     file = (payload.target as HTMLInputElement).files?.[0];
   }
   if (file && editingAchievement.value) {
@@ -711,17 +735,24 @@ const closeTrustedByEditor = () => {
 };
 const saveTrustedByEdit = () => {
   if (editingTrustedByIndex.value !== null && editingTrustedBy.value) {
-    trustedByPartners.value[editingTrustedByIndex.value] = { ...editingTrustedBy.value };
+    trustedByPartners.value[editingTrustedByIndex.value] = {
+      ...editingTrustedBy.value,
+    };
     closeTrustedByEditor();
   }
 };
 
 // Add this function to handle both drag and file input events
-const handleTrustedByEditorImageUploadCard = async (payload: Event | DragEvent) => {
+const handleTrustedByEditorImageUploadCard = async (
+  payload: Event | DragEvent,
+) => {
   let file: File | undefined;
-  if ('dataTransfer' in payload && payload.dataTransfer?.files?.length) {
+  if ("dataTransfer" in payload && payload.dataTransfer?.files?.length) {
     file = payload.dataTransfer.files[0];
-  } else if ('target' in payload && (payload.target as HTMLInputElement)?.files?.length) {
+  } else if (
+    "target" in payload &&
+    (payload.target as HTMLInputElement)?.files?.length
+  ) {
     file = (payload.target as HTMLInputElement).files?.[0];
   }
   if (file && editingTrustedBy.value) {
@@ -729,12 +760,12 @@ const handleTrustedByEditorImageUploadCard = async (payload: Event | DragEvent) 
       const imageUrl = await uploadImage(file);
       editingTrustedBy.value.image = imageBackendUrl + imageUrl;
     } catch (err) {
-      showAlert('error', 'Upload Gagal', 'Gagal mengupload logo partner');
+      showAlert("error", "Upload Gagal", "Gagal mengupload logo partner");
     }
   }
 };
 const clearTrustedByEditorImage = () => {
-  if (editingTrustedBy.value) editingTrustedBy.value.image = '';
+  if (editingTrustedBy.value) editingTrustedBy.value.image = "";
 };
 
 // --- Product Selection Dialog search handler ---
@@ -762,7 +793,12 @@ onMounted(async () => {
 <template>
   <v-container class="pa-6">
     <!-- Alert -->
-    <AppAlert v-model="alertVisible" :type="alertType" :title="alertTitle" :text="alertMessage" />
+    <AppAlert
+      v-model="alertVisible"
+      :type="alertType"
+      :title="alertTitle"
+      :text="alertMessage"
+    />
 
     <!-- Product Selection Dialog -->
     <ProductSelectionDialog
@@ -771,9 +807,17 @@ onMounted(async () => {
       :products="filteredAvailableProducts"
       :selected-ids="selectedProductIdsDialog"
       @add="addSelectedProducts"
-      @close="() => { productSelectionDialog = false; }"
+      @close="
+        () => {
+          productSelectionDialog = false;
+        }
+      "
       @search="handleProductSearch"
-      @update:selectedIds="(ids) => { selectedProductIdsDialog = ids }"
+      @update:selectedIds="
+        (ids) => {
+          selectedProductIdsDialog = ids;
+        }
+      "
     />
 
     <!-- Header -->
@@ -805,73 +849,141 @@ onMounted(async () => {
           <v-card-text class="pa-6">
             <v-form @submit.prevent="saveHomepageData">
               <!-- Banner Section -->
-              <CardListEditor title="Banner" :items="banners"
-                :menuOpenIndex="bannerMenuOpenIndex === null ? undefined : bannerMenuOpenIndex"
-                :dragOverIndex="dragOverBannerEditorIndex === null ? undefined : dragOverBannerEditorIndex"
-                @add="addBanner" 
-                @edit="openBannerEditor" 
-                @delete="removeBanner" 
+              <CardListEditor
+                title="Banner"
+                :items="banners"
+                :menuOpenIndex="
+                  bannerMenuOpenIndex === null ? undefined : bannerMenuOpenIndex
+                "
+                :dragOverIndex="
+                  dragOverBannerEditorIndex === null
+                    ? undefined
+                    : dragOverBannerEditorIndex
+                "
+                @add="addBanner"
+                @edit="openBannerEditor"
+                @delete="removeBanner"
                 @openMenu="openBannerMenu"
-                @update:menuOpenIndex="(val: number | null) => bannerMenuOpenIndex = val"
-                @dragstart="onBannerEditorDragStart" @dragover="onBannerEditorDragOver" @drop="onBannerEditorDrop"
-                @dragend="onBannerEditorDragEnd" listClass="banner-list" cardClass="banner-card"
-                :itemKey="(item: any, index: number) => item.order || index">
+                @update:menuOpenIndex="
+                  (val: number | null) => (bannerMenuOpenIndex = val)
+                "
+                @dragstart="onBannerEditorDragStart"
+                @dragover="onBannerEditorDragOver"
+                @drop="onBannerEditorDrop"
+                @dragend="onBannerEditorDragEnd"
+                listClass="banner-list"
+                cardClass="banner-card"
+                :itemKey="(item: any, index: number) => item.order || index"
+              >
                 <template #avatar="{ item }">
                   <v-avatar size="40" class="mr-3" color="#222">
-                    <v-img v-if="(item as Banner).image" :src="(item as Banner).image" />
+                    <v-img
+                      v-if="(item as Banner).image"
+                      :src="(item as Banner).image"
+                    />
                     <v-icon v-else color="amber">mdi-image-off</v-icon>
                   </v-avatar>
                 </template>
                 <template #content="{ item }">
-                  <div class="font-weight-bold text-white text-truncate">{{ (item as Banner).title || 'No Title' }}
+                  <div class="font-weight-bold text-white text-truncate">
+                    {{ (item as Banner).title || "No Title" }}
                   </div>
-                  <div class="text-caption text-grey-lighten-1 text-truncate">{{ (item as Banner).subtitle || '' }}
+                  <div class="text-caption text-grey-lighten-1 text-truncate">
+                    {{ (item as Banner).subtitle || "" }}
                   </div>
                 </template>
               </CardListEditor>
 
               <!-- Achievement Section -->
-              <CardListEditor title="Achievement" :items="achievements"
-                :menuOpenIndex="achievementMenuOpenIndex === null ? undefined : achievementMenuOpenIndex"
-                :dragOverIndex="dragOverAchievementIndex === null ? undefined : dragOverAchievementIndex"
-                @add="addAchievement" @edit="openAchievementEditor" @delete="removeAchievement"
+              <CardListEditor
+                title="Achievement"
+                :items="achievements"
+                :menuOpenIndex="
+                  achievementMenuOpenIndex === null
+                    ? undefined
+                    : achievementMenuOpenIndex
+                "
+                :dragOverIndex="
+                  dragOverAchievementIndex === null
+                    ? undefined
+                    : dragOverAchievementIndex
+                "
+                @add="addAchievement"
+                @edit="openAchievementEditor"
+                @delete="removeAchievement"
                 @openMenu="openAchievementMenu"
-                @update:menuOpenIndex="(val: number | null) => achievementMenuOpenIndex = val"
-                @dragstart="onAchievementDragStart" @dragover="onAchievementDragOver" @drop="onAchievementDrop"
-                @dragend="onAchievementDragEnd" listClass="achievement-list" cardClass="achievement-card"
-                :itemKey="(item: any, index: number) => item.order || index">
+                @update:menuOpenIndex="
+                  (val: number | null) => (achievementMenuOpenIndex = val)
+                "
+                @dragstart="onAchievementDragStart"
+                @dragover="onAchievementDragOver"
+                @drop="onAchievementDrop"
+                @dragend="onAchievementDragEnd"
+                listClass="achievement-list"
+                cardClass="achievement-card"
+                :itemKey="(item: any, index: number) => item.order || index"
+              >
                 <template #avatar="{ item }">
                   <v-avatar size="40" class="mr-3" color="#222">
-                    <v-img v-if="(item as Achievement).image" :src="(item as Achievement).image" />
+                    <v-img
+                      v-if="(item as Achievement).image"
+                      :src="(item as Achievement).image"
+                    />
                     <v-icon v-else color="amber">mdi-trophy</v-icon>
                   </v-avatar>
                 </template>
                 <template #content="{ item }">
-                  <div class="font-weight-bold text-white text-truncate">{{ (item as Achievement).title || 'No Title' }}
+                  <div class="font-weight-bold text-white text-truncate">
+                    {{ (item as Achievement).title || "No Title" }}
                   </div>
-                  <div class="text-caption text-grey-lighten-1 text-truncate">{{ (item as Achievement).description || ''
-                  }}</div>
+                  <div class="text-caption text-grey-lighten-1 text-truncate">
+                    {{ (item as Achievement).description || "" }}
+                  </div>
                 </template>
               </CardListEditor>
 
               <!-- Trusted By Section -->
-              <CardListEditor title="Trusted By" :items="trustedByPartners"
-                :menuOpenIndex="trustedByMenuOpenIndex === null ? undefined : trustedByMenuOpenIndex"
-                :dragOverIndex="dragOverTrustedByIndex === null ? undefined : dragOverTrustedByIndex"
-                @add="addTrustedByPartner" @edit="openTrustedByEditor" @delete="removeTrustedByPartner"
+              <CardListEditor
+                title="Trusted By"
+                :items="trustedByPartners"
+                :menuOpenIndex="
+                  trustedByMenuOpenIndex === null
+                    ? undefined
+                    : trustedByMenuOpenIndex
+                "
+                :dragOverIndex="
+                  dragOverTrustedByIndex === null
+                    ? undefined
+                    : dragOverTrustedByIndex
+                "
+                @add="addTrustedByPartner"
+                @edit="openTrustedByEditor"
+                @delete="removeTrustedByPartner"
                 @openMenu="openTrustedByMenu"
-                @update:menuOpenIndex="(val: number | null) => trustedByMenuOpenIndex = val"
-                @dragstart="onTrustedByDragStart" @dragover="onTrustedByDragOver" @drop="onTrustedByDrop"
-                @dragend="onTrustedByDragEnd" listClass="trustedby-list" cardClass="trustedby-card"
-                :itemKey="(item: any, index: number) => item.order || index">
+                @update:menuOpenIndex="
+                  (val: number | null) => (trustedByMenuOpenIndex = val)
+                "
+                @dragstart="onTrustedByDragStart"
+                @dragover="onTrustedByDragOver"
+                @drop="onTrustedByDrop"
+                @dragend="onTrustedByDragEnd"
+                listClass="trustedby-list"
+                cardClass="trustedby-card"
+                :itemKey="(item: any, index: number) => item.order || index"
+              >
                 <template #avatar="{ item }">
                   <v-avatar size="40" class="mr-3" color="#222">
-                    <v-img v-if="(item as TrustedByPartner).image" :src="(item as TrustedByPartner).image" />
+                    <v-img
+                      v-if="(item as TrustedByPartner).image"
+                      :src="(item as TrustedByPartner).image"
+                    />
                     <v-icon v-else color="amber">mdi-handshake</v-icon>
                   </v-avatar>
                 </template>
                 <template #content="{ item }">
-                  <div class="font-weight-bold text-white text-truncate">{{ (item as TrustedByPartner).title || 'No Title' }}</div>
+                  <div class="font-weight-bold text-white text-truncate">
+                    {{ (item as TrustedByPartner).title || "No Title" }}
+                  </div>
                 </template>
               </CardListEditor>
 
@@ -879,29 +991,59 @@ onMounted(async () => {
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Produk Andalan</h3>
-                  <v-btn @click="productSelectionDialog = true" icon="mdi-plus" variant="outlined" size="small"
-                    color="primary" class="icon-btn-square" :disabled="availableProducts.length === 0" />
+                  <v-btn
+                    @click="productSelectionDialog = true"
+                    icon="mdi-plus"
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    class="icon-btn-square"
+                    :disabled="availableProducts.length === 0"
+                  />
                 </div>
-                <div v-if="featuredProducts.length === 0" class="text-center pa-8">
-                  <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
+                <div
+                  v-if="featuredProducts.length === 0"
+                  class="text-center pa-8"
+                >
+                  <v-icon size="64" color="grey-lighten-1"
+                    >mdi-package-variant-closed</v-icon
+                  >
                   <p class="text-grey-darken-1 mt-2">
                     Belum ada produk yang dipilih sebagai featured
                   </p>
-                  <v-btn @click="productSelectionDialog = true" color="primary" variant="outlined"
-                    :disabled="availableProducts.length === 0">
+                  <v-btn
+                    @click="productSelectionDialog = true"
+                    color="primary"
+                    variant="outlined"
+                    :disabled="availableProducts.length === 0"
+                  >
                     Pilih Produk
                   </v-btn>
                 </div>
                 <div v-else>
-                  <div v-for="(product, index) in featuredProducts" :key="product.id" class="mb-3">
-                    <FeaturedProductCard :product="product" :formatPrice="formatPrice"
-                      @remove="removeFeaturedProduct(index)" />
+                  <div
+                    v-for="(product, index) in featuredProducts"
+                    :key="product.id"
+                    class="mb-3"
+                  >
+                    <FeaturedProductCard
+                      :product="product"
+                      :formatPrice="formatPrice"
+                      @remove="removeFeaturedProduct(index)"
+                    />
                   </div>
                 </div>
               </div>
 
               <!-- Save Button -->
-              <v-btn type="submit" color="primary" variant="elevated" :loading="saveLoading" block size="large">
+              <v-btn
+                type="submit"
+                color="primary"
+                variant="elevated"
+                :loading="saveLoading"
+                block
+                size="large"
+              >
                 Simpan Perubahan
               </v-btn>
             </v-form>
@@ -936,14 +1078,37 @@ onMounted(async () => {
             @drop="handleBannerEditorImageUploadCard"
             class="mb-8"
           />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.title" label="Title" variant="outlined"
-            density="compact" class="mb-2" />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.subtitle" label="Subtitle" variant="outlined"
-            density="compact" class="mb-2" />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonText" label="Button Text" variant="outlined"
-            density="compact" class="mb-2" />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonLink" label="Button Link" variant="outlined"
-            density="compact" />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.title"
+            label="Title"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.subtitle"
+            label="Subtitle"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.buttonText"
+            label="Button Text"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.buttonLink"
+            label="Button Link"
+            variant="outlined"
+            density="compact"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -968,12 +1133,33 @@ onMounted(async () => {
             @drop="handleAchievementEditorImageUploadCard"
             class="mb-8"
           />
-          <v-text-field v-if="editingAchievement" v-model="editingAchievement.title" label="Title" variant="outlined"
-            density="compact" class="mb-2" />
-          <v-text-field v-if="editingAchievement" v-model.number="editingAchievement.percentage" label="Percentage"
-            type="number" min="0" max="100" variant="outlined" density="compact" class="mb-2" />
-          <v-textarea v-if="editingAchievement" v-model="editingAchievement.description" label="Description"
-            variant="outlined" density="compact" rows="2" />
+          <v-text-field
+            v-if="editingAchievement"
+            v-model="editingAchievement.title"
+            label="Title"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingAchievement"
+            v-model.number="editingAchievement.percentage"
+            label="Percentage"
+            type="number"
+            min="0"
+            max="100"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-textarea
+            v-if="editingAchievement"
+            v-model="editingAchievement.description"
+            label="Description"
+            variant="outlined"
+            density="compact"
+            rows="2"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -998,8 +1184,14 @@ onMounted(async () => {
             @drop="handleTrustedByEditorImageUploadCard"
             class="mb-8"
           />
-          <v-text-field v-if="editingTrustedBy" v-model="editingTrustedBy.title" label="Title" variant="outlined"
-            density="compact" class="mb-2" />
+          <v-text-field
+            v-if="editingTrustedBy"
+            v-model="editingTrustedBy.title"
+            label="Title"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
