@@ -96,34 +96,37 @@
                 class="main-image-container flex-grow-1 d-flex align-center justify-center"
               >
                 <transition :name="transitionName" mode="out-in">
-                  <v-img
-                    v-if="product.assets && product.assets.length > 0"
-                    :key="`asset-${currentImageIndex}`"
-                    :src="getCurrentImageUrl()"
-                    height="350"
-                    width="350"
-                    contain
-                    class="product-image"
-                  >
-                    <template v-slot:error>
-                      <v-img
-                        :src="altImageUrl"
-                        height="350"
-                        width="350"
-                        contain
-                        class="product-image"
-                      />
-                    </template>
-                  </v-img>
-                  <v-img
-                    v-else
-                    key="no-image"
-                    :src="altImageUrl"
-                    height="350"
-                    width="350"
-                    contain
-                    class="product-image"
-                  />
+                  <template v-if="product.assets && product.assets.length > 0">
+                    <v-img
+                      :key="`asset-${currentImageIndex}`"
+                      :src="getCurrentImageUrl()"
+                      height="350"
+                      width="350"
+                      contain
+                      class="product-image"
+                    >
+                      <template v-slot:error>
+                        <div
+                          class="d-flex align-center justify-center"
+                          style="height: 350px; width: 350px"
+                        >
+                          <v-icon size="60" color="primary"
+                            >mdi-package-variant</v-icon
+                          >
+                        </div>
+                      </template>
+                    </v-img>
+                  </template>
+                  <template v-else>
+                    <div
+                      class="d-flex align-center justify-center"
+                      style="height: 350px; width: 350px"
+                    >
+                      <v-icon size="60" color="primary"
+                        >mdi-package-variant</v-icon
+                      >
+                    </div>
+                  </template>
                 </transition>
               </div>
 
@@ -223,7 +226,7 @@
                 >
                   {{
                     formatPrice(
-                      calculateDiscountedPrice(product.price, product.discount)
+                      calculateDiscountedPrice(product.price, product.discount),
                     )
                   }}
                   <span
@@ -370,8 +373,8 @@
                           formatPrice(
                             calculateDiscountedPrice(
                               similarProduct.price,
-                              similarProduct.discount
-                            )
+                              similarProduct.discount,
+                            ),
                           )
                         }}</span>
                         <span
@@ -473,7 +476,7 @@ const fetchProductDetail = async (productId: string) => {
     // Sort assets by order untuk menampilkan gambar sesuai urutan
     if (productData.assets && Array.isArray(productData.assets)) {
       productData.assets.sort(
-        (a: any, b: any) => (a.order || 0) - (b.order || 0)
+        (a: any, b: any) => (a.order || 0) - (b.order || 0),
       );
       console.log("🖼️ Sorted assets:", productData.assets.length, "images");
 
@@ -517,7 +520,7 @@ const fetchProductDetail = async (productId: string) => {
       fetchSimilarProducts(
         product.value.id,
         product.value.category_id,
-        product.value.name
+        product.value.name,
       );
     }
   } catch (error: any) {
@@ -539,7 +542,7 @@ const fetchProductDetail = async (productId: string) => {
 const fetchSimilarProducts = async (
   currentProductId: string,
   categoryId: string,
-  productName: string
+  productName: string,
 ) => {
   try {
     similarProductsLoading.value = true;
@@ -561,7 +564,7 @@ const fetchSimilarProducts = async (
     // Jika tidak cukup produk dari kategori yang sama, ambil produk random
     if (products.length < 5) {
       console.log(
-        "🎲 Not enough products in same category, fetching random products"
+        "🎲 Not enough products in same category, fetching random products",
       );
 
       try {
@@ -577,7 +580,7 @@ const fetchSimilarProducts = async (
         // Filter out produk saat ini dan produk yang sudah ada
         const existingIds = new Set(products.map((p: any) => p.id));
         randomProducts = randomProducts.filter(
-          (p: any) => p.id !== currentProductId && !existingIds.has(p.id)
+          (p: any) => p.id !== currentProductId && !existingIds.has(p.id),
         );
 
         // Shuffle array untuk randomness
@@ -602,7 +605,7 @@ const fetchSimilarProducts = async (
     console.log("✅ Similar products loaded:", {
       count: similarProducts.value.length,
       categoryProducts: products.filter(
-        (p: any) => p.category_id === categoryId
+        (p: any) => p.category_id === categoryId,
       ).length,
       randomProducts: products.filter((p: any) => p.category_id !== categoryId)
         .length,
@@ -713,10 +716,10 @@ const scrollToActiveThumbnail = (activeIndex: number) => {
   // Tunggu sedikit untuk memastikan DOM sudah terupdate
   setTimeout(() => {
     const thumbnailContainer = document.querySelector(
-      ".thumbnail-scroll-fixed"
+      ".thumbnail-scroll-fixed",
     ) as HTMLElement;
     const activeThumbnail = document.querySelector(
-      `.thumbnail-card-fixed:nth-child(${activeIndex + 1})`
+      `.thumbnail-card-fixed:nth-child(${activeIndex + 1})`,
     ) as HTMLElement;
 
     if (thumbnailContainer && activeThumbnail) {
@@ -744,7 +747,7 @@ const scrollToActiveThumbnail = (activeIndex: number) => {
 
         console.log(
           "🔄 Auto-scrolling thumbnail gallery to show active thumbnail:",
-          activeIndex + 1
+          activeIndex + 1,
         );
       }
     }
@@ -849,7 +852,7 @@ watch(
       // Fetch data baru
       fetchProductDetail(newId as string);
     }
-  }
+  },
 );
 
 onMounted(() => {
@@ -1000,7 +1003,10 @@ onMounted(() => {
 }
 
 .gallery-card .v-btn {
-  transition: opacity 0.3s ease, transform 0.2s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.2s ease,
+    visibility 0.3s ease;
 }
 
 .gallery-card:hover .v-btn {
@@ -1015,7 +1021,10 @@ onMounted(() => {
 /* Hide buttons with smooth transition */
 .left-arrow,
 .right-arrow {
-  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease,
+    transform 0.2s ease;
 }
 
 /* Navigation dots */
@@ -1191,7 +1200,10 @@ body {
 }
 
 .gallery-card .v-btn {
-  transition: opacity 0.3s ease, transform 0.2s ease, visibility 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.2s ease,
+    visibility 0.3s ease;
 }
 
 .gallery-card:hover .v-btn {
@@ -1206,7 +1218,10 @@ body {
 /* Hide buttons with smooth transition */
 .left-arrow,
 .right-arrow {
-  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease;
+  transition:
+    opacity 0.3s ease,
+    visibility 0.3s ease,
+    transform 0.2s ease;
 }
 
 /* Remove navigation dots styles - no longer needed */
@@ -1273,7 +1288,9 @@ body {
 
 .thumbnail-active-fixed {
   border-color: #1976d2 !important;
-  box-shadow: 0 0 0 1px #1976d2, 0 4px 12px rgba(25, 118, 210, 0.3) !important;
+  box-shadow:
+    0 0 0 1px #1976d2,
+    0 4px 12px rgba(25, 118, 210, 0.3) !important;
   transform: translateY(-1px);
   background-color: rgba(25, 118, 210, 0.05) !important;
 }

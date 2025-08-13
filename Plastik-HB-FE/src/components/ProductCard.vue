@@ -4,23 +4,29 @@
     outlined
     dark
   >
-    <v-img
-      :src="imageUrl"
-      :alt="product.name"
-      height="150"
-      cover
-      class="rounded mb-2"
+    <div
+      class="mb-2 rounded"
+      style="
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      "
     >
-      <template #error>
+      <template v-if="showImage && imageUrl">
         <v-img
-          :src="altImageUrl"
+          :src="imageUrl"
           :alt="product.name"
           height="150"
           cover
-          class="rounded mb-2"
+          class="rounded"
+          @error="onImageError"
         />
       </template>
-    </v-img>
+      <template v-else>
+        <v-icon size="60" color="primary">mdi-package-variant</v-icon>
+      </template>
+    </div>
     <v-card-title class="text-subtitle-1 font-weight-medium mb-1 text-white">
       {{ product.name }}
     </v-card-title>
@@ -59,14 +65,20 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from "vue";
 import { defineProps } from "vue";
 import { formatPrice, calculateDiscountedPrice } from "@/utils/formatters";
 
 const props = defineProps<{
   product: any;
   imageUrl: string;
-  altImageUrl: string;
 }>();
+
+const showImage = ref(!!props.imageUrl);
+
+function onImageError() {
+  showImage.value = false;
+}
 </script>
 
 <style scoped>

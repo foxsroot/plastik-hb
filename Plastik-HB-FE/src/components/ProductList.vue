@@ -6,13 +6,10 @@
       cols="12"
       sm="6"
       md="4"
-      lg="3"
+      lg="2"
+      xl="2"
     >
-      <ProductCard
-        :product="product"
-        :imageUrl="getMainImageUrl(product)"
-        :altImageUrl="altImageUrl"
-      />
+      <ProductCard :product="product" :imageUrl="getMainImageUrl(product)" />
     </v-col>
   </v-row>
 </template>
@@ -24,6 +21,12 @@ import ProductCard from "./ProductCard.vue";
 const props = defineProps<{
   products: any[];
   getMainImageUrl: (product: any) => string;
-  altImageUrl: string;
 }>();
 </script>
+
+<style scoped>
+.product-card {
+  max-width: 300px;
+  margin: auto;
+}
+</style>

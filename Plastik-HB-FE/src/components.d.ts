@@ -8,13 +8,21 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AboutContactMap: typeof import('./components/sections/AboutContactMap.vue')['default']
+    AboutHero: typeof import('./components/sections/AboutHero.vue')['default']
+    AboutHistory: typeof import('./components/sections/AboutHistory.vue')['default']
+    AboutMissionVision: typeof import('./components/sections/AboutMissionVision.vue')['default']
+    AboutValues: typeof import('./components/sections/AboutValues.vue')['default']
+    Achievements: typeof import('./components/Achievements.vue')['default']
     AddProductModal: typeof import('./components/pop-up/AddProductModal.vue')['default']
     AdminSideBar: typeof import('./components/AdminSideBar.vue')['default']
+    BannerCarousel: typeof import('./components/BannerCarousel.vue')['default']
     CustomerFooter: typeof import('./components/CustomerFooter.vue')['default']
     CustomerNavBar: typeof import('./components/CustomerNavBar.vue')['default']
     FilterSideBar: typeof import('./components/FilterSideBar.vue')['default']
     FloatingWhatsAppButton: typeof import('./components/FloatingWhatsAppButton.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    Information: typeof import('./components/sections/Information.vue')['default']
     Loading: typeof import('./components/Loading.vue')['default']
     NavButton: typeof import('./components/NavButton.vue')['default']
     Pagination: typeof import('./components/Pagination.vue')['default']
@@ -23,5 +31,6 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SearchBar: typeof import('./components/SearchBar.vue')['default']
+    Trustedby: typeof import('./components/Trustedby.vue')['default']
   }
 }
