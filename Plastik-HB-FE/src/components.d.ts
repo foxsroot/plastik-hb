@@ -15,6 +15,7 @@ declare module 'vue' {
     FloatingWhatsAppButton: typeof import('./components/FloatingWhatsAppButton.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     Loading: typeof import('./components/Loading.vue')['default']
+    NavButton: typeof import('./components/NavButton.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }
