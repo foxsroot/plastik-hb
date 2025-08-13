@@ -1,91 +1,103 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useAlert } from '@/composables/useAlert'
-import { fetchCategories, createCategory, updateCategory, deleteCategory as deleteCategoryApi } from '@/api/categoriesApi'
+import { ref, onMounted, computed } from "vue";
+import { useAlert } from "@/composables/useAlert";
+import {
+  fetchCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory as deleteCategoryApi,
+} from "@/api/categoriesApi";
 
 interface Category {
-  id: number
-  name: string
-  productCount: number
-  createdAt?: string
+  id: number;
+  name: string;
+  productCount: number;
+  createdAt?: string;
 }
 
 interface NewCategory {
-  name: string
+  name: string;
 }
 
-const { success, error } = useAlert()
+const { success, error } = useAlert();
 
-const categories = ref<Category[]>([])
-const loading = ref(false)
-const searchQuery = ref('')
-const sortBy = ref('name')
+const categories = ref<Category[]>([]);
+const loading = ref(false);
+const searchQuery = ref("");
+const sortBy = ref("name");
 
 // Modal state
-const showAddModal = ref(false)
-const addLoading = ref(false)
-const editingCategory = ref<Category | null>(null)
+const showAddModal = ref(false);
+const addLoading = ref(false);
+const editingCategory = ref<Category | null>(null);
 
 // Alert state
-const alertVisible = ref(false)
-const alertType = ref<'success' | 'error'>('success')
-const alertTitle = ref('')
-const alertMessage = ref('')
+const alertVisible = ref(false);
+const alertType = ref<"success" | "error">("success");
+const alertTitle = ref("");
+const alertMessage = ref("");
 
 // Form data for modal
 const newCategory = ref<NewCategory>({
-  name: ''
-})
+  name: "",
+});
 
 const sortOptions = [
-  { title: 'Nama A-Z', value: 'name' },
-  { title: 'Nama Z-A', value: 'name_desc' },
-  { title: 'Jumlah Produk', value: 'product_count' },
-  { title: 'Terbaru', value: 'newest' }
-]
+  { title: "Nama A-Z", value: "name" },
+  { title: "Nama Z-A", value: "name_desc" },
+  { title: "Jumlah Produk", value: "product_count" },
+  { title: "Terbaru", value: "newest" },
+];
 
 // Alert functions
-const showAlert = (type: 'success' | 'error', title: string, message: string) => {
-  alertType.value = type
-  alertTitle.value = title
-  alertMessage.value = message
-  alertVisible.value = true
-  
+const showAlert = (
+  type: "success" | "error",
+  title: string,
+  message: string,
+) => {
+  alertType.value = type;
+  alertTitle.value = title;
+  alertMessage.value = message;
+  alertVisible.value = true;
+
   // Auto hide after 5 seconds
   setTimeout(() => {
-    alertVisible.value = false
-  }, 5000)
-}
+    alertVisible.value = false;
+  }, 5000);
+};
 
 // Computed untuk filter dan sort kategori
 const filteredCategories = computed(() => {
-  let filtered = categories.value
+  let filtered = categories.value;
 
   // Filter berdasarkan pencarian
   if (searchQuery.value) {
-    filtered = filtered.filter(category => 
-      category.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
+    filtered = filtered.filter((category) =>
+      category.name.toLowerCase().includes(searchQuery.value.toLowerCase()),
+    );
   }
 
   // Sort
   filtered.sort((a, b) => {
     switch (sortBy.value) {
-      case 'name':
-        return a.name.localeCompare(b.name)
-      case 'name_desc':
-        return b.name.localeCompare(a.name)
-      case 'product_count':
-        return b.productCount - a.productCount
-      case 'newest':
-        return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "name_desc":
+        return b.name.localeCompare(a.name);
+      case "product_count":
+        return b.productCount - a.productCount;
+      case "newest":
+        return (
+          new Date(b.createdAt || "").getTime() -
+          new Date(a.createdAt || "").getTime()
+        );
       default:
-        return 0
+        return 0;
     }
-  })
+  });
 
-  return filtered
-})
+  return filtered;
+});
 
 // Fungsi untuk fetch data dari API
 async function fetchAllCategories() {
@@ -100,10 +112,14 @@ async function fetchAllCategories() {
       id: item.id,
       name: item.category, // backend uses 'category' for name
       createdAt: item.created_at,
-      productCount: item.productCount // or fetch actual count if available
+      productCount: item.productCount, // or fetch actual count if available
     }));
   } catch (error: any) {
-    showAlert('error', 'Error', error?.message || 'Gagal memuat kategori dari server');
+    showAlert(
+      "error",
+      "Error",
+      error?.message || "Gagal memuat kategori dari server",
+    );
     categories.value = [];
   } finally {
     loading.value = false;
@@ -112,82 +128,81 @@ async function fetchAllCategories() {
 
 // Fungsi untuk membuka modal tambah kategori
 const openAddModal = () => {
-  editingCategory.value = null
+  editingCategory.value = null;
   newCategory.value = {
-    name: ''
-  }
-  showAddModal.value = true
-}
+    name: "",
+  };
+  showAddModal.value = true;
+};
 
 // Fungsi untuk membuka modal edit kategori
 const openEditModal = (category: Category) => {
-  editingCategory.value = { ...category }
+  editingCategory.value = { ...category };
   newCategory.value = {
-    name: category.name
-  }
-  showAddModal.value = true
-}
+    name: category.name,
+  };
+  showAddModal.value = true;
+};
 
 // Fungsi untuk menyimpan kategori baru
 const handleSaveCategory = async () => {
   if (!newCategory.value.name.trim()) {
-    showAlert('error', 'Validasi Error', 'Nama kategori wajib diisi')
-    return
+    showAlert("error", "Validasi Error", "Nama kategori wajib diisi");
+    return;
   }
 
-  addLoading.value = true
+  addLoading.value = true;
   try {
     if (editingCategory.value) {
-      const updated = await updateCategory(editingCategory.value.id, { name: newCategory.value.name });
-      const index = categories.value.findIndex(c => c.id === editingCategory.value!.id);
-      if (index !== -1) {
-        categories.value[index] = {
-          ...categories.value[index],
-          ...updated
-        };
-      }
-      showAlert('success', 'Berhasil', 'Kategori berhasil diperbarui!')
+      await updateCategory(editingCategory.value.id, newCategory.value.name);
+      showAlert("success", "Berhasil", "Kategori berhasil diperbarui!");
     } else {
-      const saved = await createCategory({ name: newCategory.value.name }) as Category;
-      categories.value.unshift({
-        ...saved,
-        productCount: 0,
-        id: saved.id,
-        name: saved.name,
-        createdAt: saved.createdAt
-      });
-      showAlert('success', 'Berhasil', 'Kategori berhasil ditambahkan!')
+      await createCategory(newCategory.value.name);
+      showAlert("success", "Berhasil", "Kategori berhasil ditambahkan!");
     }
-    showAddModal.value = false
+    showAddModal.value = false;
+    await fetchAllCategories(); // <-- Refresh after save
   } catch (err: any) {
-    console.error('Error saving category:', err)
-    showAlert('error', 'Error', err?.message || 'Gagal menyimpan kategori')
+    console.error("Error saving category:", err);
+    showAlert("error", "Error", err?.message || "Gagal menyimpan kategori");
   } finally {
-    addLoading.value = false
-    editingCategory.value = null
+    addLoading.value = false;
+    editingCategory.value = null;
   }
-}
+};
 
 // Fungsi untuk hapus kategori
 const deleteCategory = async (category: Category) => {
   if (category.productCount > 0) {
-    showAlert('error', 'Error', `Tidak dapat menghapus kategori "${category.name}" karena masih memiliki ${category.productCount} produk`)
-    return
+    showAlert(
+      "error",
+      "Error",
+      `Tidak dapat menghapus kategori "${category.name}" karena masih memiliki ${category.productCount} produk`,
+    );
+    return;
   }
 
   try {
     await deleteCategoryApi(category.id);
-    categories.value = categories.value.filter(c => c.id !== category.id);
-    showAlert('success', 'Berhasil', `Kategori "${category.name}" berhasil dihapus`)
+    categories.value = categories.value.filter((c) => c.id !== category.id);
+    showAlert(
+      "success",
+      "Berhasil",
+      `Kategori "${category.name}" berhasil dihapus`,
+    );
   } catch (err: any) {
-    console.error('Error deleting category:', err)
-    showAlert('error', 'Error', err?.message || `Gagal menghapus kategori "${category.name}"`)
+    console.error("Error deleting category:", err);
+    showAlert(
+      "error",
+      "Error",
+      err?.message || `Gagal menghapus kategori "${category.name}"`,
+    );
   }
-}
+};
 
 onMounted(() => {
   fetchAllCategories();
-})
+});
 </script>
 
 <route>
@@ -209,15 +224,21 @@ onMounted(() => {
       :text="alertMessage"
       closable
       class="mb-4"
-      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"
+      style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 400px;
+      "
     />
 
     <!-- Header -->
     <v-row class="mb-6">
       <v-col cols="12" class="d-flex justify-space-between align-center">
         <h1 class="text-h4 font-weight-bold">Kategori Produk</h1>
-        <v-btn 
-          color="primary" 
+        <v-btn
+          color="primary"
           variant="elevated"
           prepend-icon="mdi-plus"
           @click="openAddModal"
@@ -243,7 +264,7 @@ onMounted(() => {
                 hide-details
               />
             </v-col>
-            
+
             <!-- Sort -->
             <v-col cols="6" md="3">
               <v-select
@@ -269,12 +290,19 @@ onMounted(() => {
               <v-progress-circular indeterminate color="primary" />
               <p class="mt-4">Memuat kategori...</p>
             </div>
-            
-            <div v-else-if="filteredCategories.length === 0" class="text-center pa-8">
-              <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-tag-multiple</v-icon>
-              <p class="text-h6 text-grey-darken-1">Tidak ada kategori ditemukan</p>
+
+            <div
+              v-else-if="filteredCategories.length === 0"
+              class="text-center pa-8"
+            >
+              <v-icon size="64" color="grey-lighten-1" class="mb-4"
+                >mdi-tag-multiple</v-icon
+              >
+              <p class="text-h6 text-grey-darken-1">
+                Tidak ada kategori ditemukan
+              </p>
             </div>
-            
+
             <div v-else>
               <v-divider />
               <div
@@ -291,13 +319,21 @@ onMounted(() => {
                   </v-col>
                   <!-- Category Info -->
                   <v-col cols="4" md="5" class="pl-4">
-                    <h3 class="text-h6 font-weight-medium mb-1">{{ category.name }}</h3>
-                    <p class="text-caption text-grey-darken-2">{{ category.productCount }} produk</p>
+                    <h3 class="text-h6 font-weight-medium mb-1">
+                      {{ category.name }}
+                    </h3>
+                    <p class="text-caption text-grey-darken-2">
+                      {{ category.productCount }} produk
+                    </p>
                   </v-col>
                   <!-- Spacer to push actions to the right -->
                   <v-col class="flex-grow-1" />
                   <!-- Action Buttons -->
-                  <v-col cols="auto" class="d-flex justify-end align-center" style="min-width: 180px;">
+                  <v-col
+                    cols="auto"
+                    class="d-flex justify-end align-center"
+                    style="min-width: 180px"
+                  >
                     <v-btn
                       prepend-icon="mdi-pencil"
                       variant="outlined"
@@ -313,7 +349,9 @@ onMounted(() => {
                       size="small"
                       color="error"
                       :disabled="category.productCount > 0"
-                      @click="category.productCount === 0 && deleteCategory(category)"
+                      @click="
+                        category.productCount === 0 && deleteCategory(category)
+                      "
                       class="ml-2"
                     >
                       Hapus
@@ -329,16 +367,12 @@ onMounted(() => {
     </v-row>
 
     <!-- Add/Edit Category Modal -->
-    <v-dialog 
-      v-model="showAddModal" 
-      max-width="600px"
-      :persistent="false"
-    >
+    <v-dialog v-model="showAddModal" max-width="600px" :persistent="false">
       <v-card>
         <v-card-title class="text-h5 pa-6">
-          {{ editingCategory ? 'Edit Kategori' : 'Tambah Kategori Baru' }}
+          {{ editingCategory ? "Edit Kategori" : "Tambah Kategori Baru" }}
         </v-card-title>
-        
+
         <v-card-text class="pa-6">
           <v-form>
             <v-row>
@@ -354,7 +388,7 @@ onMounted(() => {
             </v-row>
           </v-form>
         </v-card-text>
-        
+
         <!-- Action Buttons -->
         <v-card-actions class="px-6 pb-6">
           <v-spacer />
@@ -373,7 +407,7 @@ onMounted(() => {
             :loading="addLoading"
             :disabled="!newCategory.name.trim()"
           >
-            {{ editingCategory ? 'Update' : 'Save' }}
+            {{ editingCategory ? "Update" : "Save" }}
           </v-btn>
         </v-card-actions>
       </v-card>

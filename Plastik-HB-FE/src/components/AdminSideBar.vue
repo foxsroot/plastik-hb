@@ -2,7 +2,12 @@
   <v-container class="d-flex flex-column pa-0 fill-height">
     <!-- Logo -->
     <div class="pa-4 d-flex justify-center">
-      <h1 class="text-h4 mb-4">Plastik HB</h1>
+      <img
+        src="/logo.png"
+        alt="Logo"
+        class="logo"
+        style="width: 100px; height: auto"
+      />
     </div>
 
     <!-- Navigation Items -->

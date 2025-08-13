@@ -26,7 +26,7 @@ export const getAllCategories = async (req: Request, res: Response) => {
  * @route POST /categories
  */
 export const createCategory = async (req: Request, res: Response) => {
-    const { category } = req.body;
+    const category = req.body.name;
 
     if (!category || typeof category !== 'string') {
         throw { message: 'Category name is required and must be a string', status: 400 };
@@ -57,7 +57,9 @@ export const createCategory = async (req: Request, res: Response) => {
  */
 export const updateCategory = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { category } = req.body;
+    const category = req.body.name;
+
+    console.log('Updating category:', id, category);
 
     if (!category) {
         throw { message: 'Category name is required', status: 400 };

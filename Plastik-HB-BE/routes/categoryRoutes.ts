@@ -1,20 +1,21 @@
 import { Router } from 'express';
-import { 
-    getAllCategories, 
-    createCategory, 
-    updateCategory, 
+import {
+    getAllCategories,
+    createCategory,
+    updateCategory,
     deleteCategory,
     getProductsByCategory
 } from '../controllers/categoryController';
 import { controllerWrapper } from '../utils/controllerWrapper';
+import authenticate from '../middlewares/authenticate';
 
 const categoryRouter = Router();
 
 // Category CRUD
 categoryRouter.get('/', controllerWrapper(getAllCategories));
-categoryRouter.post('/', controllerWrapper(createCategory));
-categoryRouter.put('/:id', controllerWrapper(updateCategory));
-categoryRouter.delete('/:id', controllerWrapper(deleteCategory));
+categoryRouter.post('/', authenticate, controllerWrapper(createCategory));
+categoryRouter.put('/:id', authenticate, controllerWrapper(updateCategory));
+categoryRouter.delete('/:id', authenticate, controllerWrapper(deleteCategory));
 
 // Category relations
 categoryRouter.get('/:id/products', controllerWrapper(getProductsByCategory));
