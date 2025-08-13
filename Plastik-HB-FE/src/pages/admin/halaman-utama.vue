@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
-import index from '../index.vue'
-import { getPage, updateHomepage } from '../../api/pageApi'
-import { fetchFeaturedProducts, fetchProducts } from '../../api/productApi'
-import { updateFeaturedProducts } from '../../api/updateFeaturedProducts'
-import { uploadImage } from '../../api/uploadApi'
+import { ref, onMounted, computed, watch } from "vue";
+import index from "../index.vue";
+import { getPage, updateHomepage } from "../../api/pageApi";
+import { fetchFeaturedProducts, fetchProducts } from "../../api/productApi";
+import { updateFeaturedProducts } from "../../api/updateFeaturedProducts";
+import { uploadImage } from "../../api/uploadApi";
 
 // Image Backend URL
-const imageBackendUrl ='http://localhost:5000';
+const imageBackendUrl = "http://localhost:5000";
 
 // Banner Interface
 interface Banner {
@@ -33,7 +33,7 @@ interface Asset {
   id: string;
   url: string;
   alt: string;
-  type: 'IMAGE' | 'VIDEO';
+  type: "IMAGE" | "VIDEO";
   created_at: string;
   updated_at: string;
   product_id: string;
@@ -81,15 +81,15 @@ interface PageData {
 }
 
 // Alert state
-const alertVisible = ref(false)
-const alertType = ref<'success' | 'error'>('success')
-const alertTitle = ref('')
-const alertMessage = ref('')
+const alertVisible = ref(false);
+const alertType = ref<"success" | "error">("success");
+const alertTitle = ref("");
+const alertMessage = ref("");
 
 // Form state
-const loading = ref(false)
-const saveLoading = ref(false)
-const catalogLoading = ref(false)
+const loading = ref(false);
+const saveLoading = ref(false);
+const catalogLoading = ref(false);
 
 // All products from catalog
 const catalogProducts = ref<Product[]>([]);
@@ -98,46 +98,49 @@ const errorMessage = ref("");
 
 async function fetchAllProducts() {
   try {
-    if (Array.isArray((await fetchProducts()))) {
+    if (Array.isArray(await fetchProducts())) {
       catalogProducts.value = (await fetchProducts()) as Product[];
     } else {
       const response = await fetchProducts();
-      catalogProducts.value = (response as any).data || (response as any).products || [];
+      catalogProducts.value =
+        (response as any).data || (response as any).products || [];
     }
   } catch (error: any) {
-    showAlert('error', 'Gagal', error);
+    showAlert("error", "Gagal", error);
   }
 }
 
-
 // Product selection dialog
-const productSelectionDialog = ref(false)
-const selectedProductIdsDialog = ref<string[]>([])
+const productSelectionDialog = ref(false);
+const selectedProductIdsDialog = ref<string[]>([]);
 // Single product selection (for addSelectedProduct, legacy support)
-const selectedProductId = ref<string | null>(null)
+const selectedProductId = ref<string | null>(null);
 
 // File input refs
-const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([])
-const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([])
+const bannerFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
+const achievementFileInputRefs = ref<(HTMLInputElement | null)[]>([]);
 
 // Computed properties
 const selectedProductIds = computed(() =>
-  featuredProducts.value.map(p => p.id)
+  featuredProducts.value.map((p) => p.id),
 );
 
 const availableProducts = computed(() =>
-  catalogProducts.value.filter(product =>
-    !selectedProductIds.value.includes(product.id)
-  )
+  catalogProducts.value.filter(
+    (product) => !selectedProductIds.value.includes(product.id),
+  ),
 );
 
 // Product search for selection dialog
-const productSearch = ref('');
+const productSearch = ref("");
 const filteredAvailableProducts = computed(() => {
   if (!productSearch.value) return availableProducts.value;
-  return availableProducts.value.filter(product =>
-    product.name.toLowerCase().includes(productSearch.value.toLowerCase()) ||
-    product.description?.toLowerCase().includes(productSearch.value.toLowerCase())
+  return availableProducts.value.filter(
+    (product) =>
+      product.name.toLowerCase().includes(productSearch.value.toLowerCase()) ||
+      product.description
+        ?.toLowerCase()
+        .includes(productSearch.value.toLowerCase()),
   );
 });
 
@@ -147,23 +150,29 @@ const featuredProducts = ref<Product[]>([]);
 async function fetchFeatured() {
   try {
     const response = await fetchFeaturedProducts();
-    featuredProducts.value = Array.isArray(response) ? response : (response as any).data || [];
+    featuredProducts.value = Array.isArray(response)
+      ? response
+      : (response as any).data || [];
   } catch (error: any) {
     errorMessage.value = error;
   }
 }
 
 // Alert functions
-const showAlert = (type: 'success' | 'error', title: string, message: string) => {
-  alertType.value = type
-  alertTitle.value = title
-  alertMessage.value = message
-  alertVisible.value = true
+const showAlert = (
+  type: "success" | "error",
+  title: string,
+  message: string,
+) => {
+  alertType.value = type;
+  alertTitle.value = title;
+  alertMessage.value = message;
+  alertVisible.value = true;
 
   setTimeout(() => {
-    alertVisible.value = false
-  }, 5000)
-}
+    alertVisible.value = false;
+  }, 5000);
+};
 
 // --- Banner State as Ref ---
 const banners = ref<Banner[]>([]);
@@ -173,40 +182,49 @@ watch(
   () => pageData.value,
   (val) => {
     // Accept both BANNER and BANNERS for section type
-    const arr = val?.sections.find(s => s.type === "BANNERS" || s.type === "BANNER")?.data.banners;
+    const arr = val?.sections.find(
+      (s) => s.type === "BANNERS" || s.type === "BANNER",
+    )?.data.banners;
     banners.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
     // Always show at least one banner form
     if (banners.value.length === 0) {
       banners.value.push({
         order: 1,
-        image: '',
-        title: '',
-        subtitle: '',
-        buttonText: '',
-        buttonLink: ''
+        image: "",
+        title: "",
+        subtitle: "",
+        buttonText: "",
+        buttonLink: "",
       });
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Automatically sync banners to pageData.sections[0] when they change
-watch(banners, (newBanners) => {
-  if (
-    pageData.value &&
-    pageData.value.sections &&
-    pageData.value.sections[0] &&
-    pageData.value.sections[0].data
-  ) {
-    pageData.value.sections[0].data.banners = JSON.parse(JSON.stringify(newBanners));
-  }
-}, { deep: true });
+watch(
+  banners,
+  (newBanners) => {
+    if (
+      pageData.value &&
+      pageData.value.sections &&
+      pageData.value.sections[0] &&
+      pageData.value.sections[0].data
+    ) {
+      pageData.value.sections[0].data.banners = JSON.parse(
+        JSON.stringify(newBanners),
+      );
+    }
+  },
+  { deep: true },
+);
 
 // Update pageData banners before save
 const syncBannersToPageData = () => {
   if (pageData.value) {
-    const section = pageData.value.sections.find(s => s.type === "BANNERS");
-    if (section) section.data.banners = JSON.parse(JSON.stringify(banners.value));
+    const section = pageData.value.sections.find((s) => s.type === "BANNERS");
+    if (section)
+      section.data.banners = JSON.parse(JSON.stringify(banners.value));
   }
 };
 
@@ -214,36 +232,36 @@ const syncBannersToPageData = () => {
 const addBanner = () => {
   banners.value.push({
     order: banners.value.length + 1,
-    image: '',
-    title: '',
-    subtitle: '',
-    buttonText: '',
-    buttonLink: ''
-  })
-}
+    image: "",
+    title: "",
+    subtitle: "",
+    buttonText: "",
+    buttonLink: "",
+  });
+};
 
 const removeBanner = (index: number) => {
   if (banners.value.length > 1) {
-    banners.value.splice(index, 1)
+    banners.value.splice(index, 1);
   }
-}
+};
 
 const handleBannerImageUpload = (event: Event, index: number) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
 
   if (file) {
-    const reader = new FileReader()
+    const reader = new FileReader();
     reader.onload = (e) => {
-      banners.value[index].image = e.target?.result as string
-    }
-    reader.readAsDataURL(file)
+      banners.value[index].image = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   }
-}
+};
 
 const openBannerFileInput = (index: number) => {
-  bannerFileInputRefs.value[index]?.click()
-}
+  bannerFileInputRefs.value[index]?.click();
+};
 
 // --- Achievements State as Ref ---
 const achievements = ref<Achievement[]>([]);
@@ -252,29 +270,41 @@ const achievements = ref<Achievement[]>([]);
 watch(
   () => pageData.value,
   (val) => {
-    const arr = val?.sections.find(s => s.type === "ACHIEVEMENTS")?.data.achievements;
+    const arr = val?.sections.find((s) => s.type === "ACHIEVEMENTS")?.data
+      .achievements;
     achievements.value = arr ? JSON.parse(JSON.stringify(arr)) : [];
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Automatically sync banners and achievements to pageData.sections when they change
-watch(achievements, (newAchievements) => {
-  if (
-    pageData.value &&
-    pageData.value.sections &&
-    pageData.value.sections[1] &&
-    pageData.value.sections[1].data
-  ) {
-    pageData.value.sections[1].data.achievements = JSON.parse(JSON.stringify(newAchievements));
-  }
-}, { deep: true });
+watch(
+  achievements,
+  (newAchievements) => {
+    if (
+      pageData.value &&
+      pageData.value.sections &&
+      pageData.value.sections[1] &&
+      pageData.value.sections[1].data
+    ) {
+      pageData.value.sections[1].data.achievements = JSON.parse(
+        JSON.stringify(newAchievements),
+      );
+    }
+  },
+  { deep: true },
+);
 
 // Update pageData achievements before save
 const syncAchievementsToPageData = () => {
   if (pageData.value) {
-    const section = pageData.value.sections.find(s => s.type === "ACHIEVEMENTS");
-    if (section) section.data.achievements = JSON.parse(JSON.stringify(achievements.value));
+    const section = pageData.value.sections.find(
+      (s) => s.type === "ACHIEVEMENTS",
+    );
+    if (section)
+      section.data.achievements = JSON.parse(
+        JSON.stringify(achievements.value),
+      );
   }
 };
 
@@ -282,10 +312,10 @@ const syncAchievementsToPageData = () => {
 const addAchievement = () => {
   achievements.value.push({
     order: achievements.value.length + 1,
-    title: '',
+    title: "",
     percentage: 0,
-    description: '',
-    image: ''
+    description: "",
+    image: "",
   });
 };
 const removeAchievement = (index: number) => {
@@ -308,102 +338,114 @@ const openAchievementFileInput = (index: number) => {
 
 // Fetch catalog products
 const fetchCatalogProducts = async () => {
-  catalogLoading.value = true
+  catalogLoading.value = true;
   try {
-    if (Array.isArray((await fetchProducts()))) {
+    if (Array.isArray(await fetchProducts())) {
       catalogProducts.value = (await fetchProducts()) as Product[];
     } else {
       const response = await fetchProducts();
-      catalogProducts.value = (response as any).data || (response as any).products || [];
+      catalogProducts.value =
+        (response as any).data || (response as any).products || [];
     }
   } catch (error) {
-    console.error('Error fetching catalog products:', error)
+    console.error("Error fetching catalog products:", error);
     // Optionally show an alert or handle error
   } finally {
-    catalogLoading.value = false
+    catalogLoading.value = false;
   }
-}
+};
 
 // Fetch homepage data
 const fetchPageData = async () => {
-  loading.value = true
+  loading.value = true;
   try {
     const response = await getPage("homepage");
     // Handle both direct data and wrapped response
     pageData.value = response as PageData;
-    
+
     if (!pageData.value) {
-      throw new Error('No page data received from server');
+      throw new Error("No page data received from server");
     }
-    
-    console.log('Page data loaded successfully:', pageData.value);
+
+    console.log("Page data loaded successfully:", pageData.value);
   } catch (error: any) {
     console.error("Failed to fetch page data:", error);
-    errorMessage.value = error.response?.data?.message || error.message || "Failed to load page data.";
-    showAlert('error', 'Gagal', 'Gagal memuat data halaman utama');
+    errorMessage.value =
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to load page data.";
+    showAlert("error", "Gagal", "Gagal memuat data halaman utama");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 // Save homepage data
 const saveHomepageData = async () => {
-  saveLoading.value = true
+  saveLoading.value = true;
   try {
     // Validate pageData exists
     if (!pageData.value) {
-      throw new Error('No page data to save');
+      throw new Error("No page data to save");
     }
-    
+
     // Validate required fields
     if (!pageData.value.title || !pageData.value.sections) {
-      throw new Error('Missing required fields: title and sections');
+      throw new Error("Missing required fields: title and sections");
     }
 
     // Sync banners and achievements to pageData before saving
     syncBannersToPageData();
     syncAchievementsToPageData();
-    
-    console.log('Saving homepage data:', pageData.value);
-    
+
+    console.log("Saving homepage data:", pageData.value);
+
+    // Save featured products
+    await updateFeaturedProducts(featuredProducts.value.map((p) => p.id));
+
     // Save homepage content
     const response = await updateHomepage({
       title: pageData.value.title,
       description: pageData.value.description,
       published: pageData.value.published,
-      sections: pageData.value.sections
+      sections: pageData.value.sections,
     });
-    
-    // Save featured products
-    await updateFeaturedProducts(featuredProducts.value.map(p => p.id));
-    
-    showAlert('success', 'Berhasil', 'Data halaman utama & produk andalan berhasil disimpan!')
-    
+
+    showAlert(
+      "success",
+      "Berhasil",
+      "Data halaman utama & produk andalan berhasil disimpan!",
+    );
+
     // Auto reload after successful save
     setTimeout(() => {
       window.location.reload();
     }, 1000);
   } catch (error: any) {
-    console.error('Error saving homepage data:', error)
-    showAlert('error', 'Gagal', error?.message || 'Gagal menyimpan data halaman utama')
+    console.error("Error saving homepage data:", error);
+    showAlert(
+      "error",
+      "Gagal",
+      error?.message || "Gagal menyimpan data halaman utama",
+    );
   } finally {
-    saveLoading.value = false
+    saveLoading.value = false;
   }
-}
+};
 
 // Preview state
-const previewKey = ref(0)
-const previewTimestamp = ref(Date.now())
+const previewKey = ref(0);
+const previewTimestamp = ref(Date.now());
 
 // Preview functions
 const refreshPreview = () => {
-  previewKey.value += 1
-  previewTimestamp.value = Date.now()
-}
+  previewKey.value += 1;
+  previewTimestamp.value = Date.now();
+};
 
 const openHomepage = () => {
-  window.open('/', '_blank')
-}
+  window.open("/", "_blank");
+};
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("id-ID", {
@@ -413,19 +455,20 @@ const formatPrice = (price: number) => {
   }).format(price);
 };
 
-
 // Featured Products Section (NEW)
 const removeFeaturedProduct = (index: number) => {
   if (featuredProducts.value.length > 0) {
-    featuredProducts.value.splice(index, 1)
+    featuredProducts.value.splice(index, 1);
   }
-}
+};
 
 // Add product to featuredProducts
 const addSelectedProduct = () => {
   if (selectedProductId.value) {
-    const product = catalogProducts.value.find(p => p.id === selectedProductId.value);
-    if (product && !featuredProducts.value.some(fp => fp.id === product.id)) {
+    const product = catalogProducts.value.find(
+      (p) => p.id === selectedProductId.value,
+    );
+    if (product && !featuredProducts.value.some((fp) => fp.id === product.id)) {
       featuredProducts.value.push(product);
       selectedProductId.value = null;
       productSelectionDialog.value = false;
@@ -436,7 +479,9 @@ const addSelectedProduct = () => {
 // Update addSelectedProduct for bulk add
 const addSelectedProducts = () => {
   const newProducts = catalogProducts.value.filter(
-    p => selectedProductIdsDialog.value.includes(p.id) && !featuredProducts.value.some(fp => fp.id === p.id)
+    (p) =>
+      selectedProductIdsDialog.value.includes(p.id) &&
+      !featuredProducts.value.some((fp) => fp.id === p.id),
   );
   featuredProducts.value.push(...newProducts);
   selectedProductIdsDialog.value = [];
@@ -475,7 +520,7 @@ const onBannerDrop = (event: DragEvent, index: number) => {
 
 // Clear banner image
 const clearBannerImage = (index: number) => {
-  banners.value[index].image = '';
+  banners.value[index].image = "";
 };
 
 // --- Banner Editor Modal State ---
@@ -522,9 +567,9 @@ const handleBannerEditorImageUpload = async (event: Event) => {
   if (file && editingBanner.value) {
     try {
       const imageUrl = await uploadImage(file);
-      editingBanner.value.image = imageBackendUrl +imageUrl;
+      editingBanner.value.image = imageBackendUrl + imageUrl;
     } catch (err) {
-      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar banner');
+      showAlert("error", "Upload Gagal", "Gagal mengupload gambar banner");
     }
   }
 };
@@ -532,7 +577,7 @@ const openBannerEditorFileInput = () => {
   bannerEditorFileInputRef.value?.click();
 };
 const clearBannerEditorImage = () => {
-  if (editingBanner.value) editingBanner.value.image = '';
+  if (editingBanner.value) editingBanner.value.image = "";
 };
 const deleteBannerFromMenu = (index: number) => {
   if (banners.value.length > 1) banners.value.splice(index, 1);
@@ -569,7 +614,10 @@ const onAchievementDragOver = (index: number) => {
   dragOverAchievementIndex.value = index;
 };
 const onAchievementDrop = (index: number) => {
-  if (dragAchievementIndex.value !== null && dragAchievementIndex.value !== index) {
+  if (
+    dragAchievementIndex.value !== null &&
+    dragAchievementIndex.value !== index
+  ) {
     const moved = achievements.value.splice(dragAchievementIndex.value, 1)[0];
     achievements.value.splice(index, 0, moved);
   }
@@ -610,7 +658,9 @@ const closeAchievementEditor = () => {
 };
 const saveAchievementEdit = () => {
   if (editingAchievementIndex.value !== null && editingAchievement.value) {
-    achievements.value[editingAchievementIndex.value] = { ...editingAchievement.value };
+    achievements.value[editingAchievementIndex.value] = {
+      ...editingAchievement.value,
+    };
     closeAchievementEditor();
   }
 };
@@ -623,7 +673,7 @@ const handleAchievementEditorImageUpload = async (event: Event) => {
       const imageUrl = await uploadImage(file);
       editingAchievement.value.image = imageBackendUrl + imageUrl;
     } catch (err) {
-      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar achievement');
+      showAlert("error", "Upload Gagal", "Gagal mengupload gambar achievement");
     }
   }
 };
@@ -631,7 +681,7 @@ const openAchievementEditorFileInput = () => {
   achievementEditorFileInputRef.value?.click();
 };
 const clearAchievementEditorImage = () => {
-  if (editingAchievement.value) editingAchievement.value.image = '';
+  if (editingAchievement.value) editingAchievement.value.image = "";
 };
 const deleteAchievementFromMenu = (index: number) => {
   if (achievements.value.length > 1) achievements.value.splice(index, 1);
@@ -658,7 +708,7 @@ const handleBannerEditorImageDrop = async (event: DragEvent) => {
       const imageUrl = await uploadImage(file);
       editingBanner.value.image = imageBackendUrl + imageUrl;
     } catch (err) {
-      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar banner');
+      showAlert("error", "Upload Gagal", "Gagal mengupload gambar banner");
     }
   }
 };
@@ -673,7 +723,7 @@ const handleAchievementEditorImageDrop = async (event: DragEvent) => {
       const imageUrl = await uploadImage(file);
       editingAchievement.value.image = imageBackendUrl + imageUrl;
     } catch (err) {
-      showAlert('error', 'Upload Gagal', 'Gagal mengupload gambar achievement');
+      showAlert("error", "Upload Gagal", "Gagal mengupload gambar achievement");
     }
   }
 };
@@ -683,7 +733,7 @@ onMounted(async () => {
   await fetchAllProducts();
   await fetchFeatured();
   await fetchCatalogProducts();
-})
+});
 </script>
 
 <route>
@@ -698,8 +748,21 @@ onMounted(async () => {
 <template>
   <v-container class="pa-6">
     <!-- Alert -->
-    <v-alert v-model="alertVisible" :type="alertType" :title="alertTitle" :text="alertMessage" closable class="mb-4"
-      style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;" />
+    <v-alert
+      v-model="alertVisible"
+      :type="alertType"
+      :title="alertTitle"
+      :text="alertMessage"
+      closable
+      class="mb-4"
+      style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 400px;
+      "
+    />
 
     <!-- Product Selection Dialog -->
     <v-dialog v-model="productSelectionDialog" max-width="800px" scrollable>
@@ -711,8 +774,14 @@ onMounted(async () => {
 
         <v-card-text class="pa-0">
           <v-container class="pa-4">
-            <v-text-field v-model="productSearch" label="Cari Produk" prepend-inner-icon="mdi-magnify"
-              variant="outlined" density="compact" class="mb-4" />
+            <v-text-field
+              v-model="productSearch"
+              label="Cari Produk"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              density="compact"
+              class="mb-4"
+            />
             <v-row v-if="catalogLoading" class="justify-center">
               <v-col cols="12" class="text-center">
                 <v-progress-circular indeterminate color="primary" />
@@ -720,21 +789,46 @@ onMounted(async () => {
               </v-col>
             </v-row>
 
-            <v-row v-else-if="filteredAvailableProducts.length === 0" class="justify-center">
+            <v-row
+              v-else-if="filteredAvailableProducts.length === 0"
+              class="justify-center"
+            >
               <v-col cols="12" class="text-center">
-                <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
-                <p class="text-grey-darken-1 mt-2">Tidak ada produk yang tersedia untuk dipilih</p>
+                <v-icon size="64" color="grey-lighten-1"
+                  >mdi-package-variant-closed</v-icon
+                >
+                <p class="text-grey-darken-1 mt-2">
+                  Tidak ada produk yang tersedia untuk dipilih
+                </p>
               </v-col>
             </v-row>
 
             <v-row v-else>
-              <v-col v-for="product in filteredAvailableProducts" :key="product.id" cols="12" md="6">
-                <v-card variant="outlined" :class="['product-select-card', { 'v-card--selected': selectedProductIdsDialog.includes(product.id) }]"
-                  @click="toggleProductSelection(product.id)" class="cursor-pointer product-select-card">
+              <v-col
+                v-for="product in filteredAvailableProducts"
+                :key="product.id"
+                cols="12"
+                md="6"
+              >
+                <v-card
+                  variant="outlined"
+                  :class="[
+                    'product-select-card',
+                    {
+                      'v-card--selected': selectedProductIdsDialog.includes(
+                        product.id,
+                      ),
+                    },
+                  ]"
+                  @click="toggleProductSelection(product.id)"
+                  class="cursor-pointer product-select-card"
+                >
                   <v-row no-gutters>
                     <v-col cols="1" class="d-flex align-center justify-center">
                       <v-checkbox
-                        :model-value="selectedProductIdsDialog.includes(product.id)"
+                        :model-value="
+                          selectedProductIdsDialog.includes(product.id)
+                        "
                         @update:model-value="toggleProductSelection(product.id)"
                         hide-details
                         density="compact"
@@ -743,10 +837,18 @@ onMounted(async () => {
                       />
                     </v-col>
                     <v-col cols="3">
-                      <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" height="100" cover>
+                      <v-img
+                        :src="product.assets[0]?.url || '/placeholder.jpg'"
+                        height="100"
+                        cover
+                      >
                         <template v-slot:placeholder>
-                          <div class="d-flex align-center justify-center fill-height">
-                            <v-icon size="40" color="grey-lighten-1">mdi-package-variant</v-icon>
+                          <div
+                            class="d-flex align-center justify-center fill-height"
+                          >
+                            <v-icon size="40" color="grey-lighten-1"
+                              >mdi-package-variant</v-icon
+                            >
                           </div>
                         </template>
                       </v-img>
@@ -754,26 +856,44 @@ onMounted(async () => {
                     <v-col cols="8">
                       <v-card-text class="pa-3">
                         <h4 class="text-subtitle-2 mb-1">{{ product.name }}</h4>
-                        <p class="text-caption text-grey-darken-1 mb-2">{{ product.description }}</p>
+                        <p class="text-caption text-grey-darken-1 mb-2">
+                          {{ product.description }}
+                        </p>
                         <div class="d-flex align-center justify-space-between">
-                          <span v-if="product.discount && product.discount > 0"
+                          <span
+                            v-if="product.discount && product.discount > 0"
                             class="text-subtitle-2 font-weight-bold text-grey-darken-1 mr-2"
-                            style="text-decoration: line-through;">
+                            style="text-decoration: line-through"
+                          >
                             {{ formatPrice(product.price) }}
                           </span>
-                          <span v-if="product.discount && product.discount > 0"
-                            class="text-subtitle-2 font-weight-bold text-primary">
-                            {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
+                          <span
+                            v-if="product.discount && product.discount > 0"
+                            class="text-subtitle-2 font-weight-bold text-primary"
+                          >
+                            {{
+                              formatPrice(
+                                product.price -
+                                  (product.price * product.discount) / 100,
+                              )
+                            }}
                           </span>
-                          <span v-else class="text-subtitle-2 font-weight-bold text-primary">
+                          <span
+                            v-else
+                            class="text-subtitle-2 font-weight-bold text-primary"
+                          >
                             {{ formatPrice(product.price) }}
                           </span>
                         </div>
                       </v-card-text>
                     </v-col>
                   </v-row>
-                  <v-overlay v-if="selectedProductIdsDialog.includes(product.id)" contained
-                    class="d-flex align-center justify-center" opacity="0.1">
+                  <v-overlay
+                    v-if="selectedProductIdsDialog.includes(product.id)"
+                    contained
+                    class="d-flex align-center justify-center"
+                    opacity="0.1"
+                  >
                     <v-icon size="48" color="primary">mdi-check-circle</v-icon>
                   </v-overlay>
                 </v-card>
@@ -784,7 +904,12 @@ onMounted(async () => {
 
         <v-card-actions class="pa-4">
           <v-spacer />
-          <v-btn :disabled="selectedProductIdsDialog.length === 0" color="primary" variant="elevated" @click="addSelectedProducts">
+          <v-btn
+            :disabled="selectedProductIdsDialog.length === 0"
+            color="primary"
+            variant="elevated"
+            @click="addSelectedProducts"
+          >
             Tambahkan
           </v-btn>
           <v-btn @click="productSelectionDialog = false" variant="outlined">
@@ -798,7 +923,9 @@ onMounted(async () => {
     <v-row class="mb-6">
       <v-col cols="12">
         <h1 class="text-h4 font-weight-bold">Halaman Utama</h1>
-        <p class="text-body-2 text-grey-darken-1">Kelola konten halaman utama website dan lihat preview</p>
+        <p class="text-body-2 text-grey-darken-1">
+          Kelola konten halaman utama website dan lihat preview
+        </p>
       </v-col>
     </v-row>
 
@@ -824,10 +951,21 @@ onMounted(async () => {
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Banner Carousel</h3>
-                  <v-btn @click="addBanner" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
+                  <v-btn
+                    @click="addBanner"
+                    icon="mdi-plus"
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    class="icon-btn-square"
+                  />
                 </div>
                 <div class="banner-list">
-                  <div v-for="(banner, index) in banners" :key="'editor-form-' + index" class="mb-3">
+                  <div
+                    v-for="(banner, index) in banners"
+                    :key="'editor-form-' + index"
+                    class="mb-3"
+                  >
                     <v-card
                       class="d-flex align-center pa-2 mb-2 banner-card"
                       variant="outlined"
@@ -836,27 +974,68 @@ onMounted(async () => {
                       @dragover.prevent="onBannerEditorDragOver(index)"
                       @drop.prevent="onBannerEditorDrop(index)"
                       @dragend="onBannerEditorDragEnd"
-                      :class="{ 'banner-card--dragover': dragOverBannerEditorIndex === index }"
-                      style="transition: background 0.2s, border 0.2s;"
+                      :class="{
+                        'banner-card--dragover':
+                          dragOverBannerEditorIndex === index,
+                      }"
+                      style="
+                        transition:
+                          background 0.2s,
+                          border 0.2s;
+                      "
                     >
-                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-btn
+                        icon="mdi-drag"
+                        variant="text"
+                        size="small"
+                        class="mr-2 drag-btn"
+                        style="
+                          cursor: grab;
+                          color: var(--v-theme-on-surface, #888);
+                        "
+                      />
                       <v-avatar size="40" class="mr-3">
-                        <v-img :src="banner.image || '/placeholder.jpg'" cover />
+                        <v-img
+                          :src="banner.image || '/placeholder.jpg'"
+                          cover
+                        />
                       </v-avatar>
                       <div class="flex-grow-1">
-                        <div class="font-weight-bold text-white text-truncate">{{ banner.title || 'Judul Banner ' + (index + 1) }}</div>
-                        <div class="text-caption text-grey-lighten-1 text-truncate">{{ banner.subtitle }}</div>
+                        <div class="font-weight-bold text-white text-truncate">
+                          {{ banner.title || "Judul Banner " + (index + 1) }}
+                        </div>
+                        <div
+                          class="text-caption text-grey-lighten-1 text-truncate"
+                        >
+                          {{ banner.subtitle }}
+                        </div>
                       </div>
-                      <v-menu :model-value="bannerMenuOpenIndex === index" @update:model-value="val => bannerMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                      <v-menu
+                        :model-value="bannerMenuOpenIndex === index"
+                        @update:model-value="
+                          (val) => (bannerMenuOpenIndex = val ? index : null)
+                        "
+                        :close-on-content-click="false"
+                        location="bottom right"
+                      >
                         <template #activator="{ props }">
-                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openBannerMenu(index)" class="menu-btn" />
+                          <v-btn
+                            icon="mdi-dots-vertical"
+                            variant="text"
+                            size="small"
+                            v-bind="props"
+                            @click.stop="openBannerMenu(index)"
+                            class="menu-btn"
+                          />
                         </template>
                         <v-list>
                           <v-list-item @click="openBannerEditor(index)">
                             <v-list-item-title>Edit</v-list-item-title>
                           </v-list-item>
                           <v-list-item @click="deleteBannerFromMenu(index)">
-                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                            <v-list-item-title class="text-error"
+                              >Delete</v-list-item-title
+                            >
                           </v-list-item>
                         </v-list>
                       </v-menu>
@@ -869,10 +1048,21 @@ onMounted(async () => {
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Achievement</h3>
-                  <v-btn @click="addAchievement" icon="mdi-plus" variant="outlined" size="small" color="primary" class="icon-btn-square" />
+                  <v-btn
+                    @click="addAchievement"
+                    icon="mdi-plus"
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    class="icon-btn-square"
+                  />
                 </div>
                 <div class="achievement-list">
-                  <div v-for="(achievement, index) in achievements" :key="achievement.order ?? index" class="mb-3">
+                  <div
+                    v-for="(achievement, index) in achievements"
+                    :key="achievement.order ?? index"
+                    class="mb-3"
+                  >
                     <v-card
                       variant="outlined"
                       class="d-flex align-center pa-2 mb-2 achievement-card"
@@ -881,28 +1071,77 @@ onMounted(async () => {
                       @dragover.prevent="onAchievementDragOver(index)"
                       @drop.prevent="onAchievementDrop(index)"
                       @dragend="onAchievementDragEnd"
-                      :class="{ 'achievement-card--dragover': dragOverAchievementIndex === index }"
-                      style="transition: background 0.2s, border 0.2s;"
+                      :class="{
+                        'achievement-card--dragover':
+                          dragOverAchievementIndex === index,
+                      }"
+                      style="
+                        transition:
+                          background 0.2s,
+                          border 0.2s;
+                      "
                     >
-                      <v-btn icon="mdi-drag" variant="text" size="small" class="mr-2 drag-btn" style="cursor: grab; color: var(--v-theme-on-surface, #888);" />
+                      <v-btn
+                        icon="mdi-drag"
+                        variant="text"
+                        size="small"
+                        class="mr-2 drag-btn"
+                        style="
+                          cursor: grab;
+                          color: var(--v-theme-on-surface, #888);
+                        "
+                      />
                       <v-avatar size="40" class="mr-3">
-                        <v-img v-if="achievement.image" :src="achievement.image" cover />
-                        <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
+                        <v-img
+                          v-if="achievement.image"
+                          :src="achievement.image"
+                          cover
+                        />
+                        <v-icon v-else size="40" color="amber"
+                          >mdi-trophy</v-icon
+                        >
                       </v-avatar>
                       <div class="flex-grow-1">
-                        <div class="font-weight-bold text-white text-truncate">{{ achievement.title || 'Achievement ' + (index + 1) }}</div>
-                        <div class="text-caption text-grey-lighten-1 text-truncate">{{ achievement.description }}</div>
+                        <div class="font-weight-bold text-white text-truncate">
+                          {{
+                            achievement.title || "Achievement " + (index + 1)
+                          }}
+                        </div>
+                        <div
+                          class="text-caption text-grey-lighten-1 text-truncate"
+                        >
+                          {{ achievement.description }}
+                        </div>
                       </div>
-                      <v-menu :model-value="achievementMenuOpenIndex === index" @update:model-value="val => achievementMenuOpenIndex = val ? index : null" :close-on-content-click="false" location="bottom right">
+                      <v-menu
+                        :model-value="achievementMenuOpenIndex === index"
+                        @update:model-value="
+                          (val) =>
+                            (achievementMenuOpenIndex = val ? index : null)
+                        "
+                        :close-on-content-click="false"
+                        location="bottom right"
+                      >
                         <template #activator="{ props }">
-                          <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" @click.stop="openAchievementMenu(index)" class="menu-btn" />
+                          <v-btn
+                            icon="mdi-dots-vertical"
+                            variant="text"
+                            size="small"
+                            v-bind="props"
+                            @click.stop="openAchievementMenu(index)"
+                            class="menu-btn"
+                          />
                         </template>
                         <v-list>
                           <v-list-item @click="openAchievementEditor(index)">
                             <v-list-item-title>Edit</v-list-item-title>
                           </v-list-item>
-                          <v-list-item @click="deleteAchievementFromMenu(index)">
-                            <v-list-item-title class="text-error">Delete</v-list-item-title>
+                          <v-list-item
+                            @click="deleteAchievementFromMenu(index)"
+                          >
+                            <v-list-item-title class="text-error"
+                              >Delete</v-list-item-title
+                            >
                           </v-list-item>
                         </v-list>
                       </v-menu>
@@ -915,45 +1154,96 @@ onMounted(async () => {
               <div class="mb-6">
                 <div class="d-flex align-center mb-4">
                   <h3 class="text-h6 mr-4">Produk Andalan</h3>
-                  <v-btn @click="productSelectionDialog = true" icon="mdi-plus" variant="outlined" size="small"
-                    color="primary" class="icon-btn-square" :disabled="availableProducts.length === 0" />
+                  <v-btn
+                    @click="productSelectionDialog = true"
+                    icon="mdi-plus"
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    class="icon-btn-square"
+                    :disabled="availableProducts.length === 0"
+                  />
                 </div>
-                <div v-if="featuredProducts.length === 0" class="text-center pa-8">
-                  <v-icon size="64" color="grey-lighten-1">mdi-package-variant-closed</v-icon>
-                  <p class="text-grey-darken-1 mt-2">Belum ada produk yang dipilih sebagai featured</p>
-                  <v-btn @click="productSelectionDialog = true" color="primary" variant="outlined"
-                    :disabled="availableProducts.length === 0">
+                <div
+                  v-if="featuredProducts.length === 0"
+                  class="text-center pa-8"
+                >
+                  <v-icon size="64" color="grey-lighten-1"
+                    >mdi-package-variant-closed</v-icon
+                  >
+                  <p class="text-grey-darken-1 mt-2">
+                    Belum ada produk yang dipilih sebagai featured
+                  </p>
+                  <v-btn
+                    @click="productSelectionDialog = true"
+                    color="primary"
+                    variant="outlined"
+                    :disabled="availableProducts.length === 0"
+                  >
                     Pilih Produk
                   </v-btn>
                 </div>
                 <div v-else>
-                  <div v-for="(product, index) in featuredProducts" :key="product.id" class="mb-3">
-                    <v-card variant="outlined" class="pa-4 featured-product-card">
+                  <div
+                    v-for="(product, index) in featuredProducts"
+                    :key="product.id"
+                    class="mb-3"
+                  >
+                    <v-card
+                      variant="outlined"
+                      class="pa-4 featured-product-card"
+                    >
                       <div class="d-flex align-center mb-3">
                         <div class="featured-product-img">
-                          <v-img :src="product.assets[0]?.url || '/placeholder.jpg'" width="64" height="64" cover />
+                          <v-img
+                            :src="product.assets[0]?.url || '/placeholder.jpg'"
+                            width="64"
+                            height="64"
+                            cover
+                          />
                         </div>
                         <div class="flex-grow-1">
                           <h4 class="text-subtitle-1">{{ product.name }}</h4>
-                          <p class="text-caption text-grey-darken-1 mb-0">{{ product.category?.category }}</p>
+                          <p class="text-caption text-grey-darken-1 mb-0">
+                            {{ product.category?.category }}
+                          </p>
                         </div>
-                        <v-btn @click="removeFeaturedProduct(index)" icon="mdi-delete" variant="text" size="small"
-                          color="error" />
+                        <v-btn
+                          @click="removeFeaturedProduct(index)"
+                          icon="mdi-delete"
+                          variant="text"
+                          size="small"
+                          color="error"
+                        />
                       </div>
                       <div class="d-flex mb-3 align-center">
                         <div class="flex-grow-1">
-                          <p class="text-body-2 mb-2">{{ product.description }}</p>
+                          <p class="text-body-2 mb-2">
+                            {{ product.description }}
+                          </p>
                           <div class="d-flex align-center">
-                            <span v-if="product.discount && product.discount > 0"
-                              class="text-h6 font-weight-bold text-primary mr-2">
-                              {{ formatPrice(product.price - (product.price * product.discount / 100)) }}
+                            <span
+                              v-if="product.discount && product.discount > 0"
+                              class="text-h6 font-weight-bold text-primary mr-2"
+                            >
+                              {{
+                                formatPrice(
+                                  product.price -
+                                    (product.price * product.discount) / 100,
+                                )
+                              }}
                             </span>
-                            <span v-if="product.discount && product.discount > 0"
+                            <span
+                              v-if="product.discount && product.discount > 0"
                               class="text-h6 font-weight-bold text-grey-darken-1 mr-2"
-                              style="text-decoration: line-through;">
+                              style="text-decoration: line-through"
+                            >
                               {{ formatPrice(product.price) }}
                             </span>
-                            <span v-else class="text-h6 font-weight-bold text-primary">
+                            <span
+                              v-else
+                              class="text-h6 font-weight-bold text-primary"
+                            >
                               {{ formatPrice(product.price) }}
                             </span>
                           </div>
@@ -965,7 +1255,14 @@ onMounted(async () => {
               </div>
 
               <!-- Save Button -->
-              <v-btn type="submit" color="primary" variant="elevated" :loading="saveLoading" block size="large">
+              <v-btn
+                type="submit"
+                color="primary"
+                variant="elevated"
+                :loading="saveLoading"
+                block
+                size="large"
+              >
                 Simpan Perubahan
               </v-btn>
             </v-form>
@@ -976,16 +1273,30 @@ onMounted(async () => {
       <!-- Right Side - Preview -->
       <v-col cols="12" lg="6">
         <v-card variant="outlined">
-          <v-card-title class="bg-grey text-white d-flex justify-space-between align-center">
+          <v-card-title
+            class="bg-grey text-white d-flex justify-space-between align-center"
+          >
             <div class="d-flex align-center">
               <v-icon class="mr-2">mdi-eye</v-icon>
               Live Preview
             </div>
             <div class="d-flex gap-2">
-              <v-btn @click="refreshPreview" icon="mdi-refresh" variant="text" size="small" color="white"
-                title="Refresh preview" />
-              <v-btn @click="openHomepage" icon="mdi-open-in-new" variant="text" size="small" color="white"
-                title="Open homepage in new tab" />
+              <v-btn
+                @click="refreshPreview"
+                icon="mdi-refresh"
+                variant="text"
+                size="small"
+                color="white"
+                title="Refresh preview"
+              />
+              <v-btn
+                @click="openHomepage"
+                icon="mdi-open-in-new"
+                variant="text"
+                size="small"
+                color="white"
+                title="Open homepage in new tab"
+              />
             </div>
           </v-card-title>
 
@@ -1006,26 +1317,84 @@ onMounted(async () => {
         <v-card-title class="bg-primary text-white">Edit Banner</v-card-title>
         <v-card-text class="pa-6">
           <div class="mb-4">
-            <v-card height="150" variant="outlined" class="d-flex align-center justify-center image-upload-card"
+            <v-card
+              height="150"
+              variant="outlined"
+              class="d-flex align-center justify-center image-upload-card"
               @click="openBannerEditorFileInput"
               @dragover.prevent
               @drop="handleBannerEditorImageDrop"
-              >
+            >
               <div v-if="!editingBanner?.image" class="text-center">
-                <v-icon size="32" color="grey-lighten-1" class="mb-1">mdi-camera</v-icon>
-                <p class="text-caption text-grey-darken-1">Banner Image<br /></p>
+                <v-icon size="32" color="grey-lighten-1" class="mb-1"
+                  >mdi-camera</v-icon
+                >
+                <p class="text-caption text-grey-darken-1">
+                  Banner Image<br />
+                </p>
               </div>
               <div v-else class="banner-image-wrapper">
-                <v-img :src="editingBanner?.image" cover height="100%" class="rounded" />
-                <v-btn icon="mdi-close-circle" size="small" color="error" class="clear-image-btn" @click.stop="clearBannerEditorImage" style="position: absolute; top: 8px; right: 8px; z-index: 2; background: white;" />
+                <v-img
+                  :src="editingBanner?.image"
+                  cover
+                  height="100%"
+                  class="rounded"
+                />
+                <v-btn
+                  icon="mdi-close-circle"
+                  size="small"
+                  color="error"
+                  class="clear-image-btn"
+                  @click.stop="clearBannerEditorImage"
+                  style="
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    z-index: 2;
+                    background: white;
+                  "
+                />
               </div>
             </v-card>
-            <input ref="bannerEditorFileInputRef" type="file" accept="image" style="display: none" @change="handleBannerEditorImageUpload" />
+            <input
+              ref="bannerEditorFileInputRef"
+              type="file"
+              accept="image"
+              style="display: none"
+              @change="handleBannerEditorImageUpload"
+            />
           </div>
-          <v-text-field v-if="editingBanner" v-model="editingBanner.title" label="Title" variant="outlined" density="compact" class="mb-2" />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.subtitle" label="Subtitle" variant="outlined" density="compact" class="mb-2" />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonText" label="Button Text" variant="outlined" density="compact" class="mb-2" />
-          <v-text-field v-if="editingBanner" v-model="editingBanner.buttonLink" label="Button Link" variant="outlined" density="compact" />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.title"
+            label="Title"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.subtitle"
+            label="Subtitle"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.buttonText"
+            label="Button Text"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingBanner"
+            v-model="editingBanner.buttonLink"
+            label="Button Link"
+            variant="outlined"
+            density="compact"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -1046,7 +1415,14 @@ onMounted(async () => {
             @drop="handleAchievementEditorImageDrop"
             @dragover.prevent
             @click="openAchievementEditorFileInput"
-            style="height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; position: relative;"
+            style="
+              height: 120px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 16px;
+              position: relative;
+            "
           >
             <v-img
               v-if="editingAchievement?.image"
@@ -1061,7 +1437,7 @@ onMounted(async () => {
               icon="mdi-close"
               color="error"
               size="small"
-              style="position: absolute; top: 8px; right: 8px;"
+              style="position: absolute; top: 8px; right: 8px"
               @click.stop="clearAchievementEditorImage"
             />
             <input
@@ -1072,9 +1448,33 @@ onMounted(async () => {
               @change="handleAchievementEditorImageUpload"
             />
           </div>
-          <v-text-field v-if="editingAchievement" v-model="editingAchievement.title" label="Title" variant="outlined" density="compact" class="mb-2" />
-          <v-text-field v-if="editingAchievement" v-model.number="editingAchievement.percentage" label="Percentage" type="number" min="0" max="100" variant="outlined" density="compact" class="mb-2" />
-          <v-textarea v-if="editingAchievement" v-model="editingAchievement.description" label="Description" variant="outlined" density="compact" rows="2" />
+          <v-text-field
+            v-if="editingAchievement"
+            v-model="editingAchievement.title"
+            label="Title"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-text-field
+            v-if="editingAchievement"
+            v-model.number="editingAchievement.percentage"
+            label="Percentage"
+            type="number"
+            min="0"
+            max="100"
+            variant="outlined"
+            density="compact"
+            class="mb-2"
+          />
+          <v-textarea
+            v-if="editingAchievement"
+            v-model="editingAchievement.description"
+            label="Description"
+            variant="outlined"
+            density="compact"
+            rows="2"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -1138,7 +1538,9 @@ onMounted(async () => {
   flex-direction: column;
   justify-content: stretch;
   border-radius: 8px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .product-select-card .v-row {
   height: 100%;
