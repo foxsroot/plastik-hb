@@ -14,7 +14,7 @@ export const useImageHandler = () => {
 
   // Computed untuk mendapatkan alt image URL
   const altImageUrl = computed(() => {
-    return AltImageProduk;
+    return "";
   });
 
   // Helper untuk get gambar dari assets folder
