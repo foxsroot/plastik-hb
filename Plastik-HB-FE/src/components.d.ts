@@ -12,8 +12,10 @@ declare module 'vue' {
     AdminSideBar: typeof import('./components/AdminSideBar.vue')['default']
     CustomerFooter: typeof import('./components/CustomerFooter.vue')['default']
     CustomerNavBar: typeof import('./components/CustomerNavBar.vue')['default']
+    FloatingWhatsAppButton: typeof import('./components/FloatingWhatsAppButton.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     Loading: typeof import('./components/Loading.vue')['default']
+    NavButton: typeof import('./components/NavButton.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

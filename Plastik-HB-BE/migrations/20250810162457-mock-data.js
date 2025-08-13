@@ -313,21 +313,6 @@ module.exports = {
         created_at: new Date(),
         updated_at: new Date(),
       },
-      {
-        id: "143bd2d2-0eb6-4b1b-a0cf-f8f3156a969b",
-        page_id: "67c32e9e-c86d-4da1-a099-ac21fcd14dea",
-        type: "ADDRESS",
-        order: 2,
-        data: JSON.stringify({
-          phoneNumber: "628123456789008001700",
-          address: "Jl. Plastik HB No. 123, Bandung",
-          mapUrl:
-            "https://www.google.com/maps?q=-6.914744,107.609810&z=15&output=embed",
-        }),
-        visible: true,
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
     ]);
 
     // --- Analytics ---

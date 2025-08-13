@@ -7,5 +7,7 @@
     </v-main>
 
     <CustomerFooter />
+
+    <FloatingWhatsAppButton />
   </v-app>
 </template>

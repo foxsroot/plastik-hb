@@ -85,3 +85,5 @@ app.listen(port, '0.0.0.0', () => {
     console.log(`Server is running on http://${process.env.DB_HOST}:${port}`);
     console.log(`You can also access it at http://localhost:${port}`);
 });
+
+export default app;

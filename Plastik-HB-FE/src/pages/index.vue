@@ -247,16 +247,10 @@ onMounted(async () => {
 
   trackPageView(
     pageData.value?.id || "unknown",
-    pageData.value?.slug || "unknown"
+    pageData.value?.slug || "unknown",
   );
 
   await fetchFeatured();
-
-  trackPageView(
-    pageData.value?.id || "unknown",
-    pageData.value?.slug || "unknown"
-  );
-
   startAutoScroll();
   await nextTick();
   updateScrollPosition();
@@ -320,7 +314,7 @@ onUnmounted(() => {
                         <v-btn
                           v-if="banner.buttonText"
                           :to="banner.buttonLink"
-                          color="amber"
+                          color="primary"
                           size="large"
                           rounded
                           class="banner-btn"
@@ -392,14 +386,14 @@ onUnmounted(() => {
                     :src="achievement.image"
                     :alt="achievement.title"
                   />
-                  <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
+                  <v-icon v-else size="40" color="#1976D2">mdi-trophy</v-icon>
                 </v-avatar>
 
                 <!-- Achievement Content -->
                 <div class="flex-grow-1">
                   <div class="d-flex align-center mb-2">
                     <h3
-                      class="achievement-percentage text-h4 font-weight-bold text-amber"
+                      class="achievement-percentage text-h4 font-weight-bold text-primary"
                     >
                       {{ achievement.percentage }}%
                     </h3>
@@ -431,14 +425,14 @@ onUnmounted(() => {
                     :src="achievement.image"
                     :alt="achievement.title"
                   />
-                  <v-icon v-else size="40" color="amber">mdi-trophy</v-icon>
+                  <v-icon v-else size="40" color="#1976D2">mdi-trophy</v-icon>
                 </v-avatar>
 
                 <!-- Achievement Content -->
                 <div class="flex-grow-1">
                   <div class="d-flex align-center mb-2">
                     <h3
-                      class="achievement-percentage text-h4 font-weight-bold text-amber"
+                      class="achievement-percentage text-h4 font-weight-bold text-primary"
                     >
                       {{ achievement.percentage }}%
                     </h3>
@@ -500,7 +494,7 @@ onUnmounted(() => {
                         <div
                           class="d-flex align-center justify-center fill-height"
                         >
-                          <v-icon size="60" color="amber"
+                          <v-icon size="60" color="primary"
                             >mdi-package-variant</v-icon
                           >
                         </div>
@@ -528,12 +522,12 @@ onUnmounted(() => {
                       <div>
                         <span
                           v-if="product.discount && product.discount > 0"
-                          class="text-h6 font-weight-bold text-amber"
+                          class="text-h6 font-weight-bold text-primary"
                         >
                           {{
                             formatPrice(
                               product.price -
-                                (product.price * product.discount) / 100
+                                (product.price * product.discount) / 100,
                             )
                           }}
                         </span>
@@ -546,7 +540,7 @@ onUnmounted(() => {
                         </span>
                         <span
                           v-else
-                          class="text-h6 font-weight-bold text-amber"
+                          class="text-h6 font-weight-bold text-primary"
                         >
                           {{ formatPrice(product.price) }}
                         </span>
@@ -565,7 +559,7 @@ onUnmounted(() => {
         <v-col cols="12" class="text-center">
           <v-btn
             to="/katalog"
-            color="amber"
+            color="primary"
             size="large"
             variant="outlined"
             class="px-8"
@@ -706,12 +700,12 @@ onUnmounted(() => {
 }
 
 .banner-dot.active {
-  background: rgba(255, 193, 7, 0.9);
+  background: rgba(25, 118, 210, 0.9);
   transform: scale(1.2);
 }
 
 .banner-dot:hover {
-  background: rgba(255, 193, 7, 0.7);
+  background: rgba(25, 118, 210, 0.9);
   transform: scale(1.1);
 }
 

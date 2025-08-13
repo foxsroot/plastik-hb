@@ -53,7 +53,7 @@ onMounted(async () => {
   await fetchPageData();
   trackPageView(
     pageData.value?.id || "unknown",
-    pageData.value?.slug || "unknown"
+    pageData.value?.slug || "unknown",
   );
 });
 </script>
@@ -93,7 +93,9 @@ onMounted(async () => {
         <v-card
           class="pa-6 text-center bg-grey-darken-3 rounded-lg elevation-1"
         >
-          <v-icon color="amber" size="36" class="mb-2">mdi-star-circle</v-icon>
+          <v-icon color="primary" size="36" class="mb-2"
+            >mdi-star-circle</v-icon
+          >
           <p class="text-subtitle-1 font-weight-medium">{{ value }}</p>
         </v-card>
       </v-col>
@@ -126,7 +128,7 @@ onMounted(async () => {
               :key="item"
               class="mb-2"
             >
-              <v-icon start color="amber">mdi-circle-small</v-icon> {{ item }}
+              <v-icon start color="primary">mdi-circle-small</v-icon> {{ item }}
             </li>
           </ul>
         </v-card>

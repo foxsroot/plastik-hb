@@ -1,59 +1,37 @@
 <template>
-  <v-app-bar elevation="1" color="white" height="80">
-    <v-container fluid class="d-flex align-center px-6">
-      <v-btn variant="text" to="/" class="logo-btn pa-2" size="large">
+  <v-app-bar elevation="1" color="#333333" height="80" border="b1">
+    <v-container fluid class="d-flex align-center pl-0 pr-6">
+      <!-- Logo -->
+      <RouterLink to="/" class="logo-link">
         <v-img
-          src="/src/assets/logo.png"
-          alt="Logo"
-          max-height="40"
-          max-width="80"
-          contain
+          src="/logo.png"
+          alt="Plastik HB Company Logo"
+          width="100"
+          cover
+          class="logo-img"
+          ml-5
         />
-      </v-btn>
+      </RouterLink>
 
       <v-spacer />
 
+      <!-- Desktop Navigation -->
       <v-btn-group variant="text" class="d-none d-md-flex">
-        <v-btn
-          to="/"
-          variant="text"
-          size="large"
-          class="nav-link px-6"
-          :class="{ active: $route.path === '/' }"
-        >
-          Home
-        </v-btn>
-
-        <v-btn
-          to="/katalog"
-          variant="text"
-          size="large"
-          class="nav-link px-6"
-          :class="{ active: $route.path === '/katalog' }"
-        >
-          Katalog Produk
-        </v-btn>
-
-        <v-btn
-          to="/tentang-kami"
-          variant="text"
-          size="large"
-          class="nav-link px-6"
-          :class="{ active: $route.path === '/tentang-kami' }"
-        >
-          Tentang Kami
-        </v-btn>
+        <NavButton to="/" label="Home" />
+        <NavButton to="/katalog" label="Katalog Produk" />
+        <NavButton to="/tentang-kami" label="Tentang Kami" />
       </v-btn-group>
 
       <v-spacer />
 
+      <!-- Mobile Menu -->
       <v-menu
         v-model="mobileMenu"
         :close-on-content-click="true"
         location="bottom end"
         class="d-md-none"
       >
-        <template v-slot:activator="{ props }">
+        <template #activator="{ props }">
           <v-btn
             icon="mdi-menu"
             variant="text"
@@ -63,16 +41,14 @@
         </template>
 
         <v-list>
-          <v-list-item to="/" @click="mobileMenu = false">
-            <v-list-item-title>Home</v-list-item-title>
-          </v-list-item>
-
-          <v-list-item to="/katalog" @click="mobileMenu = false">
-            <v-list-item-title>Katalog Produk</v-list-item-title>
-          </v-list-item>
-
-          <v-list-item to="/tentang-kami" @click="mobileMenu = false">
-            <v-list-item-title>Tentang Kami</v-list-item-title>
+          <v-list-item
+            v-for="link in navLinks"
+            :key="link.to"
+            :to="link.to"
+            @click="mobileMenu = false"
+            link
+          >
+            <v-list-item-title>{{ link.label }}</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -83,19 +59,41 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 
+// State
 const mobileMenu = ref(false);
+
+// Navigation links (single source of truth)
+const navLinks = [
+  { to: "/", label: "Home" },
+  { to: "/katalog", label: "Katalog Produk" },
+  { to: "/tentang-kami", label: "Tentang Kami" },
+];
 </script>
 
 <style scoped>
-.logo-btn {
-  min-width: auto !important;
+/* Logo styles */
+.logo-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  text-decoration: none;
 }
 
+.app-logo {
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .app-logo {
+    height: 45px !important;
+  }
+}
+
+/* Nav button styles */
 .nav-link {
   font-weight: 500;
   text-transform: none;
   letter-spacing: normal;
-  color: rgba(0, 0, 0, 0.87);
   transition: color 0.3s ease;
 }
 
@@ -106,9 +104,5 @@ const mobileMenu = ref(false);
 .nav-link.active {
   color: #1976d2;
   font-weight: 600;
-}
-
-.v-app-bar {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 </style>
