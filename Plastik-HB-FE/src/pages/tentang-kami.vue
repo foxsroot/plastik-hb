@@ -46,7 +46,7 @@ async function fetchPageData() {
 function getImageUrl(imagePath?: string): string {
   if (!imagePath) return "";
   if (imagePath.startsWith("http")) return imagePath;
-  return `http://localhost:5000${imagePath}`;
+  return `${import.meta.env.VITE_API_URL}${imagePath}`;
 }
 
 onMounted(async () => {

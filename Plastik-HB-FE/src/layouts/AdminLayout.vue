@@ -1,11 +1,8 @@
 <template>
   <v-app>
-    <v-app-bar app color="primary" dark>
+    <v-app-bar v-if="$vuetify.display.smAndDown" app color="bg-gray-4" dark>
       <!-- Burger menu for mobile -->
-      <v-app-bar-nav-icon
-        v-if="$vuetify.display.smAndDown"
-        @click="drawer = true"
-      />
+      <v-app-bar-nav-icon @click="drawer = !drawer" />
       <v-toolbar-title>Admin Panel</v-toolbar-title>
       <v-spacer />
     </v-app-bar>
@@ -33,5 +30,5 @@ import AdminSideBar from "@/components/AdminSideBar.vue";
 import { useDisplay } from "vuetify";
 
 const display = useDisplay();
-const drawer = ref(!display.smAndDown.value); 
+const drawer = ref(!display.smAndDown.value);
 </script>
