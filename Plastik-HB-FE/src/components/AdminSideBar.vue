@@ -19,7 +19,6 @@
         <template #prepend>
           <v-icon>{{ item.icon }}</v-icon>
         </template>
-
         <v-list-item-title class="text-body-2 font-weight-medium">
           {{ item.title }}
         </v-list-item-title>
@@ -42,35 +41,19 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router"; // Import Vue Router
-import { logout } from "@/api/authenticationApi"; // Import logout API function
+import { useRouter } from "vue-router";
+import { logout } from "@/api/authenticationApi";
 
 const navItems = [
   { title: "Dashboard", to: "/admin", icon: "mdi-view-dashboard" },
-  {
-    title: "Halaman Utama",
-    to: "/admin/halaman-utama",
-    icon: "mdi-home-outline",
-  },
-  {
-    title: "Tentang Kami",
-    to: "/admin/tentang-kami",
-    icon: "mdi-information-outline",
-  },
-  {
-    title: "Katalog Produk",
-    to: "/admin/katalog-produk",
-    icon: "mdi-package-variant",
-  },
+  { title: "Halaman Utama", to: "/admin/halaman-utama", icon: "mdi-home-outline" },
+  { title: "Tentang Kami", to: "/admin/tentang-kami", icon: "mdi-information-outline" },
+  { title: "Katalog Produk", to: "/admin/katalog-produk", icon: "mdi-package-variant" },
   { title: "Kategori", to: "/admin/kategori", icon: "mdi-shape-outline" },
-  {
-    title: "Informasi Kontak",
-    to: "/admin/informasi-kontak",
-    icon: "mdi-phone-outline",
-  },
+  { title: "Informasi Kontak", to: "/admin/informasi-kontak", icon: "mdi-phone-outline" },
 ];
 
-const router = useRouter(); // Initialize Vue Router
+const router = useRouter();
 
 async function handleLogout() {
   const token = localStorage.getItem("sessionToken");
@@ -79,16 +62,15 @@ async function handleLogout() {
     router.push("/admin/login");
     return;
   }
-
   try {
-    await logout(token); // Call backend API to invalidate session
+    await logout(token);
     console.log("Logout successful.");
-    localStorage.removeItem("sessionToken"); // Remove token from localStorage
-    router.push("/admin/login"); // Redirect to login
+    localStorage.removeItem("sessionToken");
+    router.push("/admin/login");
   } catch (error: any) {
     console.error("Logout failed:", error);
-    localStorage.removeItem("sessionToken"); // Remove token even if logout fails
-    router.push("/admin/login"); // Redirect to login
+    localStorage.removeItem("sessionToken");
+    router.push("/admin/login");
   }
 }
 </script>
