@@ -10,13 +10,23 @@ declare module 'vue' {
   export interface GlobalComponents {
     AddProductModal: typeof import('./components/pop-up/AddProductModal.vue')['default']
     AdminSideBar: typeof import('./components/AdminSideBar.vue')['default']
+    AppAlert: typeof import('./components/AppAlert.vue')['default']
+    CardListEditor: typeof import('./components/CardListEditor.vue')['default']
+    ContactInfoPreview: typeof import('./components/ContactInfoPreview.vue')['default']
     CustomerFooter: typeof import('./components/CustomerFooter.vue')['default']
     CustomerNavBar: typeof import('./components/CustomerNavBar.vue')['default']
+    FeaturedProductCard: typeof import('./components/FeaturedProductCard.vue')['default']
     FloatingWhatsAppButton: typeof import('./components/FloatingWhatsAppButton.vue')['default']
+    GoogleMapsEmbed: typeof import('./components/GoogleMapsEmbed.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    HistoryListEditor: typeof import('./components/HistoryListEditor.vue')['default']
+    ImageUploadCard: typeof import('./components/ImageUploadCard.vue')['default']
+    LivePreviewCard: typeof import('./components/LivePreviewCard.vue')['default']
     Loading: typeof import('./components/Loading.vue')['default']
     NavButton: typeof import('./components/NavButton.vue')['default']
+    ProductSelectionDialog: typeof import('./components/ProductSelectionDialog.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ValuesInputList: typeof import('./components/ValuesInputList.vue')['default']
   }
 }
