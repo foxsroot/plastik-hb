@@ -5,7 +5,7 @@ import fs from 'fs';
 import { Request } from 'express';
 
 // Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../../Plastik-HB-FE/src/assets/productImage');
+const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

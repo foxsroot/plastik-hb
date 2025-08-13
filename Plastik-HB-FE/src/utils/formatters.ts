@@ -23,7 +23,8 @@ export function getImageUrl(imagePath: string): string {
   if (imagePath.startsWith("data:")) return imagePath; // Base64 images
 
   // Hardcode backend URL
-  return `${import.meta.env.VITE_API_URL}${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
+  // return `${import.meta.env.VITE_API_URL}/uploads/${imagePath.startsWith('/') ? imagePath : '/' + imagePath}`;
+  return `${import.meta.env.VITE_API_URL}/uploads/${imagePath}`;
 }
 
 // 🔸 Helper functions untuk format input harga
