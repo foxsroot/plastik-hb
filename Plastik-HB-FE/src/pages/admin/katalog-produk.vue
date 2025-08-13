@@ -1640,7 +1640,10 @@ watch(
 
                   <!-- Action Buttons -->
                   <v-col cols="3" md="3" class="text-right">
-                    <div class="d-flex justify-end align-center ga-2">
+                    <div
+                      class="d-flex justify-end align-center ga-2"
+                      v-if="$vuetify.display.mdAndUp"
+                    >
                       <!-- Edit Button -->
                       <v-btn
                         prepend-icon="mdi-pencil"
@@ -1662,6 +1665,28 @@ watch(
                       >
                         Hapus
                       </v-btn>
+                    </div>
+                    <!-- Dot menu for mobile -->
+                    <div v-else>
+                      <v-menu location="bottom end">
+                        <template #activator="{ props }">
+                          <v-btn icon="mdi-dots-vertical" v-bind="props" />
+                        </template>
+                        <v-list>
+                          <v-list-item @click="openEditModal(product)">
+                            <v-list-item-title>
+                              <v-icon start color="primary">mdi-pencil</v-icon>
+                              Edit
+                            </v-list-item-title>
+                          </v-list-item>
+                          <v-list-item @click="openDeleteDialog(product)">
+                            <v-list-item-title>
+                              <v-icon start color="error">mdi-delete</v-icon>
+                              Hapus
+                            </v-list-item-title>
+                          </v-list-item>
+                        </v-list>
+                      </v-menu>
                     </div>
                   </v-col>
                 </v-row>
