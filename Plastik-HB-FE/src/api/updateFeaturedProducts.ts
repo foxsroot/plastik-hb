@@ -6,6 +6,12 @@ import axiosInstance from '../utils/axiosInstance';
  * @returns Updated featured products
  */
 export const updateFeaturedProducts = async (productIds: string[]): Promise<object> => {
-  const response = await axiosInstance.put('/products/featured', { productIds });
+  const token = localStorage.getItem('sessionToken');
+  const response = await axiosInstance.put('/products/featured', { productIds }, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
   return response.data;
 };
