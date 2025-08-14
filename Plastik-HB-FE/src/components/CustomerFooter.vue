@@ -1,109 +1,154 @@
 <template>
-  <v-footer
-    color="#333333"
-    class="text-white pa-8"
-  >
+  <v-footer color="#333333" class="text-white pa-8">
     <v-container>
       <v-row>
         <!-- Company Info Section -->
         <v-col cols="12" md="3" class="mb-6">
           <div class="mb-4">
             <h3 class="text-h5 mb-2 font-weight-bold">PLASTIK HB</h3>
-            <p class="text-caption text-grey-lighten-2">SOLUSI PLASTIK TERBAIK</p>
-          </div>
-          
-          <!-- Address -->
-          <div class="mb-4">
-            <p class="text-body-2 mb-1">
-              Jl. Contoh Alamat no. 123, Jakarta
-            </p>
-            <p class="text-body-2">
-              12345, Indonesia
+            <p class="text-caption text-grey-lighten-2">
+              SOLUSI PLASTIK TERBAIK
             </p>
           </div>
 
-          <!-- Contact Info -->
+          <!-- Address (from backend) -->
+          <div class="mb-4">
+            <p class="text-body-2 mb-1">
+              {{ contactInfo?.address || "Alamat tidak tersedia" }}
+            </p>
+          </div>
+
+          <!-- Contact Info (from backend) -->
           <div class="contact-info">
             <div class="d-flex align-center mb-2">
               <v-icon icon="mdi-phone" size="16" class="me-2" />
-              <span class="text-body-2">+62 812 3456 7890</span>
-            </div>
-            
-            <div class="d-flex align-center mb-2">
-              <v-icon icon="mdi-phone" size="16" class="me-2" />
-              <span class="text-body-2">+62 21 1234 5678</span>
-            </div>
-            
-            <div class="d-flex align-center">
-              <v-icon icon="mdi-email" size="16" class="me-2" />
-              <span class="text-body-2">hello@plastikhb.com</span>
+              <span class="text-body-2">{{
+                contactInfo?.phoneNumber || "N/A"
+              }}</span>
             </div>
           </div>
         </v-col>
 
         <!-- Services Section -->
         <v-col cols="12" md="2" class="mb-6">
-          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">LAYANAN</h4>
+          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">
+            LAYANAN
+          </h4>
           <div class="footer-links">
             <div class="mb-2">
-              <router-link to="/katalog" class="footer-link">KATALOG PRODUK</router-link>
+              <router-link to="/katalog" class="footer-link"
+                >KATALOG PRODUK</router-link
+              >
             </div>
             <div class="mb-2">
-              <router-link to="/custom-order" class="footer-link">PESANAN CUSTOM</router-link>
+              <a
+                :href="
+                  contactInfo?.phoneNumber
+                    ? `https://wa.me/${contactInfo.phoneNumber}`
+                    : '#'
+                "
+                class="footer-link"
+                target="_blank"
+                rel="noopener"
+              >
+                PESANAN CUSTOM
+              </a>
             </div>
             <div class="mb-2">
-              <router-link to="/bulk-order" class="footer-link">PEMBELIAN GROSIR</router-link>
+              <a
+                :href="
+                  contactInfo?.phoneNumber
+                    ? `https://wa.me/${contactInfo.phoneNumber}`
+                    : '#'
+                "
+                class="footer-link"
+                target="_blank"
+                rel="noopener"
+              >
+                PEMBELIAN GROSIR
+              </a>
             </div>
           </div>
         </v-col>
 
         <!-- Information Section -->
         <v-col cols="12" md="2" class="mb-6">
-          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">INFORMASI</h4>
+          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">
+            INFORMASI
+          </h4>
           <div class="footer-links">
             <div class="mb-2">
-              <router-link to="/tentang" class="footer-link">TENTANG KAMI</router-link>
+              <router-link to="/tentang-kami" class="footer-link"
+                >TENTANG KAMI</router-link
+              >
             </div>
             <div class="mb-2">
-              <router-link to="/kontak" class="footer-link">HUBUNGI KAMI</router-link>
+              <a
+                :href="
+                  contactInfo?.phoneNumber
+                    ? `https://wa.me/${contactInfo.phoneNumber}`
+                    : '#'
+                "
+                class="footer-link"
+                target="_blank"
+                rel="noopener"
+              >
+                HUBUNGI KAMI
+              </a>
             </div>
             <div class="mb-2">
-              <router-link to="/kebijakan" class="footer-link">KEBIJAKAN PRIVASI</router-link>
+              <router-link to="#" class="footer-link"
+                >KEBIJAKAN PRIVASI</router-link
+              >
             </div>
             <div class="mb-2">
-              <router-link to="/syarat" class="footer-link">SYARAT & KETENTUAN</router-link>
+              <router-link to="#" class="footer-link"
+                >SYARAT & KETENTUAN</router-link
+              >
             </div>
           </div>
         </v-col>
 
         <!-- Support Section -->
         <v-col cols="12" md="2" class="mb-6">
-          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">DUKUNGAN</h4>
+          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">
+            DUKUNGAN
+          </h4>
           <div class="footer-links">
             <div class="mb-2">
-              <router-link to="/bantuan" class="footer-link">PUSAT BANTUAN</router-link>
+              <router-link to="#" class="footer-link"
+                >PUSAT BANTUAN</router-link
+              >
             </div>
             <div class="mb-2">
-              <router-link to="/faq" class="footer-link">FAQ</router-link>
+              <router-link to="#" class="footer-link">FAQ</router-link>
             </div>
             <div class="mb-2">
-              <router-link to="/panduan" class="footer-link">PANDUAN PEMBELIAN</router-link>
+              <router-link to="#" class="footer-link"
+                >PANDUAN PEMBELIAN</router-link
+              >
             </div>
           </div>
         </v-col>
 
         <!-- About Section -->
         <v-col cols="12" md="3" class="mb-6">
-          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">TENTANG KAMI</h4>
+          <h4 class="text-subtitle-1 mb-4 font-weight-bold text-uppercase">
+            TENTANG KAMI
+          </h4>
           <div class="footer-links">
             <div class="mb-2">
-              <router-link to="/tentang" class="footer-link">PROFIL PERUSAHAAN</router-link>
+              <router-link to="/tentang-kami" class="footer-link"
+                >PROFIL PERUSAHAAN</router-link
+              >
             </div>
             <div class="mb-2">
-              <router-link to="/karir" class="footer-link">KARIR</router-link>
+              <router-link to="#" class="footer-link">KARIR</router-link>
             </div>
             <div class="mb-2">
-              <router-link to="/mitra" class="footer-link">MITRA KAMI</router-link>
+              <router-link to="/#trustedby" class="footer-link"
+                >MITRA KAMI</router-link
+              >
             </div>
           </div>
         </v-col>
@@ -114,24 +159,8 @@
 
       <!-- Social Media and Copyright Section -->
       <v-row align="center">
-        <v-col cols="12" md="6">
-          <!-- Social Media Icons -->
-          <div class="d-flex justify-start justify-md-start mb-4 mb-md-0">
-            <v-btn
-              v-for="social in socialLinks"
-              :key="social.name"
-              :href="social.url"
-              target="_blank"
-              icon
-              variant="outlined"
-              size="small"
-              class="me-3 social-btn"
-            >
-              <v-icon :icon="social.icon" size="16" />
-            </v-btn>
-          </div>
-        </v-col>
-        
+        <v-col cols="12" md="6"> </v-col>
+
         <v-col cols="12" md="6">
           <div class="text-center text-md-end">
             <p class="text-body-2 text-grey-lighten-1 mb-0">
@@ -145,33 +174,27 @@
 </template>
 
 <script setup lang="ts">
-const socialLinks = [
-  {
-    name: 'Facebook',
-    icon: 'mdi-facebook',
-    url: 'https://facebook.com/plastikhb'
-  },
-  {
-    name: 'Twitter',
-    icon: 'mdi-twitter',
-    url: 'https://twitter.com/plastikhb'
-  },
-  {
-    name: 'RSS',
-    icon: 'mdi-rss',
-    url: 'https://plastikhb.com/rss'
-  },
-  {
-    name: 'Google Plus',
-    icon: 'mdi-google-plus',
-    url: 'https://plus.google.com/plastikhb'
-  },
-  {
-    name: 'More',
-    icon: 'mdi-dots-horizontal',
-    url: '#'
+import { ref, onMounted } from "vue";
+import axiosInstance from "../utils/axiosInstance";
+
+const contactInfo = ref<{
+  phoneNumber: string;
+  address: string;
+  mapUrl: string;
+} | null>(null);
+
+onMounted(async () => {
+  try {
+    const res = await axiosInstance.get("/contact");
+    contactInfo.value = res.data.data;
+  } catch (err) {
+    contactInfo.value = {
+      phoneNumber: "N/A",
+      address: "Alamat tidak tersedia",
+      mapUrl: "",
+    };
   }
-]
+});
 </script>
 
 <style scoped>
