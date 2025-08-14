@@ -355,10 +355,12 @@ onUnmounted(() => {
       </v-row>
 
       <!-- Trusted By Section -->
-      <Trustedby
-        :trustedByList="trustedByList"
-        :trustedByRepeatedList="trustedByRepeatedList"
-      />
+      <div id="trustedBy">
+        <Trustedby
+          :trustedByList="trustedByList"
+          :trustedByRepeatedList="trustedByRepeatedList"
+        />
+      </div>
     </v-container>
   </div>
 </template>
