@@ -262,3 +262,11 @@ export const updateAboutPageData = async ({
     if (!updatedAboutPage) throw new Error('About page not found after update');
     return updatedAboutPage;
 };
+
+export const PageService = {
+    getPageBySlug,
+    updateHomepageData,
+    updateAboutPageData,
+    updateBannerInSection,
+    deleteBannerImage
+};

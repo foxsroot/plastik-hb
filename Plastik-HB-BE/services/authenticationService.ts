@@ -76,3 +76,9 @@ const generateSessionToken = (): string => {
     return uuidv4();
 };
 
+
+export const AuthService = {
+    login,
+    logout,
+    verifySession
+};

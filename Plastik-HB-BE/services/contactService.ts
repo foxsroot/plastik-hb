@@ -41,3 +41,8 @@ export const updateContactSection = async (data: object): Promise<Section> => {
         throw new Error('Failed to update contact information');
     }
 };
+
+export const ContactService = {
+    getContactSection,
+    updateContactSection
+};
